@@ -240,7 +240,7 @@ export const MembersList = () => {
                       <p className="text-zinc-500 mb-3">No active membership</p>
                       <Button
                         className="btn-primary text-sm"
-                        onClick={() => navigate(`/admin/members/${selectedMember.id}/assign-plan`)}
+                        onClick={() => navigate(`/dashboard/admin/members/${selectedMember.id}/assign-plan`)}
                         data-testid="assign-plan-btn"
                       >
                         <CreditCard size={16} className="mr-2" />
