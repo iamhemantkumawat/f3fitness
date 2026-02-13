@@ -235,7 +235,7 @@ const Header = ({ onMenuClick }) => {
           </DropdownMenuItem>
           <DropdownMenuSeparator className="bg-zinc-800" />
           <DropdownMenuItem
-            onClick={() => navigate(`/${user?.role}/profile`)}
+            onClick={() => navigate(`/dashboard/${user?.role}/profile`)}
             className="cursor-pointer"
             data-testid="profile-link"
           >
