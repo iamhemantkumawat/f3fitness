@@ -684,8 +684,11 @@ async def send_whatsapp(to_number: str, message: str):
             from twilio.rest import Client
             twilio_client = Client(settings["twilio_account_sid"], settings["twilio_auth_token"])
             
+            # Clean the from number as well
+            from_number = settings["twilio_whatsapp_number"].replace(' ', '').replace('-', '')
+            
             msg = twilio_client.messages.create(
-                from_=f'whatsapp:{settings["twilio_whatsapp_number"]}',
+                from_=f'whatsapp:{from_number}',
                 body=message,
                 to=f'whatsapp:{to_number}'
             )
