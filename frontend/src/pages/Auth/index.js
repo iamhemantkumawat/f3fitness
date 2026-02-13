@@ -188,13 +188,13 @@ export const Signup = () => {
         })
       });
       
-      // Clone the response before reading to avoid stream issues
-      const responseClone = response.clone();
+      // Read as text first to avoid stream issues
+      const responseText = await response.text();
       let data;
       try {
-        data = await responseClone.json();
+        data = JSON.parse(responseText);
       } catch (jsonError) {
-        console.error('JSON parse error:', jsonError);
+        console.error('JSON parse error:', jsonError, 'Response:', responseText);
         data = { detail: 'Server error occurred' };
       }
       
