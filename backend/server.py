@@ -730,6 +730,21 @@ async def send_notification(user: dict, template_type: str, variables: dict, bac
 @api_router.post("/otp/send")
 async def send_otp(req: SendOTPRequest, background_tasks: BackgroundTasks):
     """Send same OTP to both phone (WhatsApp) and email"""
+    
+    # Check if email or phone is already registered
+    existing_user = await db.users.find_one({
+        "$or": [
+            {"email": req.email} if req.email else {"_id": None},
+            {"phone_number": req.phone_number}
+        ]
+    })
+    
+    if existing_user:
+        if existing_user.get("email") == req.email:
+            raise HTTPException(status_code=400, detail="This email is already registered. Please login instead.")
+        if existing_user.get("phone_number") == req.phone_number:
+            raise HTTPException(status_code=400, detail="This phone number is already registered. Please login instead.")
+    
     # Generate single OTP for both channels
     otp = generate_otp()
     
