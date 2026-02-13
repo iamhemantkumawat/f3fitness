@@ -385,7 +385,7 @@ export const CreateMember = () => {
     try {
       await usersAPI.create(formData, role);
       toast.success(`${role === 'trainer' ? 'Trainer' : 'Member'} created successfully`);
-      navigate('/admin/members');
+      navigate('/dashboard/admin/members');
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to create user');
     } finally {
