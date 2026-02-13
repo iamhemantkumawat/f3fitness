@@ -21,7 +21,8 @@ import {
   Clock,
   CalendarDays,
   Mail,
-  MessageSquare
+  MessageSquare,
+  Activity
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import {
