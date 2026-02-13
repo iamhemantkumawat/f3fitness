@@ -195,7 +195,7 @@ To test WhatsApp:
 2. Create Diet/Workout plan editor UI for trainers/admins
 3. Build Template Management UI with rich text editor
 4. Invoice generation and sending with payment notifications
-5. Create deployment guide for Ubuntu VPS
+5. ✅ ~~Create deployment guide for Ubuntu VPS~~ - COMPLETED
 
 ## Technical Debt
 - **server.py Refactoring** - The monolithic backend file (3000+ lines) needs to be split into:
