@@ -254,9 +254,10 @@ export const Signup = () => {
         })
       });
       
+      const verifyClone = verifyResponse.clone();
       let verifyData;
       try {
-        verifyData = await verifyResponse.json();
+        verifyData = await verifyClone.json();
       } catch (e) {
         verifyData = { detail: 'Server error' };
       }
@@ -276,9 +277,10 @@ export const Signup = () => {
         })
       });
       
+      const signupClone = signupResponse.clone();
       let signupData;
       try {
-        signupData = await signupResponse.json();
+        signupData = await signupClone.json();
       } catch (e) {
         signupData = { detail: 'Server error' };
       }
@@ -293,6 +295,7 @@ export const Signup = () => {
       toast.success('Account created successfully!');
       navigate('/dashboard/member');
     } catch (error) {
+      console.error('Signup error:', error);
       toast.error(error.message || 'Signup failed');
     } finally {
       setLoading(false);
