@@ -1318,11 +1318,265 @@ async def update_user(user_id: str, update: UserUpdate, current_user: dict = Dep
     return user
 
 @api_router.delete("/users/{user_id}")
-async def delete_user(user_id: str, current_user: dict = Depends(get_admin_user)):
-    result = await db.users.delete_one({"id": user_id})
-    if result.deleted_count == 0:
+async def delete_user(user_id: str, current_user: dict = Depends(get_admin_user), background_tasks: BackgroundTasks = None):
+    user = await db.users.find_one({"id": user_id})
+    if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    await db.users.delete_one({"id": user_id})
+    # Also delete related data
+    await db.memberships.delete_many({"user_id": user_id})
+    await db.attendance.delete_many({"user_id": user_id})
+    await db.health_logs.delete_many({"user_id": user_id})
+    await db.calorie_logs.delete_many({"user_id": user_id})
+    
     return {"message": "User deleted"}
+
+# ==================== ADMIN USER MANAGEMENT ROUTES ====================
+
+@api_router.get("/admin/users-with-membership")
+async def get_users_with_membership(
+    role: Optional[str] = None,
+    search: Optional[str] = None,
+    status: Optional[str] = None,  # active, inactive, disabled
+    current_user: dict = Depends(get_admin_user)
+):
+    """Get users with their active membership data"""
+    query = {}
+    if role:
+        query["role"] = role
+    if status == "disabled":
+        query["is_disabled"] = True
+    elif status == "active" or status == "inactive":
+        query["$or"] = [{"is_disabled": {"$exists": False}}, {"is_disabled": False}]
+    if search:
+        search_query = {
+            "$or": [
+                {"name": {"$regex": search, "$options": "i"}},
+                {"email": {"$regex": search, "$options": "i"}},
+                {"phone_number": {"$regex": search, "$options": "i"}},
+                {"member_id": {"$regex": search, "$options": "i"}}
+            ]
+        }
+        if query:
+            query = {"$and": [query, search_query]}
+        else:
+            query = search_query
+    
+    users = await db.users.find(query, {"_id": 0, "password_hash": 0}).to_list(1000)
+    
+    # Get all active memberships
+    all_memberships = await db.memberships.find({"status": "active"}, {"_id": 0}).to_list(10000)
+    membership_map = {m["user_id"]: m for m in all_memberships}
+    
+    # Get all plans
+    all_plans = await db.plans.find({}, {"_id": 0}).to_list(100)
+    plan_map = {p["id"]: p for p in all_plans}
+    
+    # Combine data
+    result = []
+    for user in users:
+        membership = membership_map.get(user["id"])
+        user_data = {**user}
+        if membership:
+            plan = plan_map.get(membership.get("plan_id"))
+            user_data["active_membership"] = {
+                "id": membership.get("id"),
+                "plan_id": membership.get("plan_id"),
+                "plan_name": plan["name"] if plan else "Unknown",
+                "start_date": membership.get("start_date"),
+                "end_date": membership.get("end_date"),
+                "status": membership.get("status")
+            }
+        else:
+            user_data["active_membership"] = None
+        
+        # Filter by membership status if requested
+        if status == "active" and not membership:
+            continue
+        if status == "inactive" and membership:
+            continue
+            
+        result.append(user_data)
+    
+    return result
+
+@api_router.post("/admin/users/bulk-delete")
+async def bulk_delete_users(
+    user_ids: List[str] = Body(...),
+    current_user: dict = Depends(get_admin_user),
+    background_tasks: BackgroundTasks = None
+):
+    """Delete multiple users"""
+    deleted_count = 0
+    for user_id in user_ids:
+        user = await db.users.find_one({"id": user_id})
+        if user and user.get("role") != "admin":
+            await db.users.delete_one({"id": user_id})
+            await db.memberships.delete_many({"user_id": user_id})
+            await db.attendance.delete_many({"user_id": user_id})
+            await db.health_logs.delete_many({"user_id": user_id})
+            await db.calorie_logs.delete_many({"user_id": user_id})
+            deleted_count += 1
+    
+    return {"message": f"{deleted_count} users deleted", "deleted_count": deleted_count}
+
+@api_router.post("/admin/users/{user_id}/toggle-status")
+async def toggle_user_status(
+    user_id: str,
+    action: str = Body(..., embed=True),  # "disable" or "enable"
+    current_user: dict = Depends(get_admin_user),
+    background_tasks: BackgroundTasks = None
+):
+    """Disable or enable a user account"""
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.get("role") == "admin":
+        raise HTTPException(status_code=400, detail="Cannot disable admin user")
+    
+    is_disabled = action == "disable"
+    await db.users.update_one({"id": user_id}, {"$set": {"is_disabled": is_disabled}})
+    
+    # Send notification
+    if background_tasks:
+        if is_disabled:
+            message = "Your F3 Fitness account has been temporarily disabled. Please contact the gym for more information."
+        else:
+            message = "Your F3 Fitness account has been reactivated. You can now login and use all features."
+        
+        # Send WhatsApp
+        if user.get("phone_number"):
+            full_phone = f"{user.get('country_code', '+91')}{user['phone_number'].lstrip('0')}"
+            background_tasks.add_task(send_whatsapp, full_phone, f"🏋️ F3 Fitness Update\n\n{message}")
+        
+        # Send Email
+        email_body = f"""
+        <div style="font-family: Arial; max-width: 600px; margin: 0 auto; background: #09090b; color: #fff; padding: 40px;">
+            <img src="https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png" style="width: 150px; margin-bottom: 20px;" />
+            <h1 style="color: #06b6d4;">Account Status Update</h1>
+            <p>Hello {user['name']},</p>
+            <p>{message}</p>
+        </div>
+        """
+        background_tasks.add_task(send_email, user["email"], "Account Status Update - F3 Fitness", email_body)
+    
+    return {"message": f"User {'disabled' if is_disabled else 'enabled'} successfully"}
+
+@api_router.post("/admin/users/{user_id}/revoke-membership")
+async def revoke_membership(
+    user_id: str,
+    current_user: dict = Depends(get_admin_user),
+    background_tasks: BackgroundTasks = None
+):
+    """Revoke/cancel active membership for a user"""
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    membership = await db.memberships.find_one({"user_id": user_id, "status": "active"})
+    if not membership:
+        raise HTTPException(status_code=400, detail="No active membership found")
+    
+    await db.memberships.update_one(
+        {"id": membership["id"]},
+        {"$set": {"status": "revoked", "revoked_at": get_ist_now().isoformat()}}
+    )
+    
+    # Send notification
+    if background_tasks:
+        plan = await db.plans.find_one({"id": membership.get("plan_id")})
+        plan_name = plan["name"] if plan else "membership"
+        
+        message = f"Your {plan_name} at F3 Fitness has been revoked. Please contact the gym for more information."
+        
+        if user.get("phone_number"):
+            full_phone = f"{user.get('country_code', '+91')}{user['phone_number'].lstrip('0')}"
+            background_tasks.add_task(send_whatsapp, full_phone, f"🏋️ F3 Fitness\n\n{message}")
+        
+        email_body = f"""
+        <div style="font-family: Arial; max-width: 600px; margin: 0 auto; background: #09090b; color: #fff; padding: 40px;">
+            <img src="https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png" style="width: 150px; margin-bottom: 20px;" />
+            <h1 style="color: #f97316;">Membership Revoked</h1>
+            <p>Hello {user['name']},</p>
+            <p>{message}</p>
+        </div>
+        """
+        background_tasks.add_task(send_email, user["email"], "Membership Revoked - F3 Fitness", email_body)
+    
+    return {"message": "Membership revoked successfully"}
+
+@api_router.get("/admin/users/{user_id}/password")
+async def get_user_password(
+    user_id: str,
+    current_user: dict = Depends(get_admin_user)
+):
+    """Get user's password (admin only) - returns masked password hint"""
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # For security, we can't retrieve the actual password (it's hashed)
+    # Instead, we return info that admin can set a new password
+    return {
+        "message": "Password is hashed and cannot be retrieved. Use the reset endpoint to set a new password.",
+        "can_reset": True
+    }
+
+@api_router.post("/admin/users/{user_id}/reset-password")
+async def admin_reset_user_password(
+    user_id: str,
+    new_password: str = Body(..., embed=True),
+    current_user: dict = Depends(get_admin_user),
+    background_tasks: BackgroundTasks = None
+):
+    """Admin resets a user's password and sends notification"""
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"password_hash": hash_password(new_password)}}
+    )
+    
+    # Send notification with new password
+    if background_tasks:
+        if user.get("phone_number"):
+            full_phone = f"{user.get('country_code', '+91')}{user['phone_number'].lstrip('0')}"
+            whatsapp_msg = f"""🏋️ F3 Fitness - Password Reset
+
+Hello {user['name']},
+
+Your password has been reset by the admin.
+
+New Password: {new_password}
+
+Please login and change your password immediately for security.
+
+Login: https://f3fitness.in/login"""
+            background_tasks.add_task(send_whatsapp, full_phone, whatsapp_msg)
+        
+        email_body = f"""
+        <div style="font-family: Arial; max-width: 600px; margin: 0 auto; background: #09090b; color: #fff; padding: 40px;">
+            <img src="https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png" style="width: 150px; margin-bottom: 20px;" />
+            <h1 style="color: #06b6d4;">Password Reset</h1>
+            <p>Hello {user['name']},</p>
+            <p>Your password has been reset by the admin.</p>
+            <div style="background: #18181b; padding: 20px; margin: 20px 0;">
+                <p style="margin: 0;"><strong>New Password:</strong> <code style="color: #06b6d4; font-size: 18px;">{new_password}</code></p>
+            </div>
+            <p style="color: #f97316;">Please login and change your password immediately for security.</p>
+            <a href="https://f3fitness.in/login" style="display: inline-block; background: #06b6d4; color: #000; padding: 12px 24px; text-decoration: none; font-weight: bold; margin-top: 10px;">Login Now</a>
+        </div>
+        """
+        background_tasks.add_task(send_email, user["email"], "Password Reset - F3 Fitness", email_body)
+    
+    return {"message": "Password reset successfully and notification sent"}
 
 # ==================== PT ASSIGNMENT ROUTES ====================
 
