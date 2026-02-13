@@ -294,6 +294,91 @@ const ProfilePage = ({ role }) => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Change Password */}
+        <Card className="glass-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg uppercase tracking-wide" style={{ fontFamily: 'Barlow Condensed' }}>
+              <Lock size={20} className="text-cyan-400" />
+              Change Password
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div>
+                <Label className="text-xs uppercase tracking-wider text-zinc-500">Current Password</Label>
+                <div className="relative mt-2">
+                  <Input
+                    data-testid="current-password"
+                    type={showPasswords.current ? 'text' : 'password'}
+                    className="input-dark pr-10"
+                    placeholder="Enter current password"
+                    value={passwordData.current_password}
+                    onChange={(e) => setPasswordData({ ...passwordData, current_password: e.target.value })}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                    onClick={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
+                  >
+                    {showPasswords.current ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-zinc-500">New Password</Label>
+                  <div className="relative mt-2">
+                    <Input
+                      data-testid="new-password"
+                      type={showPasswords.new ? 'text' : 'password'}
+                      className="input-dark pr-10"
+                      placeholder="Enter new password"
+                      value={passwordData.new_password}
+                      onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
+                      required
+                      minLength={6}
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                      onClick={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}
+                    >
+                      {showPasswords.new ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Confirm New Password</Label>
+                  <div className="relative mt-2">
+                    <Input
+                      data-testid="confirm-password"
+                      type={showPasswords.confirm ? 'text' : 'password'}
+                      className="input-dark pr-10"
+                      placeholder="Confirm new password"
+                      value={passwordData.confirm_password}
+                      onChange={(e) => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
+                      required
+                      minLength={6}
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                      onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
+                    >
+                      {showPasswords.confirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <Button type="submit" className="btn-primary" disabled={changingPassword} data-testid="change-password-btn">
+                <Lock size={18} className="mr-2" />
+                {changingPassword ? 'Changing...' : 'Change Password'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );
