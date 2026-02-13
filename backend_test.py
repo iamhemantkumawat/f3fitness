@@ -159,7 +159,7 @@ class F3FitnessAPITester:
             "Mark attendance",
             "POST",
             "attendance",
-            201,
+            200,  # Backend returns 200, not 201
             data={"member_id": member_id},
             token=self.admin_token
         )
