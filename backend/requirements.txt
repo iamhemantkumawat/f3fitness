@@ -70,6 +70,7 @@ packaging==26.0
 pandas==3.0.0
 passlib==1.7.4
 pathspec==1.0.4
+phonenumbers==9.0.23
 pillow==12.1.0
 platformdirs==4.5.1
 pluggy==1.6.0
@@ -94,6 +95,7 @@ python-jose==3.5.0
 python-multipart==0.0.22
 pytokens==0.4.1
 PyYAML==6.0.3
+qrcode==8.2
 razorpay==2.0.0
 referencing==0.37.0
 regex==2026.1.15
