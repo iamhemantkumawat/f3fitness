@@ -45,6 +45,11 @@ app = FastAPI(title="F3 Fitness Gym API")
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# Health Check Endpoint
+@api_router.get("/health")
+async def health_check():
+    return {"status": "healthy", "service": "f3fitness-backend"}
+
 # Security
 security = HTTPBearer()
 
