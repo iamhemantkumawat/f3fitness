@@ -33,6 +33,11 @@ Build a complete gym management webapp for "F3 Fitness Gym" from Jaipur with:
 
 ## What's Been Implemented (February 2026)
 
+### Bug Fixes - Session 4 (Latest)
+- ✅ **Signup Flow Fixed** - Context now properly updates after signup (uses login flow to update auth state)
+- ✅ **Forgot Password UI** - Complete 3-step flow (Enter email → Enter OTP + new password → Success)
+- ✅ **Duplicate Account Prevention** - Backend properly rejects duplicate email/phone during OTP send
+
 ### Bug Fixes - Session 2
 - ✅ **SMTP Integration Fixed** - Changed from `use_tls=True` to `start_tls=True` for port 587 (STARTTLS)
 - ✅ **WhatsApp Integration Fixed** - Phone numbers now cleaned of spaces/dashes for E.164 format
@@ -64,31 +69,44 @@ Build a complete gym management webapp for "F3 Fitness Gym" from Jaipur with:
 - ✅ Announcements, Holidays, Templates
 - ✅ SMTP & WhatsApp settings (with working test buttons)
 
-### Authentication
+### Authentication - COMPLETE
 - ✅ **OTP-based Signup Flow** - 2-step process:
   - Step 1: Enter details with +91 default country code
-  - Step 2: Verify WhatsApp OTP and Email OTP
-- ✅ JWT-based login
-- ✅ Forgot password flow
+  - Step 2: Verify single OTP (sent to both WhatsApp + Email)
+  - Auto-login after successful signup
+- ✅ **Duplicate Prevention** - Rejects existing email/phone at OTP send stage
+- ✅ JWT-based login (works with email or phone)
+- ✅ **Forgot Password Flow** - Complete 3-step OTP-based reset:
+  - Step 1: Enter email or phone
+  - Step 2: Enter OTP + new password + confirm password
+  - Step 3: Success confirmation
+- ✅ **Change Password** - Available in user profile
 
 ### Member Features
 - ✅ **Health Tracking Page** - Log weight, BMI, body fat
   - Auto-calculates BMI from weight and height
   - Shows progress history with color-coded BMI categories
   - Weight change tracking
+- ✅ **Calorie Tracker** - Daily calorie intake logging
+- ✅ **Member Profile Page** - View and edit personal information
+- ✅ **Profile Photo Upload** - Backend ready, UI integrated
 
 ### Backend APIs
 - ✅ OTP send/verify (WhatsApp + Email)
 - ✅ Signup with OTP verification
+- ✅ Forgot Password + Reset Password
+- ✅ Change Password
 - ✅ BMI Calculator API
 - ✅ Maintenance Calories Calculator API
 - ✅ Health logs (weight, BMI, body fat)
+- ✅ Calorie logs
 - ✅ Diet plans (PDF + structured)
 - ✅ Workout plans (PDF + structured)
 - ✅ PT package management
 - ✅ Template management
 - ✅ Testimonials CRUD
 - ✅ Regular absentees detection
+- ✅ Profile photo upload
 
 ### Integrations
 - ✅ Twilio WhatsApp (WORKING)
@@ -107,41 +125,55 @@ To test WhatsApp:
 - Password: admin123
 
 ## Test Member Credentials
-- Email: testmember_102810@example.com
-- Password: test123
+- Email: context_test@example.com
+- Password: testpass123
 
 ## Prioritized Backlog
 
-### P0 (Critical) - COMPLETED
+### P0 (Critical) - COMPLETED ✅
 - ✅ SMTP bug fix
 - ✅ WhatsApp bug fix
+- ✅ Signup flow bug fix (body stream already read)
+- ✅ Duplicate account prevention
+- ✅ Forgot Password UI flow
 
-### P1 (High Priority) - PARTIALLY COMPLETE
+### P1 (High Priority) - COMPLETED ✅
 - ✅ OTP signup flow UI with +91 default
 - ✅ Admin Dashboard birthdays/renewals widgets
 - ✅ Member health tracking page
+- ✅ Calorie tracker
+- ✅ Change password feature
+- ✅ Member profile page
+
+### P2 (Medium Priority) - IN PROGRESS
+- ⏳ Razorpay payment integration
 - ⏳ Diet/Workout plan creation UI for trainers
 - ⏳ Template editor in admin panel (rich text)
-- ⏳ Scheduled birthday/renewal notifications (cron)
+- ⏳ Invoice generation with payments
+- ⏳ PDF export for reports
+- ⏳ Instagram feed integration on landing page
 
-### P2 (Medium Priority)
-- Razorpay payment verification flow
-- Instagram feed integration on landing page
-- PDF export for reports
+### P3 (Low Priority) - BACKLOG
+- Scheduled birthday/renewal notifications (cron)
 - QR code check-in
-
-### P3 (Low Priority)
 - Dark/Light theme toggle
 - Multi-language support
 - Mobile app (React Native)
 
 ## Next Tasks
-1. Create Diet/Workout plan editor UI for trainers/admins
-2. Build Template Management UI with rich text editor
-3. Implement scheduled notification cron jobs
-4. Integrate Razorpay for online payments
+1. Integrate Razorpay for online payments
+2. Create Diet/Workout plan editor UI for trainers/admins
+3. Build Template Management UI with rich text editor
+4. Invoice generation and sending with payment notifications
 5. Create deployment guide for Ubuntu VPS
+
+## Technical Debt
+- **server.py Refactoring** - The monolithic backend file (3000+ lines) needs to be split into:
+  - `/app/backend/routes/` - API routes
+  - `/app/backend/models/` - Pydantic models
+  - `/app/backend/services/` - Business logic
 
 ## Test Reports
 - /app/test_reports/iteration_2.json - SMTP/WhatsApp bug fixes
 - /app/test_reports/iteration_3.json - New features (OTP, Dashboard widgets, Health Tracking)
+- /app/test_reports/iteration_4.json - Auth flows (Signup, Login, Forgot Password, Profile)
