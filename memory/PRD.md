@@ -44,7 +44,16 @@ Build a complete gym management webapp for "F3 Fitness Gym" from Jaipur with:
 - ✅ **Status Filter** - Filter by All, Active (with plan), Inactive (no plan), Disabled
 - ✅ **Welcome Notifications** - New members receive Email/WhatsApp with login credentials
 
-### Bug Fixes & Enhancements - Session 6 (Latest)
+### Deployment Guide Created - Session 7 (December 2025)
+- ✅ **DEPLOYMENT.md** - Comprehensive step-by-step Ubuntu VPS deployment guide
+- ✅ **setup.sh** - One-click automated setup script for Ubuntu 20.04/22.04/24.04
+- ✅ **QUICK_DEPLOY.md** - Quick reference card for deployment
+- ✅ **Cloudflare DNS Instructions** - A record setup for f3fitness.in domain
+- ✅ **Nginx Configuration** - Reverse proxy setup for API and SPA routing
+- ✅ **Supervisor Configuration** - Process management for backend
+- ✅ **Security Recommendations** - JWT secret, firewall, admin password guidance
+
+### Bug Fixes & Enhancements - Session 6
 - ✅ **Edit Member Route Fixed** - Edit button now navigates to edit page correctly (was redirecting to home)
 - ✅ **Joining Date Field** - Added to Create and Edit member forms (defaults to today)
 - ✅ **Profile Photo Editing** - Admin can update member's profile photo via edit page
