@@ -613,14 +613,40 @@ async def send_email(to_email: str, subject: str, body: str):
         message["Subject"] = subject
         message.attach(MIMEText(body, "html"))
         
-        await aiosmtplib.send(
-            message,
-            hostname=settings["smtp_host"],
-            port=settings["smtp_port"],
-            username=settings["smtp_user"],
-            password=settings["smtp_pass"],
-            use_tls=settings.get("smtp_secure", True)
-        )
+        port = settings["smtp_port"]
+        smtp_secure = settings.get("smtp_secure", True)
+        
+        # Port 587 uses STARTTLS, Port 465 uses direct SSL
+        if port == 587:
+            # Use STARTTLS for port 587
+            await aiosmtplib.send(
+                message,
+                hostname=settings["smtp_host"],
+                port=port,
+                username=settings["smtp_user"],
+                password=settings["smtp_pass"],
+                start_tls=True
+            )
+        elif port == 465:
+            # Use direct TLS for port 465
+            await aiosmtplib.send(
+                message,
+                hostname=settings["smtp_host"],
+                port=port,
+                username=settings["smtp_user"],
+                password=settings["smtp_pass"],
+                use_tls=True
+            )
+        else:
+            # For other ports, use the smtp_secure setting
+            await aiosmtplib.send(
+                message,
+                hostname=settings["smtp_host"],
+                port=port,
+                username=settings["smtp_user"],
+                password=settings["smtp_pass"],
+                start_tls=smtp_secure
+            )
         return True
     except Exception as e:
         logger.error(f"Email send failed: {e}")
