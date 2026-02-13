@@ -857,3 +857,243 @@ export const WhatsAppSettings = () => {
 };
 
 export default PlansSettings;
+
+// Activity Logs Settings Component
+export const ActivityLogsSettings = () => {
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({ action: '' });
+
+  useEffect(() => {
+    fetchLogs();
+  }, [filters]);
+
+  const fetchLogs = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const params = new URLSearchParams();
+      if (filters.action) params.append('action', filters.action);
+      params.append('limit', '100');
+      
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/activity-logs?${params}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      setLogs(data);
+    } catch (error) {
+      toast.error('Failed to load activity logs');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <DashboardLayout role="admin">
+      <div className="space-y-6" data-testid="activity-logs-page">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
+              Activity Logs
+            </h1>
+            <p className="text-zinc-500">Monitor user activities</p>
+          </div>
+          <select
+            className="input-dark w-48 h-10 px-3 rounded-md bg-zinc-900/50 border border-zinc-800"
+            value={filters.action}
+            onChange={(e) => setFilters({ ...filters, action: e.target.value })}
+          >
+            <option value="">All Actions</option>
+            <option value="login">Logins</option>
+            <option value="signup">Signups</option>
+            <option value="payment">Payments</option>
+          </select>
+        </div>
+
+        <Card className="glass-card">
+          <CardContent className="p-0">
+            {loading ? (
+              <div className="p-8 text-center text-zinc-500">Loading...</div>
+            ) : logs.length === 0 ? (
+              <div className="p-8 text-center text-zinc-500">No activity logs found</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-zinc-800 bg-zinc-900/50">
+                      <th className="text-left py-3 px-4 text-xs uppercase tracking-wider text-zinc-500">Timestamp</th>
+                      <th className="text-left py-3 px-4 text-xs uppercase tracking-wider text-zinc-500">User</th>
+                      <th className="text-left py-3 px-4 text-xs uppercase tracking-wider text-zinc-500">Action</th>
+                      <th className="text-left py-3 px-4 text-xs uppercase tracking-wider text-zinc-500">Description</th>
+                      <th className="text-left py-3 px-4 text-xs uppercase tracking-wider text-zinc-500">IP Address</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {logs.map((log) => (
+                      <tr key={log.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30">
+                        <td className="py-3 px-4 text-sm text-zinc-400">
+                          {new Date(log.timestamp).toLocaleString('en-IN')}
+                        </td>
+                        <td className="py-3 px-4">
+                          <div>
+                            <p className="text-sm text-white">{log.user_name || 'Unknown'}</p>
+                            <p className="text-xs text-zinc-500">{log.user_email || log.user_id}</p>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`text-xs px-2 py-1 rounded capitalize ${
+                            log.action === 'login' ? 'bg-green-500/20 text-green-400' :
+                            log.action === 'signup' ? 'bg-cyan-500/20 text-cyan-400' :
+                            log.action === 'payment' ? 'bg-yellow-500/20 text-yellow-400' :
+                            'bg-zinc-700 text-zinc-400'
+                          }`}>
+                            {log.action}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-sm text-zinc-400">{log.description}</td>
+                        <td className="py-3 px-4 text-sm text-zinc-500 font-mono">{log.ip_address || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </DashboardLayout>
+  );
+};
+
+// Payment Gateway Settings Component
+export const PaymentGatewaySettings = () => {
+  const [settings, setSettings] = useState({ razorpay_key_id: '', razorpay_key_secret: '' });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/settings/payment-gateway`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      setSettings({
+        razorpay_key_id: data.razorpay_key_id || '',
+        razorpay_key_secret: ''
+      });
+    } catch (error) {
+      toast.error('Failed to load settings');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    if (!settings.razorpay_key_id) {
+      toast.error('Please enter Razorpay Key ID');
+      return;
+    }
+    
+    setSaving(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/settings/payment-gateway`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          razorpay_key_id: settings.razorpay_key_id,
+          razorpay_key_secret: settings.razorpay_key_secret
+        })
+      });
+      
+      if (!response.ok) throw new Error('Failed to save');
+      
+      toast.success('Payment gateway settings saved');
+      setSettings({ ...settings, razorpay_key_secret: '' });
+    } catch (error) {
+      toast.error('Failed to save settings');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <DashboardLayout role="admin">
+      <div className="space-y-6" data-testid="payment-gateway-page">
+        <div>
+          <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
+            Payment Gateway Settings
+          </h1>
+          <p className="text-zinc-500">Configure Razorpay integration</p>
+        </div>
+
+        <Card className="glass-card max-w-2xl">
+          <CardHeader className="border-b border-zinc-800">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <CreditCard size={20} className="text-cyan-400" />
+              Razorpay Configuration
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            {loading ? (
+              <p className="text-zinc-500">Loading...</p>
+            ) : (
+              <form onSubmit={handleSave} className="space-y-6">
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Razorpay Key ID</Label>
+                  <Input
+                    data-testid="razorpay-key-id"
+                    type="text"
+                    className="input-dark mt-2"
+                    placeholder="rzp_live_xxxxxxxxxxxxx"
+                    value={settings.razorpay_key_id}
+                    onChange={(e) => setSettings({ ...settings, razorpay_key_id: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Razorpay Key Secret</Label>
+                  <Input
+                    data-testid="razorpay-key-secret"
+                    type="password"
+                    className="input-dark mt-2"
+                    placeholder="Enter new secret to update"
+                    value={settings.razorpay_key_secret}
+                    onChange={(e) => setSettings({ ...settings, razorpay_key_secret: e.target.value })}
+                  />
+                  <p className="text-xs text-zinc-500 mt-1">Leave empty to keep existing secret</p>
+                </div>
+                <Button type="submit" className="btn-primary" disabled={saving}>
+                  {saving ? 'Saving...' : 'Save Settings'}
+                </Button>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="glass-card max-w-2xl">
+          <CardHeader className="border-b border-zinc-800">
+            <CardTitle className="text-lg">Getting Razorpay Credentials</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <ol className="list-decimal list-inside space-y-2 text-zinc-400 text-sm">
+              <li>Login to your <a href="https://dashboard.razorpay.com" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">Razorpay Dashboard</a></li>
+              <li>Go to Settings &gt; API Keys</li>
+              <li>Generate a new key pair (or use existing)</li>
+              <li>Copy the Key ID and Key Secret</li>
+              <li>For live mode, ensure your account is activated</li>
+            </ol>
+          </CardContent>
+        </Card>
+      </div>
+    </DashboardLayout>
+  );
+};
+
