@@ -1274,6 +1274,9 @@ async def create_user(user: UserCreate, role: str = "member", current_user: dict
     user_id = str(uuid.uuid4())
     now = get_ist_now().isoformat()
     
+    # Use provided joining_date or default to now
+    joining_date = user.joining_date if user.joining_date else now
+    
     user_doc = {
         "id": user_id,
         "member_id": member_id,
@@ -1294,7 +1297,7 @@ async def create_user(user: UserCreate, role: str = "member", current_user: dict
         "pt_trainer_id": None,
         "pt_sessions_remaining": 0,
         "is_disabled": False,
-        "joining_date": now,
+        "joining_date": joining_date,
         "created_at": now
     }
     
