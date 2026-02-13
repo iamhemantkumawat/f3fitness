@@ -626,19 +626,80 @@ export const Signup = () => {
 };
 
 export const ForgotPassword = () => {
+  const [step, setStep] = useState(1); // 1: Enter email, 2: Enter OTP & new password, 3: Success
   const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+  const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  useEffect(() => {
+    if (resendTimer > 0) {
+      const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendTimer]);
+
+  const handleSendOTP = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await authAPI.forgotPassword({ email });
-      setSent(true);
-      toast.success('Reset link sent to your email');
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      
+      if (response.ok) {
+        toast.success('Reset OTP sent to your email and phone!');
+        setStep(2);
+        setResendTimer(60);
+      } else {
+        toast.success('If an account exists, OTP has been sent');
+        setStep(2);
+        setResendTimer(60);
+      }
     } catch (error) {
-      toast.error('Failed to send reset link');
+      toast.error('Failed to send OTP');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    
+    if (newPassword !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+    
+    if (newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ otp, new_password: newPassword })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        toast.success('Password reset successfully!');
+        setStep(3);
+      } else {
+        toast.error(data.detail || 'Invalid or expired OTP');
+      }
+    } catch (error) {
+      toast.error('Failed to reset password');
     } finally {
       setLoading(false);
     }
@@ -652,36 +713,21 @@ export const ForgotPassword = () => {
         </div>
 
         <div className="glass-card p-8">
-          {sent ? (
-            <div className="text-center">
-              <div className="w-16 h-16 bg-cyan-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Dumbbell className="text-cyan-400" size={32} />
-              </div>
-              <h2 className="text-2xl font-bold uppercase tracking-tight mb-2" style={{ fontFamily: 'Barlow Condensed' }}>
-                Check Your Email
-              </h2>
-              <p className="text-zinc-500 mb-6">
-                We've sent a password reset link to {email}
-              </p>
-              <Link to="/login" className="text-cyan-400 hover:text-cyan-300 font-semibold">
-                Back to Login
-              </Link>
-            </div>
-          ) : (
+          {step === 1 && (
             <>
               <h2 className="text-3xl font-bold uppercase tracking-tight mb-2" style={{ fontFamily: 'Barlow Condensed' }}>
                 Forgot Password?
               </h2>
-              <p className="text-zinc-500 mb-6">Enter your email to reset your password</p>
+              <p className="text-zinc-500 mb-6">Enter your email or phone to reset your password</p>
 
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSendOTP} className="space-y-6">
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Email</Label>
+                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Email or Phone</Label>
                   <Input
                     data-testid="forgot-email-input"
-                    type="email"
+                    type="text"
                     className="input-dark mt-2"
-                    placeholder="Enter your email"
+                    placeholder="Enter your email or phone"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -694,7 +740,8 @@ export const ForgotPassword = () => {
                   className="btn-primary w-full"
                   disabled={loading}
                 >
-                  {loading ? 'Sending...' : 'Send Reset Link'}
+                  {loading ? 'Sending OTP...' : 'Send Reset OTP'}
+                  <ArrowRight size={18} className="ml-2" />
                 </Button>
               </form>
 
@@ -705,6 +752,126 @@ export const ForgotPassword = () => {
                 </Link>
               </p>
             </>
+          )}
+
+          {step === 2 && (
+            <>
+              <button
+                onClick={() => setStep(1)}
+                className="text-zinc-500 hover:text-white mb-4 flex items-center gap-2 text-sm"
+              >
+                <ArrowRight size={16} className="rotate-180" /> Back
+              </button>
+              
+              <h2 className="text-3xl font-bold uppercase tracking-tight mb-2" style={{ fontFamily: 'Barlow Condensed' }}>
+                Reset Password
+              </h2>
+              <p className="text-zinc-500 mb-6">
+                Enter the OTP sent to your email/phone and set a new password
+              </p>
+
+              <form onSubmit={handleResetPassword} className="space-y-4">
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-zinc-500 flex items-center gap-2 mb-2">
+                    <span className="inline-flex items-center justify-center w-5 h-5 bg-cyan-500/20 text-cyan-400 rounded text-xs">OTP</span>
+                    Enter 6-digit OTP
+                  </Label>
+                  <Input
+                    data-testid="reset-otp-input"
+                    type="text"
+                    className="input-dark text-center text-3xl tracking-[0.8em] font-mono py-6"
+                    placeholder="• • • • • •"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    maxLength={6}
+                    required
+                    autoFocus
+                  />
+                </div>
+
+                <div className="text-center mb-4">
+                  {resendTimer > 0 ? (
+                    <p className="text-zinc-500 text-sm">
+                      Resend OTP in <span className="text-cyan-400 font-mono">{resendTimer}s</span>
+                    </p>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleSendOTP}
+                      disabled={loading}
+                      className="text-cyan-400 hover:text-cyan-300 text-sm font-semibold"
+                    >
+                      Resend OTP
+                    </button>
+                  )}
+                </div>
+
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-zinc-500">New Password</Label>
+                  <div className="relative mt-2">
+                    <Input
+                      data-testid="reset-password-input"
+                      type={showPassword ? 'text' : 'password'}
+                      className="input-dark pr-10"
+                      placeholder="Enter new password (min 6 chars)"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      required
+                      minLength={6}
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Confirm New Password</Label>
+                  <Input
+                    data-testid="reset-confirm-input"
+                    type={showPassword ? 'text' : 'password'}
+                    className="input-dark mt-2"
+                    placeholder="Confirm new password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    minLength={6}
+                  />
+                </div>
+
+                <Button
+                  data-testid="reset-submit-btn"
+                  type="submit"
+                  className="btn-primary w-full mt-6"
+                  disabled={loading || otp.length !== 6}
+                >
+                  {loading ? 'Resetting...' : 'Reset Password'}
+                  <ArrowRight size={18} className="ml-2" />
+                </Button>
+              </form>
+            </>
+          )}
+
+          {step === 3 && (
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Dumbbell className="text-green-400" size={32} />
+              </div>
+              <h2 className="text-2xl font-bold uppercase tracking-tight mb-2" style={{ fontFamily: 'Barlow Condensed' }}>
+                Password Reset!
+              </h2>
+              <p className="text-zinc-500 mb-6">
+                Your password has been reset successfully. You can now login with your new password.
+              </p>
+              <Button onClick={() => navigate('/login')} className="btn-primary">
+                Go to Login
+                <ArrowRight size={18} className="ml-2" />
+              </Button>
+            </div>
           )}
         </div>
       </div>
