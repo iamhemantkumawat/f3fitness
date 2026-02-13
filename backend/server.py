@@ -1130,13 +1130,17 @@ async def signup(user: UserCreate, background_tasks: BackgroundTasks):
     return {"token": token, "user": {k: v for k, v in user_doc.items() if k not in ["password_hash", "_id"]}}
 
 @api_router.post("/auth/login", response_model=dict)
-async def login(credentials: UserLogin):
+async def login(credentials: UserLogin, request: Request):
     user = await db.users.find_one({
         "$or": [{"email": credentials.email_or_phone}, {"phone_number": credentials.email_or_phone}]
     })
     
     if not user or not verify_password(credentials.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    # Log login activity
+    ip_address = request.client.host if request.client else None
+    await log_activity(user["id"], "login", "User logged in", ip_address)
     
     token = create_access_token({"sub": user["id"], "role": user["role"]})
     return {"token": token, "user": {k: v for k, v in user.items() if k not in ["password_hash", "_id"]}}
