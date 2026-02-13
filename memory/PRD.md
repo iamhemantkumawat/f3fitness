@@ -33,7 +33,7 @@ Build a complete gym management webapp for "F3 Fitness Gym" from Jaipur with:
 
 ## What's Been Implemented (February 2026)
 
-### Admin Member Management - Session 5 (Latest)
+### Admin Member Management - Session 5
 - ✅ **Plan & Expiry Display** - Members list now shows active plan name and expiry date
 - ✅ **Avatar Thumbnails** - Profile photos displayed, with default male/female icons for those without
 - ✅ **Multi-Select Delete** - Checkbox selection for bulk deleting multiple members
@@ -43,6 +43,16 @@ Build a complete gym management webapp for "F3 Fitness Gym" from Jaipur with:
 - ✅ **Column Sorting** - Sort by Member ID, Name, Phone, Plan, Expiry (asc/desc)
 - ✅ **Status Filter** - Filter by All, Active (with plan), Inactive (no plan), Disabled
 - ✅ **Welcome Notifications** - New members receive Email/WhatsApp with login credentials
+
+### Bug Fixes & Enhancements - Session 6 (Latest)
+- ✅ **Edit Member Route Fixed** - Edit button now navigates to edit page correctly (was redirecting to home)
+- ✅ **Joining Date Field** - Added to Create and Edit member forms (defaults to today)
+- ✅ **Profile Photo Editing** - Admin can update member's profile photo via edit page
+- ✅ **Landing Page Updates:**
+  - Updated trainer names: Faizan Khan, Rizwan Khan, Faizal Khan
+  - Added Instagram Reels testimonials section with 4 embedded posts
+  - Fixed Google Maps location with Plus Code: XQ5P+6G Jaipur, Rajasthan
+  - Added @f3fitnessclub Instagram handle link
 
 ### Bug Fixes - Session 4
 - ✅ **Signup Flow Fixed** - Context now properly updates after signup (uses login flow to update auth state)
