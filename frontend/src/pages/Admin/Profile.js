@@ -8,7 +8,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
-import { Camera, Save, User, Mail, Phone, MapPin, Calendar } from 'lucide-react';
+import { Camera, Save, User, Mail, Phone, MapPin, Calendar, Lock, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const AdminProfile = () => <ProfilePage role="admin" />;
