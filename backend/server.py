@@ -770,7 +770,7 @@ async def send_otp(req: SendOTPRequest, background_tasks: BackgroundTasks):
 
 @api_router.post("/otp/verify")
 async def verify_otp(req: VerifyOTPRequest):
-    """Verify OTP"""
+    """Verify OTP - single OTP works for both channels"""
     otp_doc = await db.otps.find_one({
         "phone_number": req.phone_number,
         "country_code": req.country_code
@@ -782,11 +782,10 @@ async def verify_otp(req: VerifyOTPRequest):
     if datetime.fromisoformat(otp_doc["expires_at"]) < datetime.now(timezone.utc):
         raise HTTPException(status_code=400, detail="OTP expired. Please request a new one.")
     
-    if otp_doc["phone_otp"] != req.phone_otp:
-        raise HTTPException(status_code=400, detail="Invalid phone OTP")
-    
-    if req.email and otp_doc.get("email_otp") and otp_doc["email_otp"] != req.email_otp:
-        raise HTTPException(status_code=400, detail="Invalid email OTP")
+    # Check single OTP (can be entered in either field)
+    provided_otp = req.phone_otp or req.email_otp
+    if otp_doc["otp"] != provided_otp:
+        raise HTTPException(status_code=400, detail="Invalid OTP")
     
     # Mark as verified
     await db.otps.update_one(
