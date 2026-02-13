@@ -166,6 +166,7 @@ export const Signup = () => {
   const [otpSending, setOtpSending] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
   const navigate = useNavigate();
+  const { login } = useAuth(); // Use login to update context after signup
 
   // Resend timer countdown
   useEffect(() => {
