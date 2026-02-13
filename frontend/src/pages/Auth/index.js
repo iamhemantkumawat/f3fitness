@@ -244,7 +244,12 @@ export const Signup = () => {
         })
       });
       
-      const verifyData = await verifyResponse.json();
+      let verifyData;
+      try {
+        verifyData = await verifyResponse.json();
+      } catch (e) {
+        verifyData = { detail: 'Server error' };
+      }
       
       if (!verifyResponse.ok) {
         throw new Error(verifyData.detail || 'Invalid OTP');
@@ -261,7 +266,12 @@ export const Signup = () => {
         })
       });
       
-      const signupData = await signupResponse.json();
+      let signupData;
+      try {
+        signupData = await signupResponse.json();
+      } catch (e) {
+        signupData = { detail: 'Server error' };
+      }
       
       if (!signupResponse.ok) {
         throw new Error(signupData.detail || 'Signup failed');
