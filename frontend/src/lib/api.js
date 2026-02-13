@@ -43,10 +43,15 @@ export const authAPI = {
 // Users APIs
 export const usersAPI = {
   getAll: (params) => api.get('/users', { params }),
+  getAllWithMembership: (params) => api.get('/admin/users-with-membership', { params }),
   getById: (id) => api.get(`/users/${id}`),
   create: (data, role = 'member') => api.post(`/users?role=${role}`, data),
   update: (id, data) => api.put(`/users/${id}`, data),
   delete: (id) => api.delete(`/users/${id}`),
+  bulkDelete: (userIds) => api.post('/admin/users/bulk-delete', userIds),
+  toggleStatus: (id, action) => api.post(`/admin/users/${id}/toggle-status`, { action }),
+  revokeMembership: (id) => api.post(`/admin/users/${id}/revoke-membership`),
+  resetPassword: (id, newPassword) => api.post(`/admin/users/${id}/reset-password`, { new_password: newPassword }),
   changePassword: (data) => api.post('/users/change-password', data)
 };
 
