@@ -141,6 +141,7 @@ function AppRoutes() {
       <Route path="/dashboard/admin/trainers" element={<ProtectedRoute allowedRoles={['admin']}><TrainersList /></ProtectedRoute>} />
       <Route path="/dashboard/admin/members/new" element={<ProtectedRoute allowedRoles={['admin']}><CreateMember /></ProtectedRoute>} />
       <Route path="/dashboard/admin/members/:userId/assign-plan" element={<ProtectedRoute allowedRoles={['admin']}><AssignPlan /></ProtectedRoute>} />
+      <Route path="/dashboard/admin/members/:userId/edit" element={<ProtectedRoute allowedRoles={['admin']}><EditMember /></ProtectedRoute>} />
       <Route path="/dashboard/admin/payments" element={<ProtectedRoute allowedRoles={['admin']}><PaymentsList /></ProtectedRoute>} />
       <Route path="/dashboard/admin/payments/new" element={<ProtectedRoute allowedRoles={['admin']}><AddPayment /></ProtectedRoute>} />
       <Route path="/dashboard/admin/payments/reports" element={<ProtectedRoute allowedRoles={['admin']}><PaymentReports /></ProtectedRoute>} />
