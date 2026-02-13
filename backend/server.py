@@ -659,6 +659,9 @@ async def send_whatsapp(to_number: str, message: str):
         logger.warning("WhatsApp not configured")
         return False
     
+    # Clean phone number - remove spaces, dashes, and ensure E.164 format
+    to_number = to_number.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+    
     # Ensure number starts with +
     if not to_number.startswith('+'):
         to_number = '+' + to_number.lstrip('+')
