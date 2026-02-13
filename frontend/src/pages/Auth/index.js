@@ -445,13 +445,63 @@ export const Signup = () => {
                     </div>
                     <div>
                       <Label className="text-xs uppercase tracking-wider text-zinc-500">Date of Birth</Label>
-                      <Input
-                        data-testid="signup-dob-input"
-                        type="date"
-                        className="input-dark mt-2"
-                        value={formData.date_of_birth}
-                        onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
-                      />
+                      <div className="flex gap-1 mt-2">
+                        <select
+                          data-testid="signup-dob-day"
+                          className="input-dark flex-1 h-10 px-2 rounded-md bg-zinc-900/50 border border-zinc-800 text-sm"
+                          value={formData.date_of_birth ? new Date(formData.date_of_birth).getDate() : ''}
+                          onChange={(e) => {
+                            const day = e.target.value;
+                            const current = formData.date_of_birth ? new Date(formData.date_of_birth) : new Date();
+                            if (day) {
+                              current.setDate(parseInt(day));
+                              setFormData({ ...formData, date_of_birth: current.toISOString().split('T')[0] });
+                            }
+                          }}
+                        >
+                          <option value="">Day</option>
+                          {Array.from({length: 31}, (_, i) => (
+                            <option key={i+1} value={i+1}>{i+1}</option>
+                          ))}
+                        </select>
+                        <select
+                          data-testid="signup-dob-month"
+                          className="input-dark flex-1 h-10 px-2 rounded-md bg-zinc-900/50 border border-zinc-800 text-sm"
+                          value={formData.date_of_birth ? new Date(formData.date_of_birth).getMonth() : ''}
+                          onChange={(e) => {
+                            const month = e.target.value;
+                            const current = formData.date_of_birth ? new Date(formData.date_of_birth) : new Date();
+                            if (month !== '') {
+                              current.setMonth(parseInt(month));
+                              setFormData({ ...formData, date_of_birth: current.toISOString().split('T')[0] });
+                            }
+                          }}
+                        >
+                          <option value="">Month</option>
+                          {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m, i) => (
+                            <option key={i} value={i}>{m}</option>
+                          ))}
+                        </select>
+                        <select
+                          data-testid="signup-dob-year"
+                          className="input-dark flex-1 h-10 px-2 rounded-md bg-zinc-900/50 border border-zinc-800 text-sm"
+                          value={formData.date_of_birth ? new Date(formData.date_of_birth).getFullYear() : ''}
+                          onChange={(e) => {
+                            const year = e.target.value;
+                            const current = formData.date_of_birth ? new Date(formData.date_of_birth) : new Date();
+                            if (year) {
+                              current.setFullYear(parseInt(year));
+                              setFormData({ ...formData, date_of_birth: current.toISOString().split('T')[0] });
+                            }
+                          }}
+                        >
+                          <option value="">Year</option>
+                          {Array.from({length: 80}, (_, i) => {
+                            const year = new Date().getFullYear() - i - 10;
+                            return <option key={year} value={year}>{year}</option>;
+                          })}
+                        </select>
+                      </div>
                     </div>
                   </div>
 
