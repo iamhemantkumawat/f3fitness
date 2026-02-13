@@ -3,7 +3,7 @@ import { DashboardLayout } from '../../components/Layout/DashboardLayout';
 import { dashboardAPI, announcementsAPI } from '../../lib/api';
 import { formatCurrency } from '../../lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Users, CreditCard, UserCheck, UserX, TrendingUp, Bell, Dumbbell } from 'lucide-react';
+import { Users, CreditCard, UserCheck, UserX, Bell, Dumbbell, Cake, CalendarClock, AlertTriangle, Phone } from 'lucide-react';
 import { toast } from 'sonner';
 
 const StatCard = ({ title, value, icon: Icon, color, subtext }) => (
