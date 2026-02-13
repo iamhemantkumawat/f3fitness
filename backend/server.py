@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, BackgroundTasks, Request
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, BackgroundTasks, Request, Form
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
@@ -19,6 +19,10 @@ from email.mime.multipart import MIMEMultipart
 import razorpay
 import base64
 import aiofiles
+import random
+import string
+import httpx
+import json
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -64,6 +68,7 @@ class UserBase(BaseModel):
     name: str
     email: EmailStr
     phone_number: str
+    country_code: str = "+91"
     gender: Optional[str] = None
     date_of_birth: Optional[str] = None
     address: Optional[str] = None
@@ -86,11 +91,14 @@ class UserResponse(UserBase):
     joining_date: str
     profile_photo_url: Optional[str] = None
     trainer_id: Optional[str] = None
+    pt_trainer_id: Optional[str] = None
+    pt_sessions_remaining: Optional[int] = 0
     created_at: str
 
 class UserUpdate(BaseModel):
     name: Optional[str] = None
     phone_number: Optional[str] = None
+    country_code: Optional[str] = None
     gender: Optional[str] = None
     date_of_birth: Optional[str] = None
     address: Optional[str] = None
@@ -99,6 +107,8 @@ class UserUpdate(BaseModel):
     emergency_phone: Optional[str] = None
     profile_photo_url: Optional[str] = None
     trainer_id: Optional[str] = None
+    pt_trainer_id: Optional[str] = None
+    pt_sessions_remaining: Optional[int] = None
     role: Optional[str] = None
 
 class ForgotPasswordRequest(BaseModel):
@@ -108,17 +118,53 @@ class ResetPasswordRequest(BaseModel):
     token: str
     new_password: str
 
+# OTP Models
+class SendOTPRequest(BaseModel):
+    phone_number: str
+    country_code: str = "+91"
+    email: Optional[EmailStr] = None
+
+class VerifyOTPRequest(BaseModel):
+    phone_number: str
+    country_code: str = "+91"
+    phone_otp: str
+    email: Optional[EmailStr] = None
+    email_otp: Optional[str] = None
+
+class SignupWithOTP(UserBase):
+    password: str
+    phone_otp: str
+    email_otp: str
+
 # Plan Models
 class PlanBase(BaseModel):
     name: str
     duration_days: int
     price: float
     is_active: bool = True
+    includes_pt: bool = False
+    pt_sessions: int = 0
 
 class PlanCreate(PlanBase):
     pass
 
 class PlanResponse(PlanBase):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    created_at: str
+
+# PT Package Models
+class PTPackageBase(BaseModel):
+    name: str
+    sessions: int
+    price: float
+    validity_days: int
+    is_active: bool = True
+
+class PTPackageCreate(PTPackageBase):
+    pass
+
+class PTPackageResponse(PTPackageBase):
     model_config = ConfigDict(extra="ignore")
     id: str
     created_at: str
@@ -183,7 +229,7 @@ class PaymentRequestResponse(BaseModel):
 
 # Attendance Models
 class AttendanceCreate(BaseModel):
-    member_id: str  # Can be user_id or member_id (F3-XXXX)
+    member_id: str
 
 class AttendanceResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -231,6 +277,8 @@ class WhatsAppSettings(BaseModel):
     twilio_account_sid: str
     twilio_auth_token: str
     twilio_whatsapp_number: str
+    use_sandbox: bool = True
+    sandbox_url: Optional[str] = None
 
 class SettingsResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -242,6 +290,104 @@ class SettingsResponse(BaseModel):
     sender_email: Optional[str] = None
     twilio_account_sid: Optional[str] = None
     twilio_whatsapp_number: Optional[str] = None
+    use_sandbox: Optional[bool] = True
+
+# Template Models
+class TemplateUpdate(BaseModel):
+    template_type: str  # welcome, attendance, absent_warning, birthday, holiday, plan_shared, renewal_reminder
+    channel: str  # email or whatsapp
+    subject: Optional[str] = None  # for email
+    content: str
+
+class TemplateResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    template_type: str
+    channel: str
+    subject: Optional[str] = None
+    content: str
+
+# Health Tracking Models
+class HealthLogCreate(BaseModel):
+    weight: Optional[float] = None  # kg
+    body_fat: Optional[float] = None  # percentage
+    height: Optional[float] = None  # cm for BMI calculation
+    notes: Optional[str] = None
+
+class HealthLogResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    user_id: str
+    weight: Optional[float] = None
+    body_fat: Optional[float] = None
+    height: Optional[float] = None
+    bmi: Optional[float] = None
+    notes: Optional[str] = None
+    logged_at: str
+
+# Diet/Workout Plan Models
+class MealItem(BaseModel):
+    time: str
+    meal_name: str
+    items: List[str]
+    calories: Optional[int] = None
+    protein: Optional[int] = None
+    carbs: Optional[int] = None
+    fats: Optional[int] = None
+
+class DietPlanCreate(BaseModel):
+    user_id: str
+    title: str
+    description: Optional[str] = None
+    meals: Optional[List[MealItem]] = None
+    pdf_url: Optional[str] = None
+    notes: Optional[str] = None
+
+class DietPlanResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    user_id: str
+    created_by: str
+    title: str
+    description: Optional[str] = None
+    meals: Optional[List[dict]] = None
+    pdf_url: Optional[str] = None
+    notes: Optional[str] = None
+    created_at: str
+    is_active: bool = True
+
+class ExerciseItem(BaseModel):
+    name: str
+    sets: int
+    reps: str
+    rest_seconds: Optional[int] = None
+    notes: Optional[str] = None
+
+class WorkoutDay(BaseModel):
+    day: str  # Monday, Tuesday, etc.
+    focus: str  # Chest, Back, Legs, etc.
+    exercises: List[ExerciseItem]
+
+class WorkoutPlanCreate(BaseModel):
+    user_id: str
+    title: str
+    description: Optional[str] = None
+    days: Optional[List[WorkoutDay]] = None
+    pdf_url: Optional[str] = None
+    notes: Optional[str] = None
+
+class WorkoutPlanResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    user_id: str
+    created_by: str
+    title: str
+    description: Optional[str] = None
+    days: Optional[List[dict]] = None
+    pdf_url: Optional[str] = None
+    notes: Optional[str] = None
+    created_at: str
+    is_active: bool = True
 
 # Dashboard Stats
 class DashboardStats(BaseModel):
@@ -250,6 +396,10 @@ class DashboardStats(BaseModel):
     today_collection: float
     present_today: int
     absent_today: int
+    today_birthdays: List[dict] = []
+    upcoming_birthdays: List[dict] = []
+    upcoming_renewals: List[dict] = []
+    regular_absentees: List[dict] = []
 
 # Razorpay Models
 class RazorpayOrderCreate(BaseModel):
@@ -267,6 +417,25 @@ class RazorpayPaymentVerify(BaseModel):
     razorpay_signature: str
     plan_id: str
 
+# Testimonial Models
+class TestimonialCreate(BaseModel):
+    name: str
+    role: str = "Member"
+    content: str
+    rating: int = 5
+    image_url: Optional[str] = None
+
+class TestimonialResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    name: str
+    role: str
+    content: str
+    rating: int
+    image_url: Optional[str] = None
+    is_active: bool = True
+    created_at: str
+
 # ==================== HELPER FUNCTIONS ====================
 
 def hash_password(password: str) -> str:
@@ -280,6 +449,9 @@ def create_access_token(data: dict) -> str:
     expire = datetime.now(timezone.utc) + timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+def generate_otp(length: int = 6) -> str:
+    return ''.join(random.choices(string.digits, k=length))
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     try:
@@ -297,6 +469,11 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 async def get_admin_user(current_user: dict = Depends(get_current_user)):
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
+    return current_user
+
+async def get_trainer_or_admin(current_user: dict = Depends(get_current_user)):
+    if current_user.get("role") not in ["admin", "trainer"]:
+        raise HTTPException(status_code=403, detail="Trainer or admin access required")
     return current_user
 
 async def generate_member_id() -> str:
@@ -323,6 +500,104 @@ def get_ist_today_end():
     """Get today's end in IST"""
     ist_now = get_ist_now()
     return datetime(ist_now.year, ist_now.month, ist_now.day, 23, 59, 59)
+
+async def get_template(template_type: str, channel: str) -> dict:
+    """Get notification template"""
+    template = await db.templates.find_one({"template_type": template_type, "channel": channel}, {"_id": 0})
+    if template:
+        return template
+    # Return default templates
+    defaults = {
+        ("welcome", "email"): {
+            "subject": "Welcome to F3 Fitness Gym! 💪",
+            "content": """
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #09090b; color: #fff; padding: 40px;">
+                <img src="https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png" style="width: 150px; margin-bottom: 20px;" />
+                <h1 style="color: #06b6d4;">Welcome, {{name}}!</h1>
+                <p>Thank you for joining F3 Fitness Gym - Jaipur's premier fitness destination.</p>
+                <p>Your Member ID: <strong style="color: #06b6d4;">{{member_id}}</strong></p>
+                <p>We're excited to be part of your fitness journey!</p>
+                <hr style="border-color: #27272a; margin: 20px 0;" />
+                <p style="color: #71717a; font-size: 12px;">F3 Fitness Health Club, Vidyadhar Nagar, Jaipur</p>
+            </div>
+            """
+        },
+        ("welcome", "whatsapp"): {
+            "content": "🏋️ Welcome to F3 Fitness Gym, {{name}}! Your Member ID is {{member_id}}. Let's crush your fitness goals together! 💪"
+        },
+        ("attendance", "whatsapp"): {
+            "content": "✅ Attendance marked! Great job showing up today, {{name}}. Keep the momentum going! 🔥"
+        },
+        ("absent_warning", "email"): {
+            "subject": "We Miss You at F3 Fitness! 😢",
+            "content": """
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #09090b; color: #fff; padding: 40px;">
+                <img src="https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png" style="width: 150px; margin-bottom: 20px;" />
+                <h1 style="color: #f97316;">We Miss You, {{name}}!</h1>
+                <p>It's been {{days}} days since your last visit. Your fitness goals are waiting!</p>
+                <p>Remember: Consistency is key to achieving your dream physique. 💪</p>
+                <p>See you soon at the gym!</p>
+            </div>
+            """
+        },
+        ("absent_warning", "whatsapp"): {
+            "content": "😢 Hey {{name}}, it's been {{days}} days since your last gym visit. Your fitness goals miss you! Come back stronger 💪"
+        },
+        ("birthday", "email"): {
+            "subject": "Happy Birthday from F3 Fitness! 🎂",
+            "content": """
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #09090b; color: #fff; padding: 40px;">
+                <img src="https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png" style="width: 150px; margin-bottom: 20px;" />
+                <h1 style="color: #06b6d4;">🎉 Happy Birthday, {{name}}!</h1>
+                <p>Wishing you a fantastic birthday filled with health, happiness, and gains!</p>
+                <p>Here's to another year of crushing your fitness goals! 🎂💪</p>
+                <p>Your F3 Fitness Family</p>
+            </div>
+            """
+        },
+        ("birthday", "whatsapp"): {
+            "content": "🎂 Happy Birthday, {{name}}! 🎉 Wishing you a year full of health, happiness and fitness gains! Enjoy your special day! - F3 Fitness Gym 💪"
+        },
+        ("plan_shared", "email"): {
+            "subject": "Your New {{plan_type}} Plan is Ready! 📋",
+            "content": """
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #09090b; color: #fff; padding: 40px;">
+                <img src="https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png" style="width: 150px; margin-bottom: 20px;" />
+                <h1 style="color: #06b6d4;">New {{plan_type}} Plan! 📋</h1>
+                <p>Hi {{name}},</p>
+                <p>Your trainer has created a new {{plan_type}} plan for you: <strong>{{plan_title}}</strong></p>
+                <p>Log in to your dashboard to view the full details.</p>
+                <p>Let's achieve your goals together!</p>
+            </div>
+            """
+        },
+        ("plan_shared", "whatsapp"): {
+            "content": "📋 Hi {{name}}! Your trainer has created a new {{plan_type}} plan: {{plan_title}}. Check your F3 Fitness dashboard to view it! 💪"
+        },
+        ("renewal_reminder", "email"): {
+            "subject": "Your Membership Expires Soon! ⏰",
+            "content": """
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #09090b; color: #fff; padding: 40px;">
+                <img src="https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png" style="width: 150px; margin-bottom: 20px;" />
+                <h1 style="color: #f97316;">Renewal Reminder ⏰</h1>
+                <p>Hi {{name}},</p>
+                <p>Your membership expires on <strong>{{expiry_date}}</strong> ({{days_left}} days left).</p>
+                <p>Renew now to continue your fitness journey without interruption!</p>
+                <p>Visit the gym or renew online.</p>
+            </div>
+            """
+        },
+        ("renewal_reminder", "whatsapp"): {
+            "content": "⏰ Hi {{name}}, your F3 Fitness membership expires on {{expiry_date}} ({{days_left}} days left). Renew now to keep your fitness journey going! 💪"
+        }
+    }
+    return defaults.get((template_type, channel), {"subject": "", "content": ""})
+
+def replace_template_vars(template: str, variables: dict) -> str:
+    """Replace template variables like {{name}} with actual values"""
+    for key, value in variables.items():
+        template = template.replace(f"{{{{{key}}}}}", str(value))
+    return template
 
 async def send_email(to_email: str, subject: str, body: str):
     """Send email using configured SMTP settings"""
@@ -359,24 +634,146 @@ async def send_whatsapp(to_number: str, message: str):
         return False
     
     try:
-        from twilio.rest import Client
-        client = Client(settings["twilio_account_sid"], settings["twilio_auth_token"])
-        
-        msg = client.messages.create(
-            from_=f'whatsapp:{settings["twilio_whatsapp_number"]}',
-            body=message,
-            to=f'whatsapp:{to_number}'
-        )
-        return True
+        if settings.get("use_sandbox") and settings.get("sandbox_url"):
+            # Use Twilio Sandbox via HTTP
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    settings["sandbox_url"],
+                    data={
+                        "To": f"whatsapp:{to_number}",
+                        "Body": message
+                    }
+                )
+                logger.info(f"Sandbox response: {response.status_code}")
+                return response.status_code == 200
+        else:
+            # Use Twilio API directly
+            from twilio.rest import Client
+            twilio_client = Client(settings["twilio_account_sid"], settings["twilio_auth_token"])
+            
+            msg = twilio_client.messages.create(
+                from_=f'whatsapp:{settings["twilio_whatsapp_number"]}',
+                body=message,
+                to=f'whatsapp:{to_number}'
+            )
+            return True
     except Exception as e:
         logger.error(f"WhatsApp send failed: {e}")
         return False
 
-# ==================== AUTH ROUTES ====================
+async def send_notification(user: dict, template_type: str, variables: dict, background_tasks: BackgroundTasks = None):
+    """Send notification via both email and WhatsApp"""
+    # Prepare variables
+    vars_with_user = {**variables, "name": user.get("name"), "member_id": user.get("member_id")}
+    
+    # Get templates
+    email_template = await get_template(template_type, "email")
+    whatsapp_template = await get_template(template_type, "whatsapp")
+    
+    # Send email
+    if user.get("email") and email_template.get("content"):
+        subject = replace_template_vars(email_template.get("subject", "F3 Fitness Notification"), vars_with_user)
+        body = replace_template_vars(email_template["content"], vars_with_user)
+        if background_tasks:
+            background_tasks.add_task(send_email, user["email"], subject, body)
+        else:
+            await send_email(user["email"], subject, body)
+    
+    # Send WhatsApp
+    if user.get("phone_number") and whatsapp_template.get("content"):
+        phone = user.get("country_code", "+91") + user["phone_number"].lstrip("0")
+        message = replace_template_vars(whatsapp_template["content"], vars_with_user)
+        if background_tasks:
+            background_tasks.add_task(send_whatsapp, phone, message)
+        else:
+            await send_whatsapp(phone, message)
 
-@api_router.post("/auth/signup", response_model=dict)
-async def signup(user: UserCreate):
-    # Check if email or phone already exists
+# ==================== OTP ROUTES ====================
+
+@api_router.post("/otp/send")
+async def send_otp(req: SendOTPRequest, background_tasks: BackgroundTasks):
+    """Send OTP to phone (WhatsApp) and email"""
+    phone_otp = generate_otp()
+    email_otp = generate_otp() if req.email else None
+    
+    # Store OTPs with expiry
+    otp_doc = {
+        "phone_number": req.phone_number,
+        "country_code": req.country_code,
+        "phone_otp": phone_otp,
+        "email": req.email,
+        "email_otp": email_otp,
+        "expires_at": (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat(),
+        "verified": False
+    }
+    
+    await db.otps.delete_many({"phone_number": req.phone_number})
+    await db.otps.insert_one(otp_doc)
+    
+    # Send WhatsApp OTP
+    full_phone = f"{req.country_code}{req.phone_number.lstrip('0')}"
+    whatsapp_message = f"🔐 Your F3 Fitness OTP is: {phone_otp}\n\nValid for 10 minutes. Do not share this code with anyone."
+    background_tasks.add_task(send_whatsapp, full_phone, whatsapp_message)
+    
+    # Send Email OTP
+    if req.email and email_otp:
+        email_body = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #09090b; color: #fff; padding: 40px;">
+            <img src="https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png" style="width: 150px; margin-bottom: 20px;" />
+            <h1 style="color: #06b6d4;">Your OTP Code</h1>
+            <p>Use the following code to verify your email:</p>
+            <div style="background: #18181b; padding: 20px; text-align: center; margin: 20px 0;">
+                <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #06b6d4;">{email_otp}</span>
+            </div>
+            <p style="color: #71717a;">This code is valid for 10 minutes.</p>
+        </div>
+        """
+        background_tasks.add_task(send_email, req.email, "F3 Fitness - Email Verification OTP", email_body)
+    
+    return {"message": "OTP sent successfully", "phone_sent": True, "email_sent": bool(req.email)}
+
+@api_router.post("/otp/verify")
+async def verify_otp(req: VerifyOTPRequest):
+    """Verify OTP"""
+    otp_doc = await db.otps.find_one({
+        "phone_number": req.phone_number,
+        "country_code": req.country_code
+    })
+    
+    if not otp_doc:
+        raise HTTPException(status_code=400, detail="OTP not found. Please request a new one.")
+    
+    if datetime.fromisoformat(otp_doc["expires_at"]) < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="OTP expired. Please request a new one.")
+    
+    if otp_doc["phone_otp"] != req.phone_otp:
+        raise HTTPException(status_code=400, detail="Invalid phone OTP")
+    
+    if req.email and otp_doc.get("email_otp") and otp_doc["email_otp"] != req.email_otp:
+        raise HTTPException(status_code=400, detail="Invalid email OTP")
+    
+    # Mark as verified
+    await db.otps.update_one(
+        {"phone_number": req.phone_number},
+        {"$set": {"verified": True}}
+    )
+    
+    return {"message": "OTP verified successfully", "verified": True}
+
+@api_router.post("/auth/signup-with-otp", response_model=dict)
+async def signup_with_otp(user: SignupWithOTP, background_tasks: BackgroundTasks):
+    """Signup with OTP verification"""
+    # Verify OTP first
+    otp_doc = await db.otps.find_one({
+        "phone_number": user.phone_number,
+        "country_code": user.country_code,
+        "verified": True
+    })
+    
+    if not otp_doc:
+        raise HTTPException(status_code=400, detail="Please verify OTP first")
+    
+    # Check if user exists
     existing = await db.users.find_one({"$or": [{"email": user.email}, {"phone_number": user.phone_number}]})
     if existing:
         raise HTTPException(status_code=400, detail="Email or phone number already registered")
@@ -391,6 +788,7 @@ async def signup(user: UserCreate):
         "name": user.name,
         "email": user.email,
         "phone_number": user.phone_number,
+        "country_code": user.country_code,
         "password_hash": hash_password(user.password),
         "role": "member",
         "gender": user.gender,
@@ -401,13 +799,64 @@ async def signup(user: UserCreate):
         "emergency_phone": user.emergency_phone,
         "profile_photo_url": None,
         "trainer_id": None,
+        "pt_trainer_id": None,
+        "pt_sessions_remaining": 0,
         "joining_date": now,
         "created_at": now
     }
     
     await db.users.insert_one(user_doc)
-    token = create_access_token({"sub": user_id, "role": "member"})
     
+    # Clean up OTP
+    await db.otps.delete_one({"phone_number": user.phone_number})
+    
+    # Send welcome notification
+    await send_notification(user_doc, "welcome", {}, background_tasks)
+    
+    token = create_access_token({"sub": user_id, "role": "member"})
+    return {"token": token, "user": {k: v for k, v in user_doc.items() if k not in ["password_hash", "_id"]}}
+
+# ==================== AUTH ROUTES ====================
+
+@api_router.post("/auth/signup", response_model=dict)
+async def signup(user: UserCreate, background_tasks: BackgroundTasks):
+    existing = await db.users.find_one({"$or": [{"email": user.email}, {"phone_number": user.phone_number}]})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email or phone number already registered")
+    
+    member_id = await generate_member_id()
+    user_id = str(uuid.uuid4())
+    now = get_ist_now().isoformat()
+    
+    user_doc = {
+        "id": user_id,
+        "member_id": member_id,
+        "name": user.name,
+        "email": user.email,
+        "phone_number": user.phone_number,
+        "country_code": user.country_code,
+        "password_hash": hash_password(user.password),
+        "role": "member",
+        "gender": user.gender,
+        "date_of_birth": user.date_of_birth,
+        "address": user.address,
+        "city": user.city,
+        "zip_code": user.zip_code,
+        "emergency_phone": user.emergency_phone,
+        "profile_photo_url": None,
+        "trainer_id": None,
+        "pt_trainer_id": None,
+        "pt_sessions_remaining": 0,
+        "joining_date": now,
+        "created_at": now
+    }
+    
+    await db.users.insert_one(user_doc)
+    
+    # Send welcome notification
+    await send_notification(user_doc, "welcome", {}, background_tasks)
+    
+    token = create_access_token({"sub": user_id, "role": "member"})
     return {"token": token, "user": {k: v for k, v in user_doc.items() if k not in ["password_hash", "_id"]}}
 
 @api_router.post("/auth/login", response_model=dict)
@@ -438,13 +887,16 @@ async def forgot_password(req: ForgotPasswordRequest, background_tasks: Backgrou
         "used": False
     })
     
-    reset_link = f"https://f3-fitness-gym.preview.emergentagent.com/reset-password?token={reset_token}"
+    reset_link = f"https://f3fitness.in/reset-password?token={reset_token}"
     email_body = f"""
-    <h2>F3 Fitness Gym - Password Reset</h2>
-    <p>Hello {user['name']},</p>
-    <p>Click the link below to reset your password:</p>
-    <a href="{reset_link}">{reset_link}</a>
-    <p>This link expires in 1 hour.</p>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #09090b; color: #fff; padding: 40px;">
+        <img src="https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png" style="width: 150px; margin-bottom: 20px;" />
+        <h1 style="color: #06b6d4;">Password Reset</h1>
+        <p>Hello {user['name']},</p>
+        <p>Click the link below to reset your password:</p>
+        <a href="{reset_link}" style="display: inline-block; background: #06b6d4; color: #000; padding: 12px 24px; text-decoration: none; font-weight: bold; margin: 20px 0;">Reset Password</a>
+        <p style="color: #71717a;">This link expires in 1 hour.</p>
+    </div>
     """
     
     background_tasks.add_task(send_email, req.email, "Password Reset - F3 Fitness Gym", email_body)
@@ -498,7 +950,7 @@ async def get_user(user_id: str, current_user: dict = Depends(get_current_user))
     return user
 
 @api_router.post("/users", response_model=UserResponse)
-async def create_user(user: UserCreate, role: str = "member", current_user: dict = Depends(get_admin_user)):
+async def create_user(user: UserCreate, role: str = "member", current_user: dict = Depends(get_admin_user), background_tasks: BackgroundTasks = None):
     existing = await db.users.find_one({"$or": [{"email": user.email}, {"phone_number": user.phone_number}]})
     if existing:
         raise HTTPException(status_code=400, detail="Email or phone already exists")
@@ -513,6 +965,7 @@ async def create_user(user: UserCreate, role: str = "member", current_user: dict
         "name": user.name,
         "email": user.email,
         "phone_number": user.phone_number,
+        "country_code": user.country_code,
         "password_hash": hash_password(user.password),
         "role": role,
         "gender": user.gender,
@@ -523,16 +976,21 @@ async def create_user(user: UserCreate, role: str = "member", current_user: dict
         "emergency_phone": user.emergency_phone,
         "profile_photo_url": None,
         "trainer_id": None,
+        "pt_trainer_id": None,
+        "pt_sessions_remaining": 0,
         "joining_date": now,
         "created_at": now
     }
     
     await db.users.insert_one(user_doc)
+    
+    if background_tasks:
+        await send_notification(user_doc, "welcome", {}, background_tasks)
+    
     return {k: v for k, v in user_doc.items() if k not in ["password_hash", "_id"]}
 
 @api_router.put("/users/{user_id}", response_model=UserResponse)
 async def update_user(user_id: str, update: UserUpdate, current_user: dict = Depends(get_current_user)):
-    # Users can only update themselves unless admin
     if current_user["id"] != user_id and current_user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Not authorized")
     
@@ -540,7 +998,6 @@ async def update_user(user_id: str, update: UserUpdate, current_user: dict = Dep
     if not update_data:
         raise HTTPException(status_code=400, detail="No data to update")
     
-    # Only admin can change role
     if "role" in update_data and current_user["role"] != "admin":
         del update_data["role"]
     
@@ -554,6 +1011,41 @@ async def delete_user(user_id: str, current_user: dict = Depends(get_admin_user)
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
     return {"message": "User deleted"}
+
+# ==================== PT ASSIGNMENT ROUTES ====================
+
+@api_router.post("/users/{user_id}/assign-pt")
+async def assign_pt_to_user(
+    user_id: str,
+    trainer_id: str,
+    sessions: int = 0,
+    current_user: dict = Depends(get_admin_user)
+):
+    """Assign a PT trainer to a user"""
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    trainer = await db.users.find_one({"id": trainer_id, "role": "trainer"})
+    if not trainer:
+        raise HTTPException(status_code=404, detail="Trainer not found")
+    
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"pt_trainer_id": trainer_id, "pt_sessions_remaining": sessions}}
+    )
+    
+    return {"message": f"PT assigned: {trainer['name']} ({sessions} sessions)"}
+
+@api_router.get("/users/{user_id}/pt-clients", response_model=List[UserResponse])
+async def get_pt_clients(user_id: str, current_user: dict = Depends(get_current_user)):
+    """Get all PT clients for a trainer"""
+    if current_user["role"] not in ["admin", "trainer"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    trainer_id = user_id if current_user["role"] == "admin" else current_user["id"]
+    clients = await db.users.find({"pt_trainer_id": trainer_id}, {"_id": 0, "password_hash": 0}).to_list(1000)
+    return clients
 
 # ==================== PLANS ROUTES ====================
 
@@ -594,6 +1086,45 @@ async def delete_plan(plan_id: str, current_user: dict = Depends(get_admin_user)
         raise HTTPException(status_code=404, detail="Plan not found")
     return {"message": "Plan deleted"}
 
+# ==================== PT PACKAGES ROUTES ====================
+
+@api_router.get("/pt-packages", response_model=List[PTPackageResponse])
+async def get_pt_packages(active_only: bool = False):
+    query = {"is_active": True} if active_only else {}
+    packages = await db.pt_packages.find(query, {"_id": 0}).to_list(100)
+    return packages
+
+@api_router.post("/pt-packages", response_model=PTPackageResponse)
+async def create_pt_package(package: PTPackageCreate, current_user: dict = Depends(get_admin_user)):
+    package_id = str(uuid.uuid4())
+    now = get_ist_now().isoformat()
+    
+    package_doc = {
+        "id": package_id,
+        **package.model_dump(),
+        "created_at": now
+    }
+    
+    await db.pt_packages.insert_one(package_doc)
+    return {k: v for k, v in package_doc.items() if k != "_id"}
+
+@api_router.put("/pt-packages/{package_id}", response_model=PTPackageResponse)
+async def update_pt_package(package_id: str, package: PTPackageCreate, current_user: dict = Depends(get_admin_user)):
+    update_data = package.model_dump()
+    result = await db.pt_packages.update_one({"id": package_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Package not found")
+    
+    updated = await db.pt_packages.find_one({"id": package_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/pt-packages/{package_id}")
+async def delete_pt_package(package_id: str, current_user: dict = Depends(get_admin_user)):
+    result = await db.pt_packages.delete_one({"id": package_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Package not found")
+    return {"message": "Package deleted"}
+
 # ==================== MEMBERSHIPS ROUTES ====================
 
 @api_router.get("/memberships", response_model=List[MembershipResponse])
@@ -606,7 +1137,6 @@ async def get_memberships(user_id: Optional[str] = None, current_user: dict = De
     
     memberships = await db.memberships.find(query, {"_id": 0}).to_list(1000)
     
-    # Enrich with plan names
     for m in memberships:
         plan = await db.plans.find_one({"id": m["plan_id"]}, {"_id": 0, "name": 1})
         m["plan_name"] = plan["name"] if plan else None
@@ -629,19 +1159,16 @@ async def get_active_membership(user_id: str, current_user: dict = Depends(get_c
 
 @api_router.post("/memberships", response_model=MembershipResponse)
 async def create_membership(membership: MembershipCreate, current_user: dict = Depends(get_admin_user)):
-    # Get plan details
     plan = await db.plans.find_one({"id": membership.plan_id}, {"_id": 0})
     if not plan:
         raise HTTPException(status_code=404, detail="Plan not found")
     
-    # Check for existing active membership
     existing = await db.memberships.find_one(
         {"user_id": membership.user_id, "status": "active"},
         sort=[("end_date", -1)]
     )
     
     if existing:
-        # Queue: Start after current membership ends
         start_date = datetime.fromisoformat(existing["end_date"])
     else:
         start_date = get_ist_now()
@@ -667,7 +1194,15 @@ async def create_membership(membership: MembershipCreate, current_user: dict = D
     
     await db.memberships.insert_one(membership_doc)
     
-    # Record initial payment if any
+    # Add PT sessions if plan includes PT
+    if plan.get("includes_pt") and plan.get("pt_sessions", 0) > 0:
+        user = await db.users.find_one({"id": membership.user_id})
+        current_sessions = user.get("pt_sessions_remaining", 0) if user else 0
+        await db.users.update_one(
+            {"id": membership.user_id},
+            {"$set": {"pt_sessions_remaining": current_sessions + plan["pt_sessions"]}}
+        )
+    
     if membership.initial_payment > 0:
         payment_doc = {
             "id": str(uuid.uuid4()),
@@ -714,7 +1249,6 @@ async def get_payments(
     
     payments = await db.payments.find(query, {"_id": 0}).sort("payment_date", -1).to_list(1000)
     
-    # Enrich with user details
     for p in payments:
         user = await db.users.find_one({"id": p["user_id"]}, {"_id": 0, "name": 1, "member_id": 1})
         if user:
@@ -750,7 +1284,6 @@ async def get_payment_summary(
     elif period == "monthly":
         year_month = date[:7]
         start = f"{year_month}-01T00:00:00"
-        # Get last day of month
         year, month = int(date[:4]), int(date[5:7])
         if month == 12:
             end = f"{year + 1}-01-01T00:00:00"
@@ -769,7 +1302,6 @@ async def get_payment_summary(
     
     total = sum(p["amount_paid"] for p in payments)
     
-    # Group by payment method
     by_method = {}
     for p in payments:
         method = p["payment_method"]
@@ -783,7 +1315,6 @@ async def create_payment(payment: PaymentCreate, current_user: dict = Depends(ge
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # Get active membership
     membership = await db.memberships.find_one(
         {"user_id": payment.user_id, "status": "active"},
         sort=[("end_date", -1)]
@@ -820,7 +1351,6 @@ async def get_payment_requests(status: Optional[str] = None, current_user: dict 
     
     requests = await db.payment_requests.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     
-    # Enrich with user and plan details
     for r in requests:
         user = await db.users.find_one({"id": r["user_id"]}, {"_id": 0, "name": 1, "member_id": 1})
         plan = await db.plans.find_one({"id": r["plan_id"]}, {"_id": 0, "name": 1, "price": 1})
@@ -873,7 +1403,6 @@ async def approve_payment_request(
     if request["status"] != "pending":
         raise HTTPException(status_code=400, detail="Request already processed")
     
-    # Create membership
     membership_data = MembershipCreate(
         user_id=request["user_id"],
         plan_id=request["plan_id"],
@@ -883,8 +1412,6 @@ async def approve_payment_request(
     )
     
     await create_membership(membership_data, current_user)
-    
-    # Update request status
     await db.payment_requests.update_one({"id": request_id}, {"$set": {"status": "completed"}})
     
     return {"message": "Payment request approved and membership created"}
@@ -908,7 +1435,6 @@ async def get_attendance(
     
     attendance = await db.attendance.find(query, {"_id": 0}).sort("check_in_time", -1).to_list(10000)
     
-    # Enrich with user details
     for a in attendance:
         user = await db.users.find_one({"id": a["user_id"]}, {"_id": 0, "name": 1, "member_id": 1})
         if user:
@@ -928,13 +1454,11 @@ async def get_today_attendance(current_user: dict = Depends(get_admin_user)):
     
     present_user_ids = set(a["user_id"] for a in attendance)
     
-    # Get all active members
     active_memberships = await db.memberships.find({"status": "active"}, {"_id": 0, "user_id": 1}).to_list(10000)
     active_user_ids = set(m["user_id"] for m in active_memberships)
     
     absent_user_ids = active_user_ids - present_user_ids
     
-    # Get user details
     present = []
     for a in attendance:
         user = await db.users.find_one({"id": a["user_id"]}, {"_id": 0, "name": 1, "member_id": 1})
@@ -943,15 +1467,14 @@ async def get_today_attendance(current_user: dict = Depends(get_admin_user)):
     
     absent = []
     for uid in absent_user_ids:
-        user = await db.users.find_one({"id": uid}, {"_id": 0, "id": 1, "name": 1, "member_id": 1})
+        user = await db.users.find_one({"id": uid}, {"_id": 0, "id": 1, "name": 1, "member_id": 1, "phone_number": 1})
         if user:
             absent.append(user)
     
     return {"present": present, "absent": absent, "present_count": len(present), "absent_count": len(absent)}
 
 @api_router.post("/attendance", response_model=AttendanceResponse)
-async def mark_attendance(attendance: AttendanceCreate, current_user: dict = Depends(get_admin_user)):
-    # Find user by member_id or user_id
+async def mark_attendance(attendance: AttendanceCreate, background_tasks: BackgroundTasks, current_user: dict = Depends(get_admin_user)):
     user = await db.users.find_one({
         "$or": [{"id": attendance.member_id}, {"member_id": attendance.member_id}]
     }, {"_id": 0})
@@ -959,7 +1482,6 @@ async def mark_attendance(attendance: AttendanceCreate, current_user: dict = Dep
     if not user:
         raise HTTPException(status_code=404, detail="Member not found")
     
-    # Check if already marked today
     today = get_ist_now().strftime("%Y-%m-%d")
     existing = await db.attendance.find_one({
         "user_id": user["id"],
@@ -980,6 +1502,9 @@ async def mark_attendance(attendance: AttendanceCreate, current_user: dict = Dep
     
     await db.attendance.insert_one(attendance_doc)
     
+    # Send attendance notification
+    await send_notification(user, "attendance", {}, background_tasks)
+    
     return {
         **{k: v for k, v in attendance_doc.items() if k != "_id"},
         "user_name": user["name"],
@@ -993,6 +1518,42 @@ async def get_user_attendance_history(user_id: str, current_user: dict = Depends
     
     attendance = await db.attendance.find({"user_id": user_id}, {"_id": 0}).sort("check_in_time", -1).to_list(1000)
     return attendance
+
+@api_router.get("/attendance/regular-absentees")
+async def get_regular_absentees(days: int = 7, current_user: dict = Depends(get_admin_user)):
+    """Get members absent for specified consecutive days"""
+    cutoff_date = (get_ist_now() - timedelta(days=days)).strftime("%Y-%m-%d")
+    
+    # Get all active members
+    active_memberships = await db.memberships.find({"status": "active"}, {"_id": 0, "user_id": 1}).to_list(10000)
+    active_user_ids = [m["user_id"] for m in active_memberships]
+    
+    absentees = []
+    for user_id in active_user_ids:
+        # Get last attendance
+        last_attendance = await db.attendance.find_one(
+            {"user_id": user_id},
+            {"_id": 0},
+            sort=[("check_in_time", -1)]
+        )
+        
+        if not last_attendance:
+            # Never attended
+            user = await db.users.find_one({"id": user_id}, {"_id": 0, "id": 1, "name": 1, "member_id": 1, "phone_number": 1})
+            if user:
+                user["days_absent"] = "Never attended"
+                absentees.append(user)
+        elif last_attendance["check_in_time"][:10] < cutoff_date:
+            # Absent for more than X days
+            user = await db.users.find_one({"id": user_id}, {"_id": 0, "id": 1, "name": 1, "member_id": 1, "phone_number": 1})
+            if user:
+                last_date = datetime.fromisoformat(last_attendance["check_in_time"][:10])
+                days_absent = (get_ist_now() - last_date).days
+                user["days_absent"] = days_absent
+                user["last_attendance"] = last_attendance["check_in_time"]
+                absentees.append(user)
+    
+    return absentees
 
 # ==================== HOLIDAYS ROUTES ====================
 
@@ -1071,7 +1632,15 @@ async def update_smtp_settings(settings: SMTPSettings, current_user: dict = Depe
 
 @api_router.post("/settings/smtp/test")
 async def test_smtp(to_email: str, current_user: dict = Depends(get_admin_user)):
-    success = await send_email(to_email, "F3 Fitness Gym - Test Email", "<h2>Test email from F3 Fitness Gym</h2><p>SMTP configuration is working correctly!</p>")
+    email_body = """
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #09090b; color: #fff; padding: 40px;">
+        <img src="https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png" style="width: 150px; margin-bottom: 20px;" />
+        <h1 style="color: #06b6d4;">Test Email</h1>
+        <p>SMTP configuration is working correctly!</p>
+        <p style="color: #71717a;">This is a test email from F3 Fitness Gym.</p>
+    </div>
+    """
+    success = await send_email(to_email, "F3 Fitness Gym - Test Email", email_body)
     if success:
         return {"message": "Test email sent successfully"}
     raise HTTPException(status_code=500, detail="Failed to send test email. Check SMTP settings.")
@@ -1090,10 +1659,221 @@ async def update_whatsapp_settings(settings: WhatsAppSettings, current_user: dic
 
 @api_router.post("/settings/whatsapp/test")
 async def test_whatsapp(to_number: str, current_user: dict = Depends(get_admin_user)):
-    success = await send_whatsapp(to_number, "Hello from F3 Fitness Gym! WhatsApp integration is working.")
+    success = await send_whatsapp(to_number, "🏋️ Hello from F3 Fitness Gym! WhatsApp integration is working. 💪")
     if success:
         return {"message": "Test message sent successfully"}
     raise HTTPException(status_code=500, detail="Failed to send test message. Check WhatsApp settings.")
+
+# ==================== TEMPLATE ROUTES ====================
+
+@api_router.get("/templates", response_model=List[TemplateResponse])
+async def get_templates(current_user: dict = Depends(get_admin_user)):
+    templates = await db.templates.find({}, {"_id": 0}).to_list(100)
+    
+    # Add default templates if not exist
+    template_types = ["welcome", "attendance", "absent_warning", "birthday", "holiday", "plan_shared", "renewal_reminder"]
+    channels = ["email", "whatsapp"]
+    
+    existing_keys = set(f"{t['template_type']}_{t['channel']}" for t in templates)
+    
+    for tt in template_types:
+        for ch in channels:
+            if f"{tt}_{ch}" not in existing_keys:
+                default = await get_template(tt, ch)
+                templates.append({
+                    "id": f"{tt}_{ch}",
+                    "template_type": tt,
+                    "channel": ch,
+                    "subject": default.get("subject"),
+                    "content": default.get("content", "")
+                })
+    
+    return templates
+
+@api_router.put("/templates")
+async def update_template(template: TemplateUpdate, current_user: dict = Depends(get_admin_user)):
+    template_id = f"{template.template_type}_{template.channel}"
+    
+    template_doc = {
+        "id": template_id,
+        **template.model_dump()
+    }
+    
+    await db.templates.update_one(
+        {"id": template_id},
+        {"$set": template_doc},
+        upsert=True
+    )
+    
+    return {"message": "Template updated"}
+
+# ==================== HEALTH TRACKING ROUTES ====================
+
+@api_router.get("/health-logs", response_model=List[HealthLogResponse])
+async def get_health_logs(user_id: Optional[str] = None, current_user: dict = Depends(get_current_user)):
+    query = {}
+    if user_id:
+        if current_user["id"] != user_id and current_user["role"] not in ["admin", "trainer"]:
+            raise HTTPException(status_code=403, detail="Not authorized")
+        query["user_id"] = user_id
+    else:
+        query["user_id"] = current_user["id"]
+    
+    logs = await db.health_logs.find(query, {"_id": 0}).sort("logged_at", -1).to_list(100)
+    return logs
+
+@api_router.post("/health-logs", response_model=HealthLogResponse)
+async def create_health_log(log: HealthLogCreate, current_user: dict = Depends(get_current_user)):
+    log_id = str(uuid.uuid4())
+    now = get_ist_now().isoformat()
+    
+    # Calculate BMI if height and weight provided
+    bmi = None
+    if log.weight and log.height:
+        height_m = log.height / 100
+        bmi = round(log.weight / (height_m * height_m), 1)
+    
+    log_doc = {
+        "id": log_id,
+        "user_id": current_user["id"],
+        "weight": log.weight,
+        "body_fat": log.body_fat,
+        "height": log.height,
+        "bmi": bmi,
+        "notes": log.notes,
+        "logged_at": now
+    }
+    
+    await db.health_logs.insert_one(log_doc)
+    return {k: v for k, v in log_doc.items() if k != "_id"}
+
+# ==================== DIET PLAN ROUTES ====================
+
+@api_router.get("/diet-plans", response_model=List[DietPlanResponse])
+async def get_diet_plans(user_id: Optional[str] = None, current_user: dict = Depends(get_current_user)):
+    query = {}
+    if user_id:
+        if current_user["id"] != user_id and current_user["role"] not in ["admin", "trainer"]:
+            raise HTTPException(status_code=403, detail="Not authorized")
+        query["user_id"] = user_id
+    elif current_user["role"] == "member":
+        query["user_id"] = current_user["id"]
+    
+    plans = await db.diet_plans.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return plans
+
+@api_router.post("/diet-plans", response_model=DietPlanResponse)
+async def create_diet_plan(plan: DietPlanCreate, background_tasks: BackgroundTasks, current_user: dict = Depends(get_trainer_or_admin)):
+    plan_id = str(uuid.uuid4())
+    now = get_ist_now().isoformat()
+    
+    plan_doc = {
+        "id": plan_id,
+        "user_id": plan.user_id,
+        "created_by": current_user["id"],
+        "title": plan.title,
+        "description": plan.description,
+        "meals": [m.model_dump() for m in plan.meals] if plan.meals else None,
+        "pdf_url": plan.pdf_url,
+        "notes": plan.notes,
+        "created_at": now,
+        "is_active": True
+    }
+    
+    await db.diet_plans.insert_one(plan_doc)
+    
+    # Notify user
+    user = await db.users.find_one({"id": plan.user_id}, {"_id": 0})
+    if user:
+        await send_notification(user, "plan_shared", {"plan_type": "Diet", "plan_title": plan.title}, background_tasks)
+    
+    return {k: v for k, v in plan_doc.items() if k != "_id"}
+
+@api_router.delete("/diet-plans/{plan_id}")
+async def delete_diet_plan(plan_id: str, current_user: dict = Depends(get_trainer_or_admin)):
+    result = await db.diet_plans.delete_one({"id": plan_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    return {"message": "Diet plan deleted"}
+
+# ==================== WORKOUT PLAN ROUTES ====================
+
+@api_router.get("/workout-plans", response_model=List[WorkoutPlanResponse])
+async def get_workout_plans(user_id: Optional[str] = None, current_user: dict = Depends(get_current_user)):
+    query = {}
+    if user_id:
+        if current_user["id"] != user_id and current_user["role"] not in ["admin", "trainer"]:
+            raise HTTPException(status_code=403, detail="Not authorized")
+        query["user_id"] = user_id
+    elif current_user["role"] == "member":
+        query["user_id"] = current_user["id"]
+    
+    plans = await db.workout_plans.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return plans
+
+@api_router.post("/workout-plans", response_model=WorkoutPlanResponse)
+async def create_workout_plan(plan: WorkoutPlanCreate, background_tasks: BackgroundTasks, current_user: dict = Depends(get_trainer_or_admin)):
+    plan_id = str(uuid.uuid4())
+    now = get_ist_now().isoformat()
+    
+    plan_doc = {
+        "id": plan_id,
+        "user_id": plan.user_id,
+        "created_by": current_user["id"],
+        "title": plan.title,
+        "description": plan.description,
+        "days": [d.model_dump() for d in plan.days] if plan.days else None,
+        "pdf_url": plan.pdf_url,
+        "notes": plan.notes,
+        "created_at": now,
+        "is_active": True
+    }
+    
+    await db.workout_plans.insert_one(plan_doc)
+    
+    # Notify user
+    user = await db.users.find_one({"id": plan.user_id}, {"_id": 0})
+    if user:
+        await send_notification(user, "plan_shared", {"plan_type": "Workout", "plan_title": plan.title}, background_tasks)
+    
+    return {k: v for k, v in plan_doc.items() if k != "_id"}
+
+@api_router.delete("/workout-plans/{plan_id}")
+async def delete_workout_plan(plan_id: str, current_user: dict = Depends(get_trainer_or_admin)):
+    result = await db.workout_plans.delete_one({"id": plan_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    return {"message": "Workout plan deleted"}
+
+# ==================== TESTIMONIALS ROUTES ====================
+
+@api_router.get("/testimonials", response_model=List[TestimonialResponse])
+async def get_testimonials(active_only: bool = True):
+    query = {"is_active": True} if active_only else {}
+    testimonials = await db.testimonials.find(query, {"_id": 0}).to_list(100)
+    return testimonials
+
+@api_router.post("/testimonials", response_model=TestimonialResponse)
+async def create_testimonial(testimonial: TestimonialCreate, current_user: dict = Depends(get_admin_user)):
+    testimonial_id = str(uuid.uuid4())
+    now = get_ist_now().isoformat()
+    
+    testimonial_doc = {
+        "id": testimonial_id,
+        **testimonial.model_dump(),
+        "is_active": True,
+        "created_at": now
+    }
+    
+    await db.testimonials.insert_one(testimonial_doc)
+    return {k: v for k, v in testimonial_doc.items() if k != "_id"}
+
+@api_router.delete("/testimonials/{testimonial_id}")
+async def delete_testimonial(testimonial_id: str, current_user: dict = Depends(get_admin_user)):
+    result = await db.testimonials.delete_one({"id": testimonial_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Testimonial not found")
+    return {"message": "Testimonial deleted"}
 
 # ==================== DASHBOARD ROUTES ====================
 
@@ -1118,7 +1898,7 @@ async def get_dashboard_stats(current_user: dict = Depends(get_admin_user)):
     present_user_ids = set(a["user_id"] for a in today_attendance)
     present_today = len(present_user_ids)
     
-    # Absent today (active members not in attendance)
+    # Absent today
     active_membership_users = await db.memberships.find(
         {"status": "active"},
         {"_id": 0, "user_id": 1}
@@ -1126,12 +1906,72 @@ async def get_dashboard_stats(current_user: dict = Depends(get_admin_user)):
     active_user_ids = set(m["user_id"] for m in active_membership_users)
     absent_today = len(active_user_ids - present_user_ids)
     
+    # Today's birthdays
+    today_mmdd = get_ist_now().strftime("-%m-%d")
+    all_members = await db.users.find({"role": "member", "date_of_birth": {"$exists": True, "$ne": None}}, {"_id": 0, "id": 1, "name": 1, "member_id": 1, "date_of_birth": 1, "phone_number": 1}).to_list(10000)
+    
+    today_birthdays = []
+    upcoming_birthdays = []
+    
+    for m in all_members:
+        if m.get("date_of_birth"):
+            dob = m["date_of_birth"]
+            if dob.endswith(today_mmdd):
+                today_birthdays.append({"name": m["name"], "member_id": m["member_id"], "phone_number": m.get("phone_number")})
+            else:
+                # Check upcoming 7 days
+                try:
+                    dob_date = datetime.strptime(dob, "%Y-%m-%d")
+                    this_year_bday = dob_date.replace(year=get_ist_now().year)
+                    days_until = (this_year_bday - datetime(get_ist_now().year, get_ist_now().month, get_ist_now().day)).days
+                    if 0 < days_until <= 7:
+                        upcoming_birthdays.append({
+                            "name": m["name"],
+                            "member_id": m["member_id"],
+                            "date": dob,
+                            "days_until": days_until
+                        })
+                except:
+                    pass
+    
+    upcoming_birthdays.sort(key=lambda x: x["days_until"])
+    
+    # Upcoming renewals (next 7 days)
+    upcoming_renewals = []
+    cutoff_date = (get_ist_now() + timedelta(days=7)).isoformat()
+    expiring_memberships = await db.memberships.find({
+        "status": "active",
+        "end_date": {"$lte": cutoff_date}
+    }, {"_id": 0}).to_list(100)
+    
+    for m in expiring_memberships:
+        user = await db.users.find_one({"id": m["user_id"]}, {"_id": 0, "name": 1, "member_id": 1, "phone_number": 1})
+        if user:
+            end_date = datetime.fromisoformat(m["end_date"][:10])
+            days_left = (end_date - datetime(get_ist_now().year, get_ist_now().month, get_ist_now().day)).days
+            upcoming_renewals.append({
+                "name": user["name"],
+                "member_id": user["member_id"],
+                "phone_number": user.get("phone_number"),
+                "end_date": m["end_date"][:10],
+                "days_left": days_left
+            })
+    
+    upcoming_renewals.sort(key=lambda x: x["days_left"])
+    
+    # Regular absentees (7+ days)
+    regular_absentees = await get_regular_absentees(7, current_user)
+    
     return DashboardStats(
         total_members=total_members,
         active_memberships=active_memberships,
         today_collection=today_collection,
         present_today=present_today,
-        absent_today=absent_today
+        absent_today=absent_today,
+        today_birthdays=today_birthdays[:5],
+        upcoming_birthdays=upcoming_birthdays[:5],
+        upcoming_renewals=upcoming_renewals[:10],
+        regular_absentees=regular_absentees[:10]
     )
 
 # ==================== TRAINER ROUTES ====================
@@ -1152,6 +1992,59 @@ async def get_trainers(current_user: dict = Depends(get_current_user)):
     trainers = await db.users.find({"role": "trainer"}, {"_id": 0, "password_hash": 0}).to_list(100)
     return trainers
 
+# ==================== CALCULATORS (PUBLIC) ====================
+
+@api_router.post("/calculators/bmi")
+async def calculate_bmi(weight: float, height: float):
+    """Calculate BMI - weight in kg, height in cm"""
+    height_m = height / 100
+    bmi = round(weight / (height_m * height_m), 1)
+    
+    if bmi < 18.5:
+        category = "Underweight"
+    elif bmi < 25:
+        category = "Normal weight"
+    elif bmi < 30:
+        category = "Overweight"
+    else:
+        category = "Obese"
+    
+    return {"bmi": bmi, "category": category}
+
+@api_router.post("/calculators/maintenance-calories")
+async def calculate_maintenance_calories(
+    weight: float,
+    height: float,
+    age: int,
+    gender: str,
+    activity_level: str = "moderate"
+):
+    """Calculate maintenance calories using Mifflin-St Jeor equation"""
+    # BMR calculation
+    if gender.lower() == "male":
+        bmr = 10 * weight + 6.25 * height - 5 * age + 5
+    else:
+        bmr = 10 * weight + 6.25 * height - 5 * age - 161
+    
+    # Activity multipliers
+    multipliers = {
+        "sedentary": 1.2,
+        "light": 1.375,
+        "moderate": 1.55,
+        "active": 1.725,
+        "very_active": 1.9
+    }
+    
+    multiplier = multipliers.get(activity_level, 1.55)
+    maintenance = round(bmr * multiplier)
+    
+    return {
+        "bmr": round(bmr),
+        "maintenance_calories": maintenance,
+        "weight_loss": maintenance - 500,
+        "weight_gain": maintenance + 500
+    }
+
 # ==================== RAZORPAY ROUTES ====================
 
 @api_router.post("/razorpay/create-order", response_model=RazorpayOrderResponse)
@@ -1164,7 +2057,7 @@ async def create_razorpay_order(order: RazorpayOrderCreate, current_user: dict =
     if not plan:
         raise HTTPException(status_code=404, detail="Plan not found")
     
-    amount = int(plan["price"] * 100)  # Convert to paise
+    amount = int(plan["price"] * 100)
     
     try:
         razorpay_order = client.order.create({
@@ -1199,12 +2092,10 @@ async def verify_razorpay_payment(payment: RazorpayPaymentVerify, current_user: 
         logger.error(f"Payment verification failed: {e}")
         raise HTTPException(status_code=400, detail="Payment verification failed")
     
-    # Get plan details
     plan = await db.plans.find_one({"id": payment.plan_id}, {"_id": 0})
     if not plan:
         raise HTTPException(status_code=404, detail="Plan not found")
     
-    # Check for existing active membership
     existing = await db.memberships.find_one(
         {"user_id": current_user["id"], "status": "active"},
         sort=[("end_date", -1)]
@@ -1220,7 +2111,6 @@ async def verify_razorpay_payment(payment: RazorpayPaymentVerify, current_user: 
     membership_id = str(uuid.uuid4())
     now = get_ist_now().isoformat()
     
-    # Create membership
     membership_doc = {
         "id": membership_id,
         "user_id": current_user["id"],
@@ -1236,7 +2126,6 @@ async def verify_razorpay_payment(payment: RazorpayPaymentVerify, current_user: 
     
     await db.memberships.insert_one(membership_doc)
     
-    # Record payment
     payment_doc = {
         "id": str(uuid.uuid4()),
         "membership_id": membership_id,
@@ -1259,15 +2148,24 @@ async def upload_profile_photo(file: UploadFile = File(...), current_user: dict 
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File must be an image")
     
-    # Read file and convert to base64
     content = await file.read()
     base64_content = base64.b64encode(content).decode()
     data_url = f"data:{file.content_type};base64,{base64_content}"
     
-    # Update user profile
     await db.users.update_one({"id": current_user["id"]}, {"$set": {"profile_photo_url": data_url}})
     
     return {"profile_photo_url": data_url}
+
+@api_router.post("/upload/plan-pdf")
+async def upload_plan_pdf(file: UploadFile = File(...), current_user: dict = Depends(get_trainer_or_admin)):
+    if file.content_type != "application/pdf":
+        raise HTTPException(status_code=400, detail="File must be a PDF")
+    
+    content = await file.read()
+    base64_content = base64.b64encode(content).decode()
+    data_url = f"data:{file.content_type};base64,{base64_content}"
+    
+    return {"pdf_url": data_url}
 
 # ==================== SEED DATA ROUTE ====================
 
@@ -1275,7 +2173,6 @@ async def upload_profile_photo(file: UploadFile = File(...), current_user: dict 
 async def seed_data():
     """Seed initial data for testing"""
     
-    # Check if admin exists
     admin = await db.users.find_one({"email": "admin@f3fitness.com"})
     if admin:
         return {"message": "Data already seeded"}
@@ -1289,29 +2186,67 @@ async def seed_data():
         "name": "Admin User",
         "email": "admin@f3fitness.com",
         "phone_number": "9999999999",
+        "country_code": "+91",
         "password_hash": hash_password("admin123"),
         "role": "admin",
         "gender": "male",
         "date_of_birth": "1990-01-01",
-        "address": "123 Gym Street",
+        "address": "4th avenue Plot No 4R-B, Sector 4",
         "city": "Jaipur",
-        "zip_code": "302001",
+        "zip_code": "302039",
         "emergency_phone": "9999999998",
         "profile_photo_url": None,
         "trainer_id": None,
+        "pt_trainer_id": None,
+        "pt_sessions_remaining": 0,
         "joining_date": now,
         "created_at": now
     }
     await db.users.insert_one(admin_doc)
     
+    # Create sample trainer
+    trainer_doc = {
+        "id": str(uuid.uuid4()),
+        "member_id": "F3-0002",
+        "name": "Rahul Sharma",
+        "email": "trainer@f3fitness.com",
+        "phone_number": "9888888888",
+        "country_code": "+91",
+        "password_hash": hash_password("trainer123"),
+        "role": "trainer",
+        "gender": "male",
+        "date_of_birth": "1992-05-15",
+        "address": "Vidyadhar Nagar",
+        "city": "Jaipur",
+        "zip_code": "302039",
+        "emergency_phone": None,
+        "profile_photo_url": None,
+        "trainer_id": None,
+        "pt_trainer_id": None,
+        "pt_sessions_remaining": 0,
+        "joining_date": now,
+        "created_at": now
+    }
+    await db.users.insert_one(trainer_doc)
+    
     # Create sample plans
     plans = [
-        {"id": str(uuid.uuid4()), "name": "Monthly", "duration_days": 30, "price": 1000, "is_active": True, "created_at": now},
-        {"id": str(uuid.uuid4()), "name": "Quarterly", "duration_days": 90, "price": 2500, "is_active": True, "created_at": now},
-        {"id": str(uuid.uuid4()), "name": "Half Yearly", "duration_days": 180, "price": 4500, "is_active": True, "created_at": now},
-        {"id": str(uuid.uuid4()), "name": "Yearly", "duration_days": 365, "price": 8000, "is_active": True, "created_at": now},
+        {"id": str(uuid.uuid4()), "name": "Monthly", "duration_days": 30, "price": 1000, "is_active": True, "includes_pt": False, "pt_sessions": 0, "created_at": now},
+        {"id": str(uuid.uuid4()), "name": "Quarterly", "duration_days": 90, "price": 2500, "is_active": True, "includes_pt": False, "pt_sessions": 0, "created_at": now},
+        {"id": str(uuid.uuid4()), "name": "Half Yearly", "duration_days": 180, "price": 4500, "is_active": True, "includes_pt": False, "pt_sessions": 0, "created_at": now},
+        {"id": str(uuid.uuid4()), "name": "Yearly", "duration_days": 365, "price": 8000, "is_active": True, "includes_pt": False, "pt_sessions": 0, "created_at": now},
+        {"id": str(uuid.uuid4()), "name": "Monthly + PT", "duration_days": 30, "price": 3000, "is_active": True, "includes_pt": True, "pt_sessions": 12, "created_at": now},
+        {"id": str(uuid.uuid4()), "name": "Quarterly + PT", "duration_days": 90, "price": 8000, "is_active": True, "includes_pt": True, "pt_sessions": 36, "created_at": now},
     ]
     await db.plans.insert_many(plans)
+    
+    # Create PT packages
+    pt_packages = [
+        {"id": str(uuid.uuid4()), "name": "10 Sessions", "sessions": 10, "price": 3000, "validity_days": 45, "is_active": True, "created_at": now},
+        {"id": str(uuid.uuid4()), "name": "20 Sessions", "sessions": 20, "price": 5500, "validity_days": 60, "is_active": True, "created_at": now},
+        {"id": str(uuid.uuid4()), "name": "30 Sessions", "sessions": 30, "price": 7500, "validity_days": 90, "is_active": True, "created_at": now},
+    ]
+    await db.pt_packages.insert_many(pt_packages)
     
     # Create sample announcement
     announcement_doc = {
@@ -1322,7 +2257,59 @@ async def seed_data():
     }
     await db.announcements.insert_one(announcement_doc)
     
-    return {"message": "Data seeded successfully", "admin_email": "admin@f3fitness.com", "admin_password": "admin123"}
+    # Create sample testimonials
+    testimonials = [
+        {
+            "id": str(uuid.uuid4()),
+            "name": "Amit Kumar",
+            "role": "Member since 2023",
+            "content": "F3 Fitness transformed my life! Lost 15kg in 6 months with amazing trainers.",
+            "rating": 5,
+            "image_url": None,
+            "is_active": True,
+            "created_at": now
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "name": "Priya Singh",
+            "role": "Fitness Enthusiast",
+            "content": "Best gym in Jaipur! Clean equipment, helpful staff, and great atmosphere.",
+            "rating": 5,
+            "image_url": None,
+            "is_active": True,
+            "created_at": now
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "name": "Rajesh Sharma",
+            "role": "PT Client",
+            "content": "The personal training program is exceptional. My trainer pushed me to achieve goals I thought were impossible.",
+            "rating": 5,
+            "image_url": None,
+            "is_active": True,
+            "created_at": now
+        }
+    ]
+    await db.testimonials.insert_many(testimonials)
+    
+    # Save WhatsApp settings for sandbox testing
+    settings_doc = {
+        "id": "1",
+        "twilio_account_sid": "AC90629793b1b80228b667f3a239ffb773",
+        "twilio_auth_token": "251ae784c0912cc5bdf07737648af837",
+        "twilio_whatsapp_number": "+14155238886",
+        "use_sandbox": True,
+        "sandbox_url": "https://timberwolf-mastiff-9776.twil.io/demo-reply"
+    }
+    await db.settings.update_one({"id": "1"}, {"$set": settings_doc}, upsert=True)
+    
+    return {
+        "message": "Data seeded successfully",
+        "admin_email": "admin@f3fitness.com",
+        "admin_password": "admin123",
+        "trainer_email": "trainer@f3fitness.com",
+        "trainer_password": "trainer123"
+    }
 
 # Include the router in the main app
 app.include_router(api_router)
