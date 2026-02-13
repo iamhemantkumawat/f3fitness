@@ -1769,7 +1769,7 @@ async def get_holidays():
     return holidays
 
 @api_router.post("/holidays", response_model=HolidayResponse)
-async def create_holiday(holiday: HolidayCreate, current_user: dict = Depends(get_admin_user)):
+async def create_holiday(holiday: HolidayCreate, background_tasks: BackgroundTasks, current_user: dict = Depends(get_admin_user)):
     holiday_id = str(uuid.uuid4())
     
     holiday_doc = {
@@ -1778,6 +1778,13 @@ async def create_holiday(holiday: HolidayCreate, current_user: dict = Depends(ge
     }
     
     await db.holidays.insert_one(holiday_doc)
+    
+    # Send notification to all members
+    await send_notification_to_all("holiday", {
+        "holiday_date": holiday.date,
+        "holiday_reason": holiday.reason
+    }, background_tasks)
+    
     return {k: v for k, v in holiday_doc.items() if k != "_id"}
 
 @api_router.delete("/holidays/{holiday_id}")
