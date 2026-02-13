@@ -450,42 +450,29 @@ export const Signup = () => {
                   Verify OTP
                 </h2>
                 <p className="text-zinc-500 mb-6">
-                  Enter the codes sent to your phone ({formData.country_code} {formData.phone_number}) and email ({formData.email})
+                  Enter the OTP sent to your phone ({formData.country_code} {formData.phone_number}) and email ({formData.email})
                 </p>
 
                 <form onSubmit={handleVerifyAndSignup} className="space-y-4">
                   <div>
-                    <Label className="text-xs uppercase tracking-wider text-zinc-500 flex items-center gap-2">
-                      <span className="inline-flex items-center justify-center w-5 h-5 bg-green-500/20 text-green-400 rounded text-xs">W</span>
-                      WhatsApp OTP
+                    <Label className="text-xs uppercase tracking-wider text-zinc-500 flex items-center justify-center gap-2 mb-2">
+                      <span className="inline-flex items-center justify-center w-5 h-5 bg-cyan-500/20 text-cyan-400 rounded text-xs">OTP</span>
+                      Enter 6-digit OTP
                     </Label>
                     <Input
-                      data-testid="signup-phone-otp-input"
+                      data-testid="signup-otp-input"
                       type="text"
-                      className="input-dark mt-2 text-center text-2xl tracking-[0.5em] font-mono"
+                      className="input-dark text-center text-3xl tracking-[0.8em] font-mono py-6"
                       placeholder="• • • • • •"
-                      value={otpData.phone_otp}
-                      onChange={(e) => setOtpData({ ...otpData, phone_otp: e.target.value.replace(/\D/g, '').slice(0, 6) })}
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                       maxLength={6}
                       required
+                      autoFocus
                     />
-                  </div>
-
-                  <div>
-                    <Label className="text-xs uppercase tracking-wider text-zinc-500 flex items-center gap-2">
-                      <span className="inline-flex items-center justify-center w-5 h-5 bg-cyan-500/20 text-cyan-400 rounded text-xs">@</span>
-                      Email OTP
-                    </Label>
-                    <Input
-                      data-testid="signup-email-otp-input"
-                      type="text"
-                      className="input-dark mt-2 text-center text-2xl tracking-[0.5em] font-mono"
-                      placeholder="• • • • • •"
-                      value={otpData.email_otp}
-                      onChange={(e) => setOtpData({ ...otpData, email_otp: e.target.value.replace(/\D/g, '').slice(0, 6) })}
-                      maxLength={6}
-                      required
-                    />
+                    <p className="text-xs text-zinc-500 text-center mt-2">
+                      Same OTP has been sent to both WhatsApp and Email
+                    </p>
                   </div>
 
                   <div className="text-center">
