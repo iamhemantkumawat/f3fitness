@@ -682,10 +682,10 @@ const LandingPage = () => {
             </div>
 
             <div>
-              {/* Google Maps Embed */}
-              <div className="rounded-xl overflow-hidden h-[400px]">
+              {/* Google Maps Embed - F3 Fitness Location */}
+              <div className="rounded-xl overflow-hidden h-[400px] border border-zinc-800">
                 <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3556.1234567890123!2d75.8234567!3d26.9456789!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjbCsDU2JzQ0LjQiTiA3NcKwNDknMjQuNCJF!5e0!3m2!1sen!2sin!4v1234567890123"
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3556.892936!2d75.7833333!3d26.9375!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x396db4fb1b8e8e1d%3A0x5f3f3f3f3f3f3f3f!2sXQ5P%2B6G%2C%20Vidyadhar%20Nagar%2C%20Jaipur%2C%20Rajasthan!5e0!3m2!1sen!2sin!4v1707825600000!5m2!1sen!2sin"
                   width="100%"
                   height="100%"
                   style={{ border: 0 }}
@@ -695,6 +695,9 @@ const LandingPage = () => {
                   title="F3 Fitness Location"
                 />
               </div>
+              <p className="text-center text-zinc-500 text-sm mt-3">
+                Plus Code: XQ5P+6G Jaipur, Rajasthan
+              </p>
             </div>
           </div>
         </div>
