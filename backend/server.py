@@ -99,10 +99,12 @@ class UserResponse(UserBase):
 
 class UserUpdate(BaseModel):
     name: Optional[str] = None
+    email: Optional[str] = None
     phone_number: Optional[str] = None
     country_code: Optional[str] = None
     gender: Optional[str] = None
     date_of_birth: Optional[str] = None
+    joining_date: Optional[str] = None
     address: Optional[str] = None
     city: Optional[str] = None
     zip_code: Optional[str] = None
