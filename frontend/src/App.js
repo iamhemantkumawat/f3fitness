@@ -1,7 +1,10 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Toaster } from './components/ui/sonner';
+
+// Landing Page
+import LandingPage from './pages/LandingPage';
 
 // Auth Pages
 import { Login, Signup, ForgotPassword } from './pages/Auth';
@@ -41,14 +44,13 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   }
 
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-    // Redirect to appropriate dashboard based on role
     switch (user.role) {
       case 'admin':
-        return <Navigate to="/admin" replace />;
+        return <Navigate to="/dashboard/admin" replace />;
       case 'trainer':
-        return <Navigate to="/trainer" replace />;
+        return <Navigate to="/dashboard/trainer" replace />;
       default:
-        return <Navigate to="/member" replace />;
+        return <Navigate to="/dashboard/member" replace />;
     }
   }
 
@@ -73,19 +75,19 @@ const PublicRoute = ({ children }) => {
   if (token && user) {
     switch (user.role) {
       case 'admin':
-        return <Navigate to="/admin" replace />;
+        return <Navigate to="/dashboard/admin" replace />;
       case 'trainer':
-        return <Navigate to="/trainer" replace />;
+        return <Navigate to="/dashboard/trainer" replace />;
       default:
-        return <Navigate to="/member" replace />;
+        return <Navigate to="/dashboard/member" replace />;
     }
   }
 
   return children;
 };
 
-// Home redirect based on auth status
-const HomeRedirect = () => {
+// Dashboard redirect based on role
+const DashboardRedirect = () => {
   const { user, loading, token } = useAuth();
 
   if (loading) {
@@ -99,14 +101,18 @@ const HomeRedirect = () => {
     );
   }
 
-  if (token && user) {
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user) {
     switch (user.role) {
       case 'admin':
-        return <Navigate to="/admin" replace />;
+        return <Navigate to="/dashboard/admin" replace />;
       case 'trainer':
-        return <Navigate to="/trainer" replace />;
+        return <Navigate to="/dashboard/trainer" replace />;
       default:
-        return <Navigate to="/member" replace />;
+        return <Navigate to="/dashboard/member" replace />;
     }
   }
 
@@ -116,45 +122,53 @@ const HomeRedirect = () => {
 function AppRoutes() {
   return (
     <Routes>
-      {/* Home - redirect based on auth */}
-      <Route path="/" element={<HomeRedirect />} />
+      {/* Public Landing Page */}
+      <Route path="/" element={<LandingPage />} />
 
-      {/* Public Routes */}
+      {/* Auth Routes */}
       <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
       <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
 
-      {/* Admin Routes */}
-      <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
-      <Route path="/admin/members" element={<ProtectedRoute allowedRoles={['admin']}><MembersList /></ProtectedRoute>} />
-      <Route path="/admin/trainers" element={<ProtectedRoute allowedRoles={['admin']}><TrainersList /></ProtectedRoute>} />
-      <Route path="/admin/members/new" element={<ProtectedRoute allowedRoles={['admin']}><CreateMember /></ProtectedRoute>} />
-      <Route path="/admin/members/:userId/assign-plan" element={<ProtectedRoute allowedRoles={['admin']}><AssignPlan /></ProtectedRoute>} />
-      <Route path="/admin/payments" element={<ProtectedRoute allowedRoles={['admin']}><PaymentsList /></ProtectedRoute>} />
-      <Route path="/admin/payments/new" element={<ProtectedRoute allowedRoles={['admin']}><AddPayment /></ProtectedRoute>} />
-      <Route path="/admin/payments/reports" element={<ProtectedRoute allowedRoles={['admin']}><PaymentReports /></ProtectedRoute>} />
-      <Route path="/admin/payments/pending" element={<ProtectedRoute allowedRoles={['admin']}><PendingPayments /></ProtectedRoute>} />
-      <Route path="/admin/attendance" element={<ProtectedRoute allowedRoles={['admin']}><MarkAttendance /></ProtectedRoute>} />
-      <Route path="/admin/attendance/today" element={<ProtectedRoute allowedRoles={['admin']}><TodayAttendance /></ProtectedRoute>} />
-      <Route path="/admin/attendance/history" element={<ProtectedRoute allowedRoles={['admin']}><AttendanceHistory /></ProtectedRoute>} />
-      <Route path="/admin/settings/plans" element={<ProtectedRoute allowedRoles={['admin']}><PlansSettings /></ProtectedRoute>} />
-      <Route path="/admin/settings/announcements" element={<ProtectedRoute allowedRoles={['admin']}><AnnouncementsSettings /></ProtectedRoute>} />
-      <Route path="/admin/settings/holidays" element={<ProtectedRoute allowedRoles={['admin']}><HolidaysSettings /></ProtectedRoute>} />
-      <Route path="/admin/settings/smtp" element={<ProtectedRoute allowedRoles={['admin']}><SMTPSettings /></ProtectedRoute>} />
-      <Route path="/admin/settings/whatsapp" element={<ProtectedRoute allowedRoles={['admin']}><WhatsAppSettings /></ProtectedRoute>} />
-      <Route path="/admin/profile" element={<ProtectedRoute allowedRoles={['admin']}><AdminProfile /></ProtectedRoute>} />
+      {/* Dashboard Redirect */}
+      <Route path="/dashboard" element={<DashboardRedirect />} />
 
-      {/* Member Routes */}
-      <Route path="/member" element={<ProtectedRoute allowedRoles={['member']}><MemberDashboard /></ProtectedRoute>} />
-      <Route path="/member/plans" element={<ProtectedRoute allowedRoles={['member']}><MemberPlans /></ProtectedRoute>} />
-      <Route path="/member/profile" element={<ProtectedRoute allowedRoles={['member']}><MemberProfile /></ProtectedRoute>} />
+      {/* Admin Routes - under /dashboard/admin */}
+      <Route path="/dashboard/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
+      <Route path="/dashboard/admin/members" element={<ProtectedRoute allowedRoles={['admin']}><MembersList /></ProtectedRoute>} />
+      <Route path="/dashboard/admin/trainers" element={<ProtectedRoute allowedRoles={['admin']}><TrainersList /></ProtectedRoute>} />
+      <Route path="/dashboard/admin/members/new" element={<ProtectedRoute allowedRoles={['admin']}><CreateMember /></ProtectedRoute>} />
+      <Route path="/dashboard/admin/members/:userId/assign-plan" element={<ProtectedRoute allowedRoles={['admin']}><AssignPlan /></ProtectedRoute>} />
+      <Route path="/dashboard/admin/payments" element={<ProtectedRoute allowedRoles={['admin']}><PaymentsList /></ProtectedRoute>} />
+      <Route path="/dashboard/admin/payments/new" element={<ProtectedRoute allowedRoles={['admin']}><AddPayment /></ProtectedRoute>} />
+      <Route path="/dashboard/admin/payments/reports" element={<ProtectedRoute allowedRoles={['admin']}><PaymentReports /></ProtectedRoute>} />
+      <Route path="/dashboard/admin/payments/pending" element={<ProtectedRoute allowedRoles={['admin']}><PendingPayments /></ProtectedRoute>} />
+      <Route path="/dashboard/admin/attendance" element={<ProtectedRoute allowedRoles={['admin']}><MarkAttendance /></ProtectedRoute>} />
+      <Route path="/dashboard/admin/attendance/today" element={<ProtectedRoute allowedRoles={['admin']}><TodayAttendance /></ProtectedRoute>} />
+      <Route path="/dashboard/admin/attendance/history" element={<ProtectedRoute allowedRoles={['admin']}><AttendanceHistory /></ProtectedRoute>} />
+      <Route path="/dashboard/admin/settings/plans" element={<ProtectedRoute allowedRoles={['admin']}><PlansSettings /></ProtectedRoute>} />
+      <Route path="/dashboard/admin/settings/announcements" element={<ProtectedRoute allowedRoles={['admin']}><AnnouncementsSettings /></ProtectedRoute>} />
+      <Route path="/dashboard/admin/settings/holidays" element={<ProtectedRoute allowedRoles={['admin']}><HolidaysSettings /></ProtectedRoute>} />
+      <Route path="/dashboard/admin/settings/smtp" element={<ProtectedRoute allowedRoles={['admin']}><SMTPSettings /></ProtectedRoute>} />
+      <Route path="/dashboard/admin/settings/whatsapp" element={<ProtectedRoute allowedRoles={['admin']}><WhatsAppSettings /></ProtectedRoute>} />
+      <Route path="/dashboard/admin/profile" element={<ProtectedRoute allowedRoles={['admin']}><AdminProfile /></ProtectedRoute>} />
 
-      {/* Trainer Routes */}
-      <Route path="/trainer" element={<ProtectedRoute allowedRoles={['trainer']}><TrainerDashboard /></ProtectedRoute>} />
-      <Route path="/trainer/clients" element={<ProtectedRoute allowedRoles={['trainer']}><TrainerClients /></ProtectedRoute>} />
-      <Route path="/trainer/profile" element={<ProtectedRoute allowedRoles={['trainer']}><TrainerProfile /></ProtectedRoute>} />
+      {/* Member Routes - under /dashboard/member */}
+      <Route path="/dashboard/member" element={<ProtectedRoute allowedRoles={['member']}><MemberDashboard /></ProtectedRoute>} />
+      <Route path="/dashboard/member/plans" element={<ProtectedRoute allowedRoles={['member']}><MemberPlans /></ProtectedRoute>} />
+      <Route path="/dashboard/member/profile" element={<ProtectedRoute allowedRoles={['member']}><MemberProfile /></ProtectedRoute>} />
 
-      {/* Catch all - redirect to home */}
+      {/* Trainer Routes - under /dashboard/trainer */}
+      <Route path="/dashboard/trainer" element={<ProtectedRoute allowedRoles={['trainer']}><TrainerDashboard /></ProtectedRoute>} />
+      <Route path="/dashboard/trainer/clients" element={<ProtectedRoute allowedRoles={['trainer']}><TrainerClients /></ProtectedRoute>} />
+      <Route path="/dashboard/trainer/profile" element={<ProtectedRoute allowedRoles={['trainer']}><TrainerProfile /></ProtectedRoute>} />
+
+      {/* Legacy routes redirect to new structure */}
+      <Route path="/admin/*" element={<Navigate to="/dashboard/admin" replace />} />
+      <Route path="/member/*" element={<Navigate to="/dashboard/member" replace />} />
+      <Route path="/trainer/*" element={<Navigate to="/dashboard/trainer" replace />} />
+
+      {/* Catch all - redirect to landing */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
