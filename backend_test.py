@@ -5,7 +5,7 @@ import json
 from datetime import datetime
 
 class F3FitnessAPITester:
-    def __init__(self, base_url="https://f3-gym-preview.preview.emergentagent.com"):
+    def __init__(self, base_url="https://fitness-vps.preview.emergentagent.com"):
         self.base_url = base_url
         self.admin_token = None
         self.member_token = None
@@ -284,7 +284,7 @@ class F3FitnessAPITester:
 
 def main():
     print("🚀 Starting F3 Fitness Gym API Tests")
-    print(f"Backend URL: https://f3-gym-preview.preview.emergentagent.com")
+    print(f"Backend URL: https://fitness-vps.preview.emergentagent.com")
     print("="*60)
     
     tester = F3FitnessAPITester()
