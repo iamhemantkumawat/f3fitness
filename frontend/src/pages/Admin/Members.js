@@ -311,7 +311,7 @@ export const TrainersList = () => {
           </div>
           <Button 
             className="btn-primary" 
-            onClick={() => navigate('/admin/members/new?role=trainer')}
+            onClick={() => navigate('/dashboard/admin/members/new?role=trainer')}
             data-testid="add-trainer-btn"
           >
             <Plus size={18} className="mr-2" />
