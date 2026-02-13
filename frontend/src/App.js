@@ -20,6 +20,7 @@ import { AdminProfile, MemberProfile, TrainerProfile } from './pages/Admin/Profi
 
 // Member Pages
 import { MemberDashboard, MemberPlans } from './pages/Member/Dashboard';
+import { HealthTracking } from './pages/Member/HealthTracking';
 
 // Trainer Pages
 import { TrainerDashboard, TrainerClients } from './pages/Trainer/Dashboard';
