@@ -525,7 +525,70 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Testimonials */}
+      {/* Instagram Testimonials / Reels */}
+      <section className="py-24 bg-zinc-900/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold uppercase tracking-tight mb-4" style={{ fontFamily: 'Barlow Condensed' }}>
+              Real <span className="text-pink-500">Transformations</span>
+            </h2>
+            <p className="text-zinc-400 max-w-2xl mx-auto mb-4">
+              Check out our member success stories on Instagram
+            </p>
+            <a 
+              href="https://www.instagram.com/f3fitnessclub" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-pink-400 hover:text-pink-300 font-semibold"
+            >
+              <Instagram size={20} />
+              @f3fitnessclub
+            </a>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {instagramReels.map((reel) => (
+              <a 
+                key={reel.id}
+                href={reel.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group block"
+              >
+                <Card className="bg-zinc-900/50 border-zinc-800 overflow-hidden hover:border-pink-500/50 transition-all">
+                  <CardContent className="p-0">
+                    <div className="relative aspect-[9/16] bg-gradient-to-br from-pink-500/20 to-purple-500/20 flex items-center justify-center">
+                      <iframe
+                        src={`https://www.instagram.com/p/${reel.id}/embed`}
+                        className="w-full h-full"
+                        frameBorder="0"
+                        scrolling="no"
+                        allowTransparency="true"
+                        title={`Instagram Reel ${reel.id}`}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </a>
+            ))}
+          </div>
+
+          <div className="text-center mt-10">
+            <a 
+              href="https://www.instagram.com/f3fitnessclub" 
+              target="_blank" 
+              rel="noopener noreferrer"
+            >
+              <Button className="bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:from-pink-600 hover:to-purple-600 font-bold">
+                <Instagram size={18} className="mr-2" />
+                Follow Us for More
+              </Button>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* Written Testimonials */}
       {testimonials.length > 0 && (
         <section className="py-24">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
