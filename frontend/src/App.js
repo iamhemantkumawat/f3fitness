@@ -153,6 +153,8 @@ function AppRoutes() {
       <Route path="/dashboard/admin/settings/holidays" element={<ProtectedRoute allowedRoles={['admin']}><HolidaysSettings /></ProtectedRoute>} />
       <Route path="/dashboard/admin/settings/smtp" element={<ProtectedRoute allowedRoles={['admin']}><SMTPSettings /></ProtectedRoute>} />
       <Route path="/dashboard/admin/settings/whatsapp" element={<ProtectedRoute allowedRoles={['admin']}><WhatsAppSettings /></ProtectedRoute>} />
+      <Route path="/dashboard/admin/settings/payment-gateway" element={<ProtectedRoute allowedRoles={['admin']}><PaymentGatewaySettings /></ProtectedRoute>} />
+      <Route path="/dashboard/admin/settings/activity-logs" element={<ProtectedRoute allowedRoles={['admin']}><ActivityLogsSettings /></ProtectedRoute>} />
       <Route path="/dashboard/admin/profile" element={<ProtectedRoute allowedRoles={['admin']}><AdminProfile /></ProtectedRoute>} />
 
       {/* Member Routes - under /dashboard/member */}
