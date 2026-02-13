@@ -878,14 +878,3 @@ export const ForgotPassword = () => {
     </div>
   );
 };
-
-const authAPI = {
-  forgotPassword: async (data) => {
-    const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/auth/forgot-password`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    return response.json();
-  }
-};
