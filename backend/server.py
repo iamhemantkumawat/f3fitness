@@ -39,7 +39,7 @@ SECRET_KEY = os.environ.get('JWT_SECRET', 'f3-fitness-gym-secret-key-2024')
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 24
 
-# Create the main app
+# Create the main app with lifespan
 app = FastAPI(title="F3 Fitness Gym API")
 
 # Create a router with the /api prefix
