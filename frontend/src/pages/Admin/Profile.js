@@ -19,6 +19,13 @@ const ProfilePage = ({ role }) => {
   const { user, updateUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
+  const [passwordData, setPasswordData] = useState({
+    current_password: '',
+    new_password: '',
+    confirm_password: ''
+  });
   const [formData, setFormData] = useState({
     name: '',
     phone_number: '',
