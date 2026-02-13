@@ -73,7 +73,9 @@ const adminMenuItems = [
       { label: 'Announcements', path: '/dashboard/admin/settings/announcements' },
       { label: 'Holidays', path: '/dashboard/admin/settings/holidays' },
       { label: 'SMTP Settings', path: '/dashboard/admin/settings/smtp' },
-      { label: 'WhatsApp Settings', path: '/dashboard/admin/settings/whatsapp' }
+      { label: 'WhatsApp Settings', path: '/dashboard/admin/settings/whatsapp' },
+      { label: 'Payment Gateway', path: '/dashboard/admin/settings/payment-gateway' },
+      { label: 'Activity Logs', path: '/dashboard/admin/settings/activity-logs' }
     ]
   },
   { label: 'My Profile', icon: User, path: '/dashboard/admin/profile' }
