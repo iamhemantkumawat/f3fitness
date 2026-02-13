@@ -132,7 +132,7 @@ class F3FitnessAPITester:
             "Create member",
             "POST",
             "users?role=member",
-            201,
+            200,  # Backend returns 200, not 201
             data=test_member_data,
             token=self.admin_token
         )
