@@ -59,7 +59,7 @@ export const AssignPlan = () => {
         payment_method: paymentMethod
       });
       toast.success('Plan assigned successfully');
-      navigate('/admin/members');
+      navigate('/dashboard/admin/members');
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to assign plan');
     } finally {
