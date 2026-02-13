@@ -80,6 +80,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    joining_date: Optional[str] = None  # If not provided, defaults to now
 
 class UserLogin(BaseModel):
     email_or_phone: str
