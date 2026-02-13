@@ -116,10 +116,12 @@ class F3FitnessAPITester:
 
     def test_create_member(self):
         """Test creating a new member"""
+        # Generate unique data based on current timestamp with microseconds
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S%f')
         test_member_data = {
-            "name": "Test Member",
-            "email": f"testmember_{datetime.now().strftime('%H%M%S')}@example.com",
-            "phone_number": f"999000{datetime.now().strftime('%H%M')}",
+            "name": f"Test Member {timestamp}",
+            "email": f"testmember_{timestamp}@example.com",
+            "phone_number": f"9990{timestamp[-6:]}",  # Use last 6 digits to ensure unique
             "password": "test123",
             "gender": "male",
             "date_of_birth": "1990-01-01",
