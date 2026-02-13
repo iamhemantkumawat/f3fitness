@@ -115,7 +115,8 @@ class ForgotPasswordRequest(BaseModel):
     email: EmailStr
 
 class ResetPasswordRequest(BaseModel):
-    token: str
+    token: Optional[str] = None
+    otp: Optional[str] = None
     new_password: str
 
 # OTP Models
