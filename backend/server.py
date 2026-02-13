@@ -2062,6 +2062,70 @@ async def update_template(template: TemplateUpdate, current_user: dict = Depends
     
     return {"message": "Template updated"}
 
+# ==================== ACTIVITY LOGS ROUTES ====================
+
+@api_router.get("/activity-logs")
+async def get_activity_logs(
+    user_id: Optional[str] = None,
+    action: Optional[str] = None,
+    limit: int = 100,
+    current_user: dict = Depends(get_admin_user)
+):
+    query = {}
+    if user_id:
+        query["user_id"] = user_id
+    if action:
+        query["action"] = action
+    
+    logs = await db.activity_logs.find(query, {"_id": 0}).sort("timestamp", -1).to_list(limit)
+    
+    # Enrich with user names
+    for log in logs:
+        user = await db.users.find_one({"id": log["user_id"]}, {"_id": 0, "name": 1, "email": 1})
+        if user:
+            log["user_name"] = user.get("name")
+            log["user_email"] = user.get("email")
+    
+    return logs
+
+# ==================== PAYMENT GATEWAY SETTINGS ====================
+
+@api_router.get("/settings/payment-gateway")
+async def get_payment_gateway_settings(current_user: dict = Depends(get_admin_user)):
+    settings = await db.settings.find_one({"id": "1"}, {"_id": 0})
+    if not settings:
+        return {"razorpay_key_id": "", "razorpay_key_secret_masked": ""}
+    
+    key_secret = settings.get("razorpay_key_secret", "")
+    masked = "*" * (len(key_secret) - 4) + key_secret[-4:] if len(key_secret) > 4 else "*" * len(key_secret)
+    
+    return {
+        "razorpay_key_id": settings.get("razorpay_key_id", ""),
+        "razorpay_key_secret_masked": masked
+    }
+
+@api_router.put("/settings/payment-gateway")
+async def update_payment_gateway_settings(
+    razorpay_key_id: str = Body(...),
+    razorpay_key_secret: str = Body(...),
+    current_user: dict = Depends(get_admin_user)
+):
+    await db.settings.update_one(
+        {"id": "1"},
+        {"$set": {
+            "razorpay_key_id": razorpay_key_id,
+            "razorpay_key_secret": razorpay_key_secret
+        }},
+        upsert=True
+    )
+    
+    # Reinitialize Razorpay client
+    global razorpay_client
+    razorpay_client = None
+    get_razorpay_client()
+    
+    return {"message": "Payment gateway settings updated"}
+
 # ==================== HEALTH TRACKING ROUTES ====================
 
 @api_router.get("/health-logs", response_model=List[HealthLogResponse])
