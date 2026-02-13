@@ -729,17 +729,16 @@ async def send_notification(user: dict, template_type: str, variables: dict, bac
 
 @api_router.post("/otp/send")
 async def send_otp(req: SendOTPRequest, background_tasks: BackgroundTasks):
-    """Send OTP to phone (WhatsApp) and email"""
-    phone_otp = generate_otp()
-    email_otp = generate_otp() if req.email else None
+    """Send same OTP to both phone (WhatsApp) and email"""
+    # Generate single OTP for both channels
+    otp = generate_otp()
     
-    # Store OTPs with expiry
+    # Store OTP with expiry
     otp_doc = {
         "phone_number": req.phone_number,
         "country_code": req.country_code,
-        "phone_otp": phone_otp,
+        "otp": otp,  # Single OTP for both channels
         "email": req.email,
-        "email_otp": email_otp,
         "expires_at": (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat(),
         "verified": False
     }
@@ -749,23 +748,23 @@ async def send_otp(req: SendOTPRequest, background_tasks: BackgroundTasks):
     
     # Send WhatsApp OTP
     full_phone = f"{req.country_code}{req.phone_number.lstrip('0')}"
-    whatsapp_message = f"🔐 Your F3 Fitness OTP is: {phone_otp}\n\nValid for 10 minutes. Do not share this code with anyone."
+    whatsapp_message = f"🔐 Your F3 Fitness OTP is: {otp}\n\nValid for 10 minutes. Do not share this code with anyone."
     background_tasks.add_task(send_whatsapp, full_phone, whatsapp_message)
     
-    # Send Email OTP
-    if req.email and email_otp:
+    # Send same OTP to Email
+    if req.email:
         email_body = f"""
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #09090b; color: #fff; padding: 40px;">
             <img src="https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png" style="width: 150px; margin-bottom: 20px;" />
             <h1 style="color: #06b6d4;">Your OTP Code</h1>
-            <p>Use the following code to verify your email:</p>
+            <p>Use the following code to verify your account:</p>
             <div style="background: #18181b; padding: 20px; text-align: center; margin: 20px 0;">
-                <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #06b6d4;">{email_otp}</span>
+                <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #06b6d4;">{otp}</span>
             </div>
             <p style="color: #71717a;">This code is valid for 10 minutes.</p>
         </div>
         """
-        background_tasks.add_task(send_email, req.email, "F3 Fitness - Email Verification OTP", email_body)
+        background_tasks.add_task(send_email, req.email, "F3 Fitness - Verification OTP", email_body)
     
     return {"message": "OTP sent successfully", "phone_sent": True, "email_sent": bool(req.email)}
 
