@@ -328,6 +328,44 @@ class HealthLogResponse(BaseModel):
     notes: Optional[str] = None
     logged_at: str
 
+# Calorie Tracking Models
+class CalorieLogCreate(BaseModel):
+    calories: int
+    protein: Optional[int] = None
+    carbs: Optional[int] = None
+    fats: Optional[int] = None
+    meal_type: Optional[str] = None  # breakfast, lunch, dinner, snack
+    food_items: Optional[str] = None
+    notes: Optional[str] = None
+
+class CalorieGoalUpdate(BaseModel):
+    target_calories: int
+    goal_type: str = "maintenance"  # maintenance, deficit, surplus
+
+class CalorieLogResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    user_id: str
+    calories: int
+    protein: Optional[int] = None
+    carbs: Optional[int] = None
+    fats: Optional[int] = None
+    meal_type: Optional[str] = None
+    food_items: Optional[str] = None
+    notes: Optional[str] = None
+    logged_at: str
+    date: str
+
+class CalorieSummaryResponse(BaseModel):
+    date: str
+    total_calories: int
+    total_protein: Optional[int] = None
+    total_carbs: Optional[int] = None
+    total_fats: Optional[int] = None
+    target_calories: int
+    difference: int
+    goal_type: str
+
 # Diet/Workout Plan Models
 class MealItem(BaseModel):
     time: str
