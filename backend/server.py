@@ -923,48 +923,86 @@ async def login(credentials: UserLogin):
 
 @api_router.post("/auth/forgot-password")
 async def forgot_password(req: ForgotPasswordRequest, background_tasks: BackgroundTasks):
-    user = await db.users.find_one({"email": req.email})
+    user = await db.users.find_one({"$or": [{"email": req.email}, {"phone_number": req.email}]})
     if not user:
-        return {"message": "If an account exists, a reset email has been sent"}
+        return {"message": "If an account exists, a reset OTP has been sent"}
     
-    reset_token = str(uuid.uuid4())
-    expire = datetime.now(timezone.utc) + timedelta(hours=1)
+    # Generate OTP for password reset
+    otp = generate_otp()
+    expire = datetime.now(timezone.utc) + timedelta(minutes=10)
     
+    await db.password_resets.delete_many({"user_id": user["id"]})
     await db.password_resets.insert_one({
         "user_id": user["id"],
-        "token": reset_token,
+        "otp": otp,
         "expires_at": expire.isoformat(),
         "used": False
     })
     
-    reset_link = f"https://f3fitness.in/reset-password?token={reset_token}"
+    # Send OTP via Email
     email_body = f"""
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #09090b; color: #fff; padding: 40px;">
         <img src="https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png" style="width: 150px; margin-bottom: 20px;" />
-        <h1 style="color: #06b6d4;">Password Reset</h1>
+        <h1 style="color: #06b6d4;">Password Reset OTP</h1>
         <p>Hello {user['name']},</p>
-        <p>Click the link below to reset your password:</p>
-        <a href="{reset_link}" style="display: inline-block; background: #06b6d4; color: #000; padding: 12px 24px; text-decoration: none; font-weight: bold; margin: 20px 0;">Reset Password</a>
-        <p style="color: #71717a;">This link expires in 1 hour.</p>
+        <p>Use the following OTP to reset your password:</p>
+        <div style="background: #18181b; padding: 20px; text-align: center; margin: 20px 0;">
+            <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #06b6d4;">{otp}</span>
+        </div>
+        <p style="color: #71717a;">This OTP is valid for 10 minutes. Do not share it with anyone.</p>
     </div>
     """
+    background_tasks.add_task(send_email, user["email"], "Password Reset OTP - F3 Fitness Gym", email_body)
     
-    background_tasks.add_task(send_email, req.email, "Password Reset - F3 Fitness Gym", email_body)
-    return {"message": "If an account exists, a reset email has been sent"}
+    # Send OTP via WhatsApp
+    if user.get("phone_number"):
+        full_phone = f"{user.get('country_code', '+91')}{user['phone_number'].lstrip('0')}"
+        whatsapp_message = f"🔐 F3 Fitness Password Reset\n\nYour OTP is: {otp}\n\nValid for 10 minutes. Do not share this code with anyone."
+        background_tasks.add_task(send_whatsapp, full_phone, whatsapp_message)
+    
+    return {"message": "If an account exists, a reset OTP has been sent to your email and phone"}
 
 @api_router.post("/auth/reset-password")
 async def reset_password(req: ResetPasswordRequest):
-    reset = await db.password_resets.find_one({"token": req.token, "used": False})
+    # Support both token and OTP-based reset
+    reset = None
+    if hasattr(req, 'otp') and req.otp:
+        reset = await db.password_resets.find_one({"otp": req.otp, "used": False})
+    elif hasattr(req, 'token') and req.token:
+        reset = await db.password_resets.find_one({"token": req.token, "used": False})
+    
     if not reset:
-        raise HTTPException(status_code=400, detail="Invalid or expired token")
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP/token")
     
     if datetime.fromisoformat(reset["expires_at"]) < datetime.now(timezone.utc):
-        raise HTTPException(status_code=400, detail="Token expired")
+        raise HTTPException(status_code=400, detail="OTP/Token expired")
     
     await db.users.update_one({"id": reset["user_id"]}, {"$set": {"password_hash": hash_password(req.new_password)}})
-    await db.password_resets.update_one({"token": req.token}, {"$set": {"used": True}})
+    await db.password_resets.update_one({"_id": reset["_id"]}, {"$set": {"used": True}})
     
     return {"message": "Password reset successful"}
+
+@api_router.post("/users/change-password")
+async def change_password(
+    current_password: str = Body(...),
+    new_password: str = Body(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Change password for logged in user"""
+    user = await db.users.find_one({"id": current_user["id"]})
+    
+    if not verify_password(current_password, user["password_hash"]):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    
+    if len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {"$set": {"password_hash": hash_password(new_password)}}
+    )
+    
+    return {"message": "Password changed successfully"}
 
 @api_router.get("/auth/me", response_model=UserResponse)
 async def get_me(current_user: dict = Depends(get_current_user)):
