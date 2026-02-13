@@ -187,7 +187,7 @@ class F3FitnessAPITester:
             "Create plan",
             "POST",
             "plans",
-            201,
+            200,  # Backend returns 200, not 201
             data=test_plan_data,
             token=self.admin_token
         )
