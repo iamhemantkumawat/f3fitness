@@ -1331,10 +1331,14 @@ async def get_active_membership(user_id: str, current_user: dict = Depends(get_c
     return membership
 
 @api_router.post("/memberships", response_model=MembershipResponse)
-async def create_membership(membership: MembershipCreate, current_user: dict = Depends(get_admin_user)):
+async def create_membership(membership: MembershipCreate, background_tasks: BackgroundTasks, current_user: dict = Depends(get_admin_user)):
     plan = await db.plans.find_one({"id": membership.plan_id}, {"_id": 0})
     if not plan:
         raise HTTPException(status_code=404, detail="Plan not found")
+    
+    user = await db.users.find_one({"id": membership.user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
     
     existing = await db.memberships.find_one(
         {"user_id": membership.user_id, "status": "active"},
@@ -1369,25 +1373,43 @@ async def create_membership(membership: MembershipCreate, current_user: dict = D
     
     # Add PT sessions if plan includes PT
     if plan.get("includes_pt") and plan.get("pt_sessions", 0) > 0:
-        user = await db.users.find_one({"id": membership.user_id})
-        current_sessions = user.get("pt_sessions_remaining", 0) if user else 0
+        current_sessions = user.get("pt_sessions_remaining", 0)
         await db.users.update_one(
             {"id": membership.user_id},
             {"$set": {"pt_sessions_remaining": current_sessions + plan["pt_sessions"]}}
         )
     
+    receipt_no = None
     if membership.initial_payment > 0:
+        receipt_no = f"F3-{datetime.now().strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
         payment_doc = {
             "id": str(uuid.uuid4()),
+            "receipt_no": receipt_no,
             "membership_id": membership_id,
             "user_id": membership.user_id,
             "amount_paid": membership.initial_payment,
             "payment_date": now,
             "payment_method": membership.payment_method,
-            "notes": "Initial membership payment",
+            "notes": f"Payment for {plan['name']}",
             "recorded_by_admin_id": current_user["id"]
         }
         await db.payments.insert_one(payment_doc)
+        
+        # Send payment notification
+        await send_notification(user, "payment_received", {
+            "receipt_no": receipt_no,
+            "amount": membership.initial_payment,
+            "payment_mode": membership.payment_method,
+            "payment_date": datetime.now().strftime("%d %b %Y"),
+            "description": f"Payment for {plan['name']}"
+        }, background_tasks)
+    
+    # Send membership activation notification
+    await send_notification(user, "membership_activated", {
+        "plan_name": plan["name"],
+        "start_date": (start_date if isinstance(start_date, datetime) else datetime.fromisoformat(start_date)).strftime("%d %b %Y"),
+        "end_date": end_date.strftime("%d %b %Y")
+    }, background_tasks)
     
     result = {k: v for k, v in membership_doc.items() if k != "_id"}
     result["plan_name"] = plan["name"]
