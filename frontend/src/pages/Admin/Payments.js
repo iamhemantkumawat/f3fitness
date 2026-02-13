@@ -150,7 +150,7 @@ export const AddPayment = () => {
         notes: formData.notes
       });
       toast.success('Payment recorded successfully');
-      navigate('/admin/payments');
+      navigate('/dashboard/admin/payments');
     } catch (error) {
       toast.error('Failed to record payment');
     } finally {
