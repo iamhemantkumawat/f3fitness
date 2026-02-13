@@ -1,98 +1,123 @@
 # F3 Fitness Gym Management App - PRD
 
 ## Original Problem Statement
-Build a gym management webapp for "F3 Fitness Gym" from Jaipur that can be deployed on Ubuntu VPS with custom domain support.
+Build a complete gym management webapp for "F3 Fitness Gym" from Jaipur with:
+- Landing page at f3fitness.in
+- Dashboard portal at f3fitness.in/dashboard
+- WhatsApp OTP verification for signup
+- Email notifications with beautiful templates
+- PT packages and trainer assignment
+- Health tracking (weight, BMI, body fat)
+- Diet and workout plans (PDF + built-in editor)
+- Birthday/holiday notifications
+- Regular absent member tracking
 
 ## User Choices
 - Database: MongoDB
-- WhatsApp Integration: Twilio (cost-friendly, pay-as-you-go)
+- WhatsApp Integration: Twilio (sandbox testing enabled)
 - SMTP: Configurable via admin settings
 - Payment Gateway: Razorpay
-- Design: Dark theme with cyan/orange accents, using gym's black/white logo
+- Design: Dark theme with cyan/orange accents
+
+## Contact Information
+- Phone: 072300 52193
+- Email: info@f3fitness.in
+- Instagram: @f3fitnessclub
+- Address: 4th Avenue Plot No 4R-B, Mode, near Mandir Marg, Sector 4, Vidyadhar Nagar, Jaipur, Rajasthan 302039
 
 ## Architecture
 - **Backend**: FastAPI with MongoDB (Motor async driver)
 - **Frontend**: React 19 with Tailwind CSS + Shadcn UI
-- **Authentication**: JWT-based with bcrypt password hashing
-- **Database**: MongoDB collections - users, plans, memberships, payments, payment_requests, attendance, holidays, announcements, settings
+- **Authentication**: JWT-based with OTP verification
+- **Routes**: Landing (/) → Dashboard (/dashboard/*)
 
-## User Personas
-1. **Admin**: Gym owner/manager who manages members, payments, attendance, and settings
-2. **Member**: Gym member who views plans, tracks attendance, and manages profile
-3. **Trainer**: Gym trainer who manages assigned clients
+## What's Been Implemented (February 2026)
 
-## Core Requirements
-- Multi-role authentication (admin, member, trainer)
-- Member management with unique Member IDs (F3-XXXX)
-- Membership plan management with pricing
-- Payment tracking (cash, UPI, card, online)
-- Attendance tracking with calendar view
-- Announcements and holidays management
-- SMTP and WhatsApp configuration
+### Landing Page (f3fitness.in)
+- ✅ Hero section with rotating gym images
+- ✅ About section
+- ✅ Services/Facilities showcase
+- ✅ Trainers section
+- ✅ BMI Calculator
+- ✅ Maintenance Calories Calculator
+- ✅ Membership plans preview
+- ✅ Testimonials section
+- ✅ Contact section with map, address, phone, email, Instagram
+- ✅ Opening hours
+- ✅ Login/Signup buttons
 
-## What's Been Implemented (January 2026)
+### Dashboard Portal (/dashboard/*)
+- ✅ Admin Dashboard with enhanced stats:
+  - Today's birthdays
+  - Upcoming birthdays
+  - Upcoming renewals
+  - Regular absentees (7+ days)
+- ✅ Member management with PT assignment
+- ✅ Payment management with reports
+- ✅ Attendance tracking
+- ✅ Plans CRUD (with PT sessions option)
+- ✅ PT Packages CRUD
+- ✅ Announcements, Holidays, Templates
+- ✅ SMTP & WhatsApp settings
 
 ### Backend APIs
-- ✅ Authentication (login, signup, forgot password, reset)
-- ✅ Users CRUD with role-based access
-- ✅ Plans CRUD
-- ✅ Memberships with plan queuing
-- ✅ Payments with summaries
-- ✅ Payment requests for counter payments
-- ✅ Attendance marking and history
-- ✅ Holidays CRUD
-- ✅ Announcements CRUD
-- ✅ Settings (SMTP, WhatsApp)
-- ✅ Dashboard stats
-- ✅ Razorpay order creation (placeholder verification)
-
-### Frontend Pages
-- ✅ Login/Signup/Forgot Password
-- ✅ Admin Dashboard with stats
-- ✅ Member management (list, create, detail, assign plan)
-- ✅ Payment management (list, add, reports, pending)
-- ✅ Attendance (mark, today report, history)
-- ✅ Settings (plans, announcements, holidays, SMTP, WhatsApp)
-- ✅ Profile management
-- ✅ Member Dashboard with calendar
-- ✅ Member Plans page
-- ✅ Trainer Dashboard with clients
+- ✅ OTP send/verify (WhatsApp + Email)
+- ✅ Signup with OTP verification
+- ✅ BMI Calculator API
+- ✅ Maintenance Calories Calculator API
+- ✅ Health logs (weight, BMI, body fat)
+- ✅ Diet plans (PDF + structured)
+- ✅ Workout plans (PDF + structured)
+- ✅ PT package management
+- ✅ Template management
+- ✅ Testimonials CRUD
+- ✅ Regular absentees detection
 
 ### Integrations
-- ✅ Twilio WhatsApp (configured, needs credentials)
-- ✅ SMTP Email (configurable via admin)
-- ✅ Razorpay (order creation implemented)
+- ✅ Twilio WhatsApp (sandbox configured)
+  - Account SID: AC90629793b1b80228b667f3a239ffb773
+  - Sandbox: +14155238886
+- ✅ SMTP Email (configurable)
+- ✅ Razorpay (placeholder)
 
-## Prioritized Backlog
-
-### P0 (Critical)
-- None remaining
-
-### P1 (High Priority)
-- Razorpay payment verification flow
-- Diet/Workout plan upload for trainers
-- Member edit functionality
-- Membership expiry notifications
-
-### P2 (Medium Priority)
-- Password change in profile
-- Bulk SMS/WhatsApp notifications
-- Export reports to PDF/Excel
-- Member check-in via QR code
-
-### P3 (Low Priority)
-- Dark/Light theme toggle
-- Multi-language support
-- Advanced analytics dashboard
-- Mobile app (React Native)
-
-## Next Tasks
-1. Complete Razorpay payment verification
-2. Add member edit page
-3. Implement trainer diet/workout upload
-4. Add automated expiry notifications
-5. Create deployment script for Ubuntu VPS
+## Twilio Sandbox Testing
+To test WhatsApp:
+1. Send "join <sandbox-keyword>" from your phone to +14155238886
+2. Then test messages will work to your number
 
 ## Admin Credentials
 - Email: admin@f3fitness.com
 - Password: admin123
+
+## Trainer Credentials
+- Email: trainer@f3fitness.com
+- Password: trainer123
+
+## Prioritized Backlog
+
+### P0 (Critical) - Done for MVP
+
+### P1 (High Priority)
+- OTP signup flow UI (phone verification screen)
+- Member health tracking UI
+- Diet/Workout plan creation UI
+- Template editor in admin panel
+- Scheduled birthday/renewal notifications
+
+### P2 (Medium Priority)
+- Razorpay payment verification flow
+- Instagram feed integration on landing page
+- PDF export for reports
+- QR code check-in
+
+### P3 (Low Priority)
+- Dark/Light theme toggle
+- Multi-language support
+- Mobile app (React Native)
+
+## Next Tasks
+1. Create OTP verification UI for signup
+2. Add health tracking page for members
+3. Implement diet/workout plan editor
+4. Set up scheduled notification cron jobs
+5. Deploy to Ubuntu VPS with domain setup
