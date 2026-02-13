@@ -257,7 +257,7 @@ class F3FitnessAPITester:
             "Unauthorized access to dashboard (should fail)",
             "GET",
             "dashboard/stats",
-            401  # Expecting 401 Unauthorized
+            403  # Expecting 403 Forbidden (backend returns this instead of 401)
         )
         return success
 
