@@ -1,19 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '../../components/Layout/DashboardLayout';
-import { usersAPI, membershipsAPI, trainerAPI } from '../../lib/api';
+import { usersAPI, membershipsAPI } from '../../lib/api';
 import { formatDate, getStatusBadge } from '../../lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
+import { Checkbox } from '../../components/ui/checkbox';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/ui/sheet';
+import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import { 
   Search, Plus, User, Phone, Mail, Calendar, MapPin, 
-  CreditCard, UserPlus, Edit, Trash2, Eye, ChevronRight
+  CreditCard, Edit, Trash2, Eye, ChevronRight, EyeOff,
+  ArrowUpDown, ArrowUp, ArrowDown, UserX, UserCheck,
+  Ban, RotateCcw, Key, MoreHorizontal, CheckSquare, Square
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+// Default avatar images
+const MALE_AVATAR = "https://api.dicebear.com/7.x/avataaars/svg?seed=male&backgroundColor=06b6d4";
+const FEMALE_AVATAR = "https://api.dicebear.com/7.x/avataaars/svg?seed=female&backgroundColor=f97316";
+const DEFAULT_AVATAR = "https://api.dicebear.com/7.x/avataaars/svg?seed=default&backgroundColor=71717a";
 
 export const MembersList = () => {
   const [members, setMembers] = useState([]);
@@ -21,15 +30,31 @@ export const MembersList = () => {
   const [search, setSearch] = useState('');
   const [selectedMember, setSelectedMember] = useState(null);
   const [membershipData, setMembershipData] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [sortConfig, setSortConfig] = useState({ key: 'member_id', direction: 'asc' });
+  const [statusFilter, setStatusFilter] = useState('all'); // all, active, inactive, disabled
+  
+  // Dialogs
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+  
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchMembers();
-  }, []);
+  }, [statusFilter]);
 
   const fetchMembers = async (searchQuery = '') => {
     try {
-      const response = await usersAPI.getAll({ role: 'member', search: searchQuery });
+      setLoading(true);
+      const params = { role: 'member', search: searchQuery };
+      if (statusFilter !== 'all') {
+        params.status = statusFilter;
+      }
+      const response = await usersAPI.getAllWithMembership(params);
       setMembers(response.data);
     } catch (error) {
       toast.error('Failed to load members');
@@ -43,26 +68,175 @@ export const MembersList = () => {
     fetchMembers(e.target.value);
   };
 
-  const openMemberDetail = async (member) => {
-    setSelectedMember(member);
-    try {
-      const response = await membershipsAPI.getActive(member.id);
-      setMembershipData(response.data);
-    } catch (error) {
-      setMembershipData(null);
+  // Sorting logic
+  const sortedMembers = useMemo(() => {
+    const sorted = [...members];
+    sorted.sort((a, b) => {
+      let aVal, bVal;
+      
+      switch (sortConfig.key) {
+        case 'member_id':
+          aVal = a.member_id || '';
+          bVal = b.member_id || '';
+          break;
+        case 'name':
+          aVal = a.name || '';
+          bVal = b.name || '';
+          break;
+        case 'phone_number':
+          aVal = a.phone_number || '';
+          bVal = b.phone_number || '';
+          break;
+        case 'plan':
+          aVal = a.active_membership?.plan_name || '';
+          bVal = b.active_membership?.plan_name || '';
+          break;
+        case 'expiry':
+          aVal = a.active_membership?.end_date || '9999-99-99';
+          bVal = b.active_membership?.end_date || '9999-99-99';
+          break;
+        default:
+          aVal = a[sortConfig.key] || '';
+          bVal = b[sortConfig.key] || '';
+      }
+      
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }, [members, sortConfig]);
+
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  const getSortIcon = (key) => {
+    if (sortConfig.key !== key) return <ArrowUpDown size={14} className="text-zinc-600" />;
+    return sortConfig.direction === 'asc' 
+      ? <ArrowUp size={14} className="text-cyan-400" /> 
+      : <ArrowDown size={14} className="text-cyan-400" />;
+  };
+
+  // Selection handlers
+  const toggleSelectAll = () => {
+    if (selectedIds.length === members.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(members.map(m => m.id));
     }
   };
 
-  const handleDelete = async (id) => {
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const openMemberDetail = async (member) => {
+    setSelectedMember(member);
+    setMembershipData(member.active_membership);
+  };
+
+  // Action handlers
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) {
+      toast.error('No members selected');
+      return;
+    }
+    setShowDeleteDialog(true);
+  };
+
+  const confirmBulkDelete = async () => {
+    setActionLoading(true);
+    try {
+      await usersAPI.bulkDelete(selectedIds);
+      toast.success(`${selectedIds.length} member(s) deleted`);
+      setSelectedIds([]);
+      fetchMembers(search);
+      setShowDeleteDialog(false);
+    } catch (error) {
+      toast.error('Failed to delete members');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleSingleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this member?')) return;
     try {
       await usersAPI.delete(id);
       toast.success('Member deleted');
-      fetchMembers();
+      fetchMembers(search);
       setSelectedMember(null);
     } catch (error) {
       toast.error('Failed to delete member');
     }
+  };
+
+  const handleToggleStatus = async (id, action) => {
+    try {
+      await usersAPI.toggleStatus(id, action);
+      toast.success(`Member ${action === 'disable' ? 'disabled' : 'enabled'} and notified`);
+      fetchMembers(search);
+      setSelectedMember(null);
+    } catch (error) {
+      toast.error(`Failed to ${action} member`);
+    }
+  };
+
+  const handleRevokeMembership = async (id) => {
+    if (!window.confirm('Are you sure you want to revoke this membership?')) return;
+    try {
+      await usersAPI.revokeMembership(id);
+      toast.success('Membership revoked and member notified');
+      fetchMembers(search);
+      setSelectedMember(null);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to revoke membership');
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!newPassword || newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    setActionLoading(true);
+    try {
+      await usersAPI.resetPassword(selectedMember.id, newPassword);
+      toast.success('Password reset and sent to member via Email & WhatsApp');
+      setShowPasswordDialog(false);
+      setNewPassword('');
+    } catch (error) {
+      toast.error('Failed to reset password');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const getAvatarUrl = (member) => {
+    if (member.profile_photo_url) return member.profile_photo_url;
+    if (member.gender === 'male') return MALE_AVATAR;
+    if (member.gender === 'female') return FEMALE_AVATAR;
+    return DEFAULT_AVATAR;
+  };
+
+  const getMemberStatus = (member) => {
+    if (member.is_disabled) return { label: 'Disabled', class: 'bg-red-500/20 text-red-400' };
+    if (member.active_membership) {
+      const endDate = new Date(member.active_membership.end_date);
+      const today = new Date();
+      const daysLeft = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+      
+      if (daysLeft < 0) return { label: 'Expired', class: 'bg-red-500/20 text-red-400' };
+      if (daysLeft <= 7) return { label: `${daysLeft}d left`, class: 'bg-orange-500/20 text-orange-400' };
+      return { label: 'Active', class: 'bg-emerald-500/20 text-emerald-400' };
+    }
+    return { label: 'No Plan', class: 'bg-zinc-500/20 text-zinc-400' };
   };
 
   return (
@@ -73,28 +247,53 @@ export const MembersList = () => {
             <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
               Members
             </h1>
-            <p className="text-zinc-500">Manage gym members</p>
+            <p className="text-zinc-500">Manage gym members ({members.length} total)</p>
           </div>
-          <Button 
-            className="btn-primary" 
-            onClick={() => navigate('/dashboard/admin/members/new')}
-            data-testid="add-member-btn"
-          >
-            <Plus size={18} className="mr-2" />
-            Add Member
-          </Button>
+          <div className="flex gap-2">
+            {selectedIds.length > 0 && (
+              <Button 
+                variant="destructive" 
+                onClick={handleBulkDelete}
+                data-testid="bulk-delete-btn"
+              >
+                <Trash2 size={16} className="mr-2" />
+                Delete ({selectedIds.length})
+              </Button>
+            )}
+            <Button 
+              className="btn-primary" 
+              onClick={() => navigate('/dashboard/admin/members/new')}
+              data-testid="add-member-btn"
+            >
+              <Plus size={18} className="mr-2" />
+              Add Member
+            </Button>
+          </div>
         </div>
 
-        {/* Search */}
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
-          <Input
-            data-testid="member-search"
-            className="input-dark pl-10"
-            placeholder="Search by name, email, phone or member ID..."
-            value={search}
-            onChange={handleSearch}
-          />
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+            <Input
+              data-testid="member-search"
+              className="input-dark pl-10"
+              placeholder="Search by name, email, phone or member ID..."
+              value={search}
+              onChange={handleSearch}
+            />
+          </div>
+          <select
+            className="input-dark h-10 px-3 rounded-md bg-zinc-900/50 border border-zinc-800 text-sm"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            data-testid="status-filter"
+          >
+            <option value="all">All Members</option>
+            <option value="active">Active (With Plan)</option>
+            <option value="inactive">Inactive (No Plan)</option>
+            <option value="disabled">Disabled</option>
+          </select>
         </div>
 
         {/* Members Table */}
@@ -103,11 +302,30 @@ export const MembersList = () => {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th className="pl-6">Member ID</th>
-                  <th>Name</th>
-                  <th>Phone</th>
-                  <th>Plan</th>
-                  <th>Expiry</th>
+                  <th className="pl-4 w-10">
+                    <button onClick={toggleSelectAll} className="p-1 hover:bg-white/10 rounded">
+                      {selectedIds.length === members.length && members.length > 0 
+                        ? <CheckSquare size={18} className="text-cyan-400" />
+                        : <Square size={18} className="text-zinc-500" />
+                      }
+                    </button>
+                  </th>
+                  <th className="w-12"></th>
+                  <th className="cursor-pointer" onClick={() => handleSort('member_id')}>
+                    <div className="flex items-center gap-2">Member ID {getSortIcon('member_id')}</div>
+                  </th>
+                  <th className="cursor-pointer" onClick={() => handleSort('name')}>
+                    <div className="flex items-center gap-2">Name {getSortIcon('name')}</div>
+                  </th>
+                  <th className="cursor-pointer" onClick={() => handleSort('phone_number')}>
+                    <div className="flex items-center gap-2">Phone {getSortIcon('phone_number')}</div>
+                  </th>
+                  <th className="cursor-pointer" onClick={() => handleSort('plan')}>
+                    <div className="flex items-center gap-2">Plan {getSortIcon('plan')}</div>
+                  </th>
+                  <th className="cursor-pointer" onClick={() => handleSort('expiry')}>
+                    <div className="flex items-center gap-2">Expiry {getSortIcon('expiry')}</div>
+                  </th>
                   <th>Status</th>
                   <th className="pr-6">Actions</th>
                 </tr>
@@ -116,38 +334,82 @@ export const MembersList = () => {
                 {loading ? (
                   [...Array(5)].map((_, i) => (
                     <tr key={i}>
-                      <td colSpan={7} className="pl-6">
-                        <div className="h-4 bg-zinc-800 rounded animate-pulse" />
+                      <td colSpan={9} className="pl-4">
+                        <div className="h-12 bg-zinc-800/50 rounded animate-pulse" />
                       </td>
                     </tr>
                   ))
-                ) : members.length === 0 ? (
+                ) : sortedMembers.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center text-zinc-500 py-8 pl-6">
+                    <td colSpan={9} className="text-center text-zinc-500 py-8 pl-4">
                       No members found
                     </td>
                   </tr>
                 ) : (
-                  members.map((member) => (
-                    <tr 
-                      key={member.id} 
-                      className="cursor-pointer hover:bg-white/5"
-                      onClick={() => openMemberDetail(member)}
-                      data-testid={`member-row-${member.member_id}`}
-                    >
-                      <td className="pl-6 font-mono text-cyan-400">{member.member_id}</td>
-                      <td className="font-medium text-white">{member.name}</td>
-                      <td className="text-zinc-400">{member.phone_number}</td>
-                      <td className="text-zinc-400">-</td>
-                      <td className="text-zinc-400">-</td>
-                      <td><span className="badge-pending">New</span></td>
-                      <td className="pr-6">
-                        <button className="text-zinc-500 hover:text-white">
-                          <ChevronRight size={18} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                  sortedMembers.map((member) => {
+                    const status = getMemberStatus(member);
+                    return (
+                      <tr 
+                        key={member.id} 
+                        className={`hover:bg-white/5 ${member.is_disabled ? 'opacity-60' : ''}`}
+                        data-testid={`member-row-${member.member_id}`}
+                      >
+                        <td className="pl-4" onClick={(e) => e.stopPropagation()}>
+                          <button 
+                            onClick={() => toggleSelect(member.id)} 
+                            className="p-1 hover:bg-white/10 rounded"
+                          >
+                            {selectedIds.includes(member.id) 
+                              ? <CheckSquare size={18} className="text-cyan-400" />
+                              : <Square size={18} className="text-zinc-500" />
+                            }
+                          </button>
+                        </td>
+                        <td className="cursor-pointer" onClick={() => openMemberDetail(member)}>
+                          <Avatar className="w-8 h-8">
+                            <AvatarImage src={getAvatarUrl(member)} />
+                            <AvatarFallback className="bg-cyan-500/20 text-cyan-400 text-xs">
+                              {member.name?.charAt(0)?.toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                        </td>
+                        <td className="font-mono text-cyan-400 cursor-pointer" onClick={() => openMemberDetail(member)}>
+                          {member.member_id}
+                        </td>
+                        <td className="font-medium text-white cursor-pointer" onClick={() => openMemberDetail(member)}>
+                          {member.name}
+                        </td>
+                        <td className="text-zinc-400 cursor-pointer" onClick={() => openMemberDetail(member)}>
+                          {member.phone_number}
+                        </td>
+                        <td className="cursor-pointer" onClick={() => openMemberDetail(member)}>
+                          <span className={member.active_membership ? 'text-white' : 'text-zinc-500'}>
+                            {member.active_membership?.plan_name || '-'}
+                          </span>
+                        </td>
+                        <td className="cursor-pointer" onClick={() => openMemberDetail(member)}>
+                          <span className={member.active_membership ? 'text-white' : 'text-zinc-500'}>
+                            {member.active_membership?.end_date 
+                              ? formatDate(member.active_membership.end_date)
+                              : '-'}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${status.class}`}>
+                            {status.label}
+                          </span>
+                        </td>
+                        <td className="pr-6">
+                          <button 
+                            className="text-zinc-500 hover:text-white p-1 hover:bg-white/10 rounded"
+                            onClick={() => openMemberDetail(member)}
+                          >
+                            <ChevronRight size={18} />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -167,14 +429,20 @@ export const MembersList = () => {
 
                 {/* Profile Section */}
                 <div className="flex items-center gap-4 p-4 bg-zinc-900/50 rounded-lg">
-                  <div className="w-16 h-16 bg-cyan-500/20 rounded-full flex items-center justify-center">
-                    <span className="text-2xl font-bold text-cyan-400">
-                      {selectedMember.name.charAt(0)}
-                    </span>
-                  </div>
+                  <Avatar className="w-16 h-16">
+                    <AvatarImage src={getAvatarUrl(selectedMember)} />
+                    <AvatarFallback className="bg-cyan-500/20 text-cyan-400 text-2xl">
+                      {selectedMember.name?.charAt(0)?.toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                   <div>
                     <h3 className="text-xl font-bold text-white">{selectedMember.name}</h3>
                     <p className="text-cyan-400 font-mono">{selectedMember.member_id}</p>
+                    {selectedMember.is_disabled && (
+                      <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">
+                        DISABLED
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -225,15 +493,25 @@ export const MembersList = () => {
                 {/* Membership Info */}
                 <div className="space-y-3">
                   <h4 className="text-xs uppercase tracking-wider text-zinc-500 font-semibold">Membership</h4>
-                  {membershipData ? (
+                  {selectedMember.active_membership ? (
                     <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-semibold text-white">{membershipData.plan_name}</span>
-                        <span className="badge-active">{membershipData.status}</span>
+                        <span className="font-semibold text-white">{selectedMember.active_membership.plan_name}</span>
+                        <span className="badge-active">{selectedMember.active_membership.status}</span>
                       </div>
                       <p className="text-sm text-zinc-400">
-                        {formatDate(membershipData.start_date)} - {formatDate(membershipData.end_date)}
+                        {formatDate(selectedMember.active_membership.start_date)} - {formatDate(selectedMember.active_membership.end_date)}
                       </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-3 text-orange-400 border-orange-400/30 hover:bg-orange-400/10"
+                        onClick={() => handleRevokeMembership(selectedMember.id)}
+                        data-testid="revoke-membership-btn"
+                      >
+                        <Ban size={14} className="mr-2" />
+                        Revoke Membership
+                      </Button>
                     </div>
                   ) : (
                     <div className="p-4 bg-zinc-900/50 rounded-lg text-center">
@@ -250,7 +528,47 @@ export const MembersList = () => {
                   )}
                 </div>
 
-                {/* Actions */}
+                {/* Quick Actions */}
+                <div className="space-y-3">
+                  <h4 className="text-xs uppercase tracking-wider text-zinc-500 font-semibold">Quick Actions</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="justify-start"
+                      onClick={() => setShowPasswordDialog(true)}
+                      data-testid="reset-password-btn"
+                    >
+                      <Key size={14} className="mr-2" />
+                      Reset Password
+                    </Button>
+                    {selectedMember.is_disabled ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="justify-start text-emerald-400 border-emerald-400/30 hover:bg-emerald-400/10"
+                        onClick={() => handleToggleStatus(selectedMember.id, 'enable')}
+                        data-testid="enable-user-btn"
+                      >
+                        <UserCheck size={14} className="mr-2" />
+                        Enable User
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="justify-start text-orange-400 border-orange-400/30 hover:bg-orange-400/10"
+                        onClick={() => handleToggleStatus(selectedMember.id, 'disable')}
+                        data-testid="disable-user-btn"
+                      >
+                        <UserX size={14} className="mr-2" />
+                        Disable User
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Main Actions */}
                 <div className="flex gap-3 pt-4 border-t border-zinc-800">
                   <Button
                     className="btn-secondary flex-1"
@@ -263,7 +581,7 @@ export const MembersList = () => {
                   <Button
                     variant="destructive"
                     className="flex-1"
-                    onClick={() => handleDelete(selectedMember.id)}
+                    onClick={() => handleSingleDelete(selectedMember.id)}
                     data-testid="delete-member-btn"
                   >
                     <Trash2 size={16} className="mr-2" />
@@ -274,6 +592,78 @@ export const MembersList = () => {
             )}
           </SheetContent>
         </Sheet>
+
+        {/* Bulk Delete Dialog */}
+        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <DialogContent className="bg-card border-zinc-800">
+            <DialogHeader>
+              <DialogTitle className="text-xl">Confirm Bulk Delete</DialogTitle>
+            </DialogHeader>
+            <p className="text-zinc-400">
+              Are you sure you want to delete {selectedIds.length} member(s)? 
+              This action cannot be undone. All related data (memberships, attendance, health logs) will also be deleted.
+            </p>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={confirmBulkDelete}
+                disabled={actionLoading}
+              >
+                {actionLoading ? 'Deleting...' : `Delete ${selectedIds.length} Member(s)`}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Reset Password Dialog */}
+        <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+          <DialogContent className="bg-card border-zinc-800">
+            <DialogHeader>
+              <DialogTitle className="text-xl">Reset Password</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-zinc-400">
+                Set a new password for <strong className="text-white">{selectedMember?.name}</strong>. 
+                The new password will be sent to the member via Email and WhatsApp.
+              </p>
+              <div>
+                <Label className="text-xs uppercase tracking-wider text-zinc-500">New Password</Label>
+                <div className="relative mt-2">
+                  <Input
+                    type={showNewPassword ? 'text' : 'password'}
+                    className="input-dark pr-10"
+                    placeholder="Enter new password (min 6 chars)"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    data-testid="new-password-input"
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                  >
+                    {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => {setShowPasswordDialog(false); setNewPassword('');}}>
+                Cancel
+              </Button>
+              <Button 
+                className="btn-primary"
+                onClick={handleResetPassword}
+                disabled={actionLoading || newPassword.length < 6}
+              >
+                {actionLoading ? 'Resetting...' : 'Reset & Send'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
@@ -297,6 +687,13 @@ export const TrainersList = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const getAvatarUrl = (trainer) => {
+    if (trainer.profile_photo_url) return trainer.profile_photo_url;
+    if (trainer.gender === 'male') return MALE_AVATAR;
+    if (trainer.gender === 'female') return FEMALE_AVATAR;
+    return DEFAULT_AVATAR;
   };
 
   return (
@@ -339,11 +736,12 @@ export const TrainersList = () => {
               <Card key={trainer.id} className="glass-card hover:border-white/10 transition-all cursor-pointer">
                 <CardContent className="p-6">
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-orange-500/20 rounded-full flex items-center justify-center">
-                      <span className="text-xl font-bold text-orange-400">
-                        {trainer.name.charAt(0)}
-                      </span>
-                    </div>
+                    <Avatar className="w-14 h-14">
+                      <AvatarImage src={getAvatarUrl(trainer)} />
+                      <AvatarFallback className="bg-orange-500/20 text-orange-400 text-xl">
+                        {trainer.name?.charAt(0)?.toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
                     <div>
                       <h3 className="font-semibold text-white">{trainer.name}</h3>
                       <p className="text-sm text-cyan-400 font-mono">{trainer.member_id}</p>
@@ -379,12 +777,21 @@ export const CreateMember = () => {
     emergency_phone: ''
   });
 
+  const generatePassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    let password = '';
+    for (let i = 0; i < 8; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setFormData({ ...formData, password });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
       await usersAPI.create(formData, role);
-      toast.success(`${role === 'trainer' ? 'Trainer' : 'Member'} created successfully`);
+      toast.success(`${role === 'trainer' ? 'Trainer' : 'Member'} created! Welcome message sent via Email & WhatsApp.`);
       navigate('/dashboard/admin/members');
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to create user');
@@ -400,7 +807,7 @@ export const CreateMember = () => {
           <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
             Add New {role === 'trainer' ? 'Trainer' : 'Member'}
           </h1>
-          <p className="text-zinc-500">Fill in the details below</p>
+          <p className="text-zinc-500">Fill in the details below. Welcome message with credentials will be sent automatically.</p>
         </div>
 
         <Card className="glass-card">
@@ -440,14 +847,21 @@ export const CreateMember = () => {
                 </div>
                 <div>
                   <Label className="text-xs uppercase tracking-wider text-zinc-500">Password *</Label>
-                  <Input
-                    data-testid="input-password"
-                    type="password"
-                    className="input-dark mt-2"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    required
-                  />
+                  <div className="flex gap-2 mt-2">
+                    <Input
+                      data-testid="input-password"
+                      type="text"
+                      className="input-dark flex-1"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      required
+                      placeholder="Enter or generate"
+                    />
+                    <Button type="button" variant="outline" onClick={generatePassword} className="shrink-0">
+                      <RotateCcw size={16} />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-zinc-500 mt-1">This will be sent to the member</p>
                 </div>
                 <div>
                   <Label className="text-xs uppercase tracking-wider text-zinc-500">Gender</Label>
@@ -511,12 +925,18 @@ export const CreateMember = () => {
                 </div>
               </div>
 
+              <div className="p-4 bg-cyan-500/10 border border-cyan-500/30 rounded-lg">
+                <p className="text-sm text-cyan-400">
+                  <strong>Note:</strong> After creation, the member will receive a welcome message with their login credentials via Email and WhatsApp.
+                </p>
+              </div>
+
               <div className="flex gap-4 pt-4">
                 <Button type="button" className="btn-secondary" onClick={() => navigate(-1)}>
                   Cancel
                 </Button>
                 <Button type="submit" className="btn-primary" disabled={loading} data-testid="submit-btn">
-                  {loading ? 'Creating...' : 'Create'}
+                  {loading ? 'Creating...' : 'Create & Send Credentials'}
                 </Button>
               </div>
             </form>
