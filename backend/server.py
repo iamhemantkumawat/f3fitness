@@ -804,6 +804,12 @@ async def send_notification(user: dict, template_type: str, variables: dict, bac
         else:
             await send_whatsapp(phone, message)
 
+async def send_notification_to_all(template_type: str, variables: dict, background_tasks: BackgroundTasks):
+    """Send notification to all active members"""
+    users = await db.users.find({"role": "member"}, {"_id": 0}).to_list(10000)
+    for user in users:
+        await send_notification(user, template_type, variables, background_tasks)
+
 # ==================== OTP ROUTES ====================
 
 @api_router.post("/otp/send")
