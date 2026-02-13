@@ -254,10 +254,10 @@ export const Signup = () => {
         })
       });
       
-      const verifyClone = verifyResponse.clone();
+      const verifyText = await verifyResponse.text();
       let verifyData;
       try {
-        verifyData = await verifyClone.json();
+        verifyData = JSON.parse(verifyText);
       } catch (e) {
         verifyData = { detail: 'Server error' };
       }
@@ -277,10 +277,10 @@ export const Signup = () => {
         })
       });
       
-      const signupClone = signupResponse.clone();
+      const signupText = await signupResponse.text();
       let signupData;
       try {
-        signupData = await signupClone.json();
+        signupData = JSON.parse(signupText);
       } catch (e) {
         signupData = { detail: 'Server error' };
       }
