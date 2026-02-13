@@ -36,7 +36,7 @@ async def seed_database():
             "id": "admin_001",
             "email": admin_email,
             "phone": "+919999999999",
-            "password": pwd_context.hash("admin123"),
+            "password_hash": hash_password("admin123"),
             "first_name": "Admin",
             "last_name": "F3 Fitness",
             "role": "admin",
@@ -54,7 +54,15 @@ async def seed_database():
         await db.users.insert_one(admin_user)
         print("✅ Admin user created: admin@f3fitness.in / admin123")
     else:
-        print("ℹ️  Admin user already exists")
+        # Fix existing admin if password field is wrong
+        if "password" in existing_admin and "password_hash" not in existing_admin:
+            await db.users.update_one(
+                {"email": admin_email},
+                {"$set": {"password_hash": hash_password("admin123")}, "$unset": {"password": ""}}
+            )
+            print("✅ Admin user password fixed")
+        else:
+            print("ℹ️  Admin user already exists")
     
     # 2. Create Default Settings (SMTP & Twilio placeholders)
     existing_settings = await db.settings.find_one({"id": "1"})
