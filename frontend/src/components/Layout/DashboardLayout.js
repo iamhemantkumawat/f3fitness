@@ -35,59 +35,59 @@ import {
 const LOGO_URL = "https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png";
 
 const adminMenuItems = [
-  { label: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
+  { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard/admin' },
   {
     label: 'Members & Staff',
     icon: Users,
     children: [
-      { label: 'All Members', path: '/admin/members' },
-      { label: 'Trainers', path: '/admin/trainers' },
-      { label: 'Add New', path: '/admin/members/new' }
+      { label: 'All Members', path: '/dashboard/admin/members' },
+      { label: 'Trainers', path: '/dashboard/admin/trainers' },
+      { label: 'Add New', path: '/dashboard/admin/members/new' }
     ]
   },
   {
     label: 'Payment Management',
     icon: CreditCard,
     children: [
-      { label: 'All Payments', path: '/admin/payments' },
-      { label: 'Add Payment', path: '/admin/payments/new' },
-      { label: 'Payment Reports', path: '/admin/payments/reports' },
-      { label: 'Pending Requests', path: '/admin/payments/pending' }
+      { label: 'All Payments', path: '/dashboard/admin/payments' },
+      { label: 'Add Payment', path: '/dashboard/admin/payments/new' },
+      { label: 'Payment Reports', path: '/dashboard/admin/payments/reports' },
+      { label: 'Pending Requests', path: '/dashboard/admin/payments/pending' }
     ]
   },
   {
     label: 'Attendance',
     icon: UserCheck,
     children: [
-      { label: 'Mark Attendance', path: '/admin/attendance' },
-      { label: 'Today\'s Report', path: '/admin/attendance/today' },
-      { label: 'Attendance History', path: '/admin/attendance/history' }
+      { label: 'Mark Attendance', path: '/dashboard/admin/attendance' },
+      { label: 'Today\'s Report', path: '/dashboard/admin/attendance/today' },
+      { label: 'Attendance History', path: '/dashboard/admin/attendance/history' }
     ]
   },
   {
     label: 'Settings',
     icon: Settings,
     children: [
-      { label: 'Plans', path: '/admin/settings/plans' },
-      { label: 'Announcements', path: '/admin/settings/announcements' },
-      { label: 'Holidays', path: '/admin/settings/holidays' },
-      { label: 'SMTP Settings', path: '/admin/settings/smtp' },
-      { label: 'WhatsApp Settings', path: '/admin/settings/whatsapp' }
+      { label: 'Plans', path: '/dashboard/admin/settings/plans' },
+      { label: 'Announcements', path: '/dashboard/admin/settings/announcements' },
+      { label: 'Holidays', path: '/dashboard/admin/settings/holidays' },
+      { label: 'SMTP Settings', path: '/dashboard/admin/settings/smtp' },
+      { label: 'WhatsApp Settings', path: '/dashboard/admin/settings/whatsapp' }
     ]
   },
-  { label: 'My Profile', icon: User, path: '/admin/profile' }
+  { label: 'My Profile', icon: User, path: '/dashboard/admin/profile' }
 ];
 
 const memberMenuItems = [
-  { label: 'Dashboard', icon: LayoutDashboard, path: '/member' },
-  { label: 'Plans', icon: ClipboardList, path: '/member/plans' },
-  { label: 'My Profile', icon: User, path: '/member/profile' }
+  { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard/member' },
+  { label: 'Plans', icon: ClipboardList, path: '/dashboard/member/plans' },
+  { label: 'My Profile', icon: User, path: '/dashboard/member/profile' }
 ];
 
 const trainerMenuItems = [
-  { label: 'Dashboard', icon: LayoutDashboard, path: '/trainer' },
-  { label: 'My Clients', icon: Users, path: '/trainer/clients' },
-  { label: 'My Profile', icon: User, path: '/trainer/profile' }
+  { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard/trainer' },
+  { label: 'My Clients', icon: Users, path: '/dashboard/trainer/clients' },
+  { label: 'My Profile', icon: User, path: '/dashboard/trainer/profile' }
 ];
 
 const SidebarItem = ({ item, isActive, isChild = false }) => {
