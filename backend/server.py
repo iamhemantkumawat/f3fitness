@@ -812,6 +812,89 @@ async def send_notification_to_all(template_type: str, variables: dict, backgrou
     for user in users:
         await send_notification(user, template_type, variables, background_tasks)
 
+# ==================== SCHEDULED TASKS ====================
+
+async def send_expiry_reminders():
+    """Send reminders for memberships expiring in 10 days"""
+    logger.info("Running expiry reminder task...")
+    try:
+        now = get_ist_now()
+        reminder_date = now + timedelta(days=10)
+        
+        # Find memberships expiring in exactly 10 days
+        memberships = await db.memberships.find({
+            "status": "active",
+            "end_date": {
+                "$gte": reminder_date.replace(hour=0, minute=0, second=0).isoformat(),
+                "$lt": (reminder_date + timedelta(days=1)).replace(hour=0, minute=0, second=0).isoformat()
+            }
+        }).to_list(1000)
+        
+        for membership in memberships:
+            user = await db.users.find_one({"id": membership["user_id"]}, {"_id": 0})
+            if user:
+                expiry = datetime.fromisoformat(membership["end_date"])
+                days_left = (expiry - now).days
+                await send_notification(user, "renewal_reminder", {
+                    "expiry_date": expiry.strftime("%d %b %Y"),
+                    "days_left": days_left
+                })
+        
+        logger.info(f"Sent {len(memberships)} expiry reminders")
+    except Exception as e:
+        logger.error(f"Error in expiry reminders: {e}")
+
+async def send_birthday_wishes():
+    """Send birthday wishes to members"""
+    logger.info("Running birthday wishes task...")
+    try:
+        now = get_ist_now()
+        today_str = now.strftime("%m-%d")
+        
+        users = await db.users.find({
+            "role": "member",
+            "date_of_birth": {"$regex": f".*-{today_str}$"}
+        }, {"_id": 0}).to_list(1000)
+        
+        for user in users:
+            await send_notification(user, "birthday", {})
+        
+        logger.info(f"Sent {len(users)} birthday wishes")
+    except Exception as e:
+        logger.error(f"Error in birthday wishes: {e}")
+
+async def scheduler_loop():
+    """Background scheduler that runs daily tasks"""
+    while True:
+        try:
+            now = get_ist_now()
+            # Run at 9 AM IST
+            if now.hour == 9 and now.minute < 5:
+                await send_expiry_reminders()
+                await send_birthday_wishes()
+            await asyncio.sleep(300)  # Check every 5 minutes
+        except Exception as e:
+            logger.error(f"Scheduler error: {e}")
+            await asyncio.sleep(60)
+
+scheduler_task = None
+
+@asynccontextmanager
+async def lifespan(app):
+    global scheduler_task
+    # Start scheduler on startup
+    scheduler_task = asyncio.create_task(scheduler_loop())
+    logger.info("Scheduler started")
+    yield
+    # Stop scheduler on shutdown
+    if scheduler_task:
+        scheduler_task.cancel()
+        try:
+            await scheduler_task
+        except asyncio.CancelledError:
+            pass
+    logger.info("Scheduler stopped")
+
 # ==================== OTP ROUTES ====================
 
 @api_router.post("/otp/send")
