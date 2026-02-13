@@ -633,6 +633,10 @@ async def send_whatsapp(to_number: str, message: str):
         logger.warning("WhatsApp not configured")
         return False
     
+    # Ensure number starts with +
+    if not to_number.startswith('+'):
+        to_number = '+' + to_number.lstrip('+')
+    
     try:
         if settings.get("use_sandbox") and settings.get("sandbox_url"):
             # Use Twilio Sandbox via HTTP
@@ -656,6 +660,7 @@ async def send_whatsapp(to_number: str, message: str):
                 body=message,
                 to=f'whatsapp:{to_number}'
             )
+            logger.info(f"WhatsApp message sent: {msg.sid}")
             return True
     except Exception as e:
         logger.error(f"WhatsApp send failed: {e}")
