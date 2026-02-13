@@ -77,7 +77,7 @@ export const MembersList = () => {
           </div>
           <Button 
             className="btn-primary" 
-            onClick={() => navigate('/admin/members/new')}
+            onClick={() => navigate('/dashboard/admin/members/new')}
             data-testid="add-member-btn"
           >
             <Plus size={18} className="mr-2" />
