@@ -138,7 +138,7 @@ export const MemberDashboard = () => {
                   <p className="text-zinc-500 mb-4">No active membership</p>
                   <Button 
                     className="btn-primary"
-                    onClick={() => navigate('/member/plans')}
+                    onClick={() => navigate('/dashboard/member/plans')}
                     data-testid="view-plans-btn"
                   >
                     View Plans
