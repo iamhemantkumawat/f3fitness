@@ -33,7 +33,18 @@ Build a complete gym management webapp for "F3 Fitness Gym" from Jaipur with:
 
 ## What's Been Implemented (February 2026)
 
-### Bug Fixes - Session 4 (Latest)
+### Admin Member Management - Session 5 (Latest)
+- ✅ **Plan & Expiry Display** - Members list now shows active plan name and expiry date
+- ✅ **Avatar Thumbnails** - Profile photos displayed, with default male/female icons for those without
+- ✅ **Multi-Select Delete** - Checkbox selection for bulk deleting multiple members
+- ✅ **User Status Toggle** - Disable/Enable user accounts with notifications
+- ✅ **Admin Password Reset** - Set new password and send via Email/WhatsApp
+- ✅ **Revoke Membership** - Cancel active membership with notification
+- ✅ **Column Sorting** - Sort by Member ID, Name, Phone, Plan, Expiry (asc/desc)
+- ✅ **Status Filter** - Filter by All, Active (with plan), Inactive (no plan), Disabled
+- ✅ **Welcome Notifications** - New members receive Email/WhatsApp with login credentials
+
+### Bug Fixes - Session 4
 - ✅ **Signup Flow Fixed** - Context now properly updates after signup (uses login flow to update auth state)
 - ✅ **Forgot Password UI** - Complete 3-step flow (Enter email → Enter OTP + new password → Success)
 - ✅ **Duplicate Account Prevention** - Backend properly rejects duplicate email/phone during OTP send
