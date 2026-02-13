@@ -117,6 +117,12 @@ export const dashboardAPI = {
   getStats: () => api.get('/dashboard/stats')
 };
 
+// Health Logs APIs
+export const healthLogsAPI = {
+  getAll: (userId) => api.get('/health-logs', { params: { user_id: userId } }),
+  create: (data) => api.post('/health-logs', data)
+};
+
 // Trainer APIs
 export const trainerAPI = {
   getClients: () => api.get('/trainer/clients'),
