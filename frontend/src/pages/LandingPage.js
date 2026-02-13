@@ -33,23 +33,31 @@ const services = [
 // Trainers
 const trainers = [
   {
-    name: "Rahul Sharma",
+    name: "Faizan Khan",
     role: "Head Trainer",
     speciality: "Strength & Conditioning",
     image: "https://images.unsplash.com/photo-1567013127542-490d757e51fc?w=400"
   },
   {
-    name: "Priya Verma",
+    name: "Rizwan Khan",
     role: "Fitness Coach",
     speciality: "Weight Loss & Nutrition",
-    image: "https://images.unsplash.com/photo-1594381898411-846e7d193883?w=400"
+    image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400"
   },
   {
-    name: "Amit Singh",
+    name: "Faizal Khan",
     role: "PT Specialist",
     speciality: "Muscle Building",
-    image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400"
+    image: "https://images.unsplash.com/photo-1534367610401-9f5ed68180aa?w=400"
   }
+];
+
+// Instagram Testimonial Reels
+const instagramReels = [
+  { id: "DQ9eXr6iU9u", url: "https://www.instagram.com/p/DQ9eXr6iU9u/" },
+  { id: "DOckGKaiXet", url: "https://www.instagram.com/p/DOckGKaiXet/" },
+  { id: "DOFlZDJiR49", url: "https://www.instagram.com/p/DOFlZDJiR49/" },
+  { id: "DHr-XyXhVyt", url: "https://www.instagram.com/p/DHr-XyXhVyt/" }
 ];
 
 const LandingPage = () => {
