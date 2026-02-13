@@ -150,28 +150,131 @@ export const Login = () => {
 };
 
 export const Signup = () => {
+  const [step, setStep] = useState(1); // 1: Details, 2: OTP Verification
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone_number: '',
+    country_code: '+91',
     password: '',
     gender: '',
     date_of_birth: ''
   });
+  const [otpData, setOtpData] = useState({
+    phone_otp: '',
+    email_otp: ''
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { signup } = useAuth();
+  const [otpSending, setOtpSending] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  // Resend timer countdown
+  useEffect(() => {
+    if (resendTimer > 0) {
+      const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendTimer]);
+
+  const sendOTP = async () => {
+    setOtpSending(true);
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/otp/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone_number: formData.phone_number,
+          country_code: formData.country_code,
+          email: formData.email
+        })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Failed to send OTP');
+      }
+      
+      toast.success('OTP sent to your phone and email!');
+      setStep(2);
+      setResendTimer(60); // 60 seconds cooldown
+    } catch (error) {
+      toast.error(error.message || 'Failed to send OTP');
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
+  const handleStep1Submit = async (e) => {
     e.preventDefault();
+    
+    // Validate all fields
+    if (!formData.name || !formData.email || !formData.phone_number || !formData.password) {
+      toast.error('Please fill all required fields');
+      return;
+    }
+    
+    if (formData.password.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    
+    await sendOTP();
+  };
+
+  const handleVerifyAndSignup = async (e) => {
+    e.preventDefault();
+    
+    if (!otpData.phone_otp || !otpData.email_otp) {
+      toast.error('Please enter both OTPs');
+      return;
+    }
+    
     setLoading(true);
     try {
-      await signup(formData);
+      // Verify OTP first
+      const verifyResponse = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/otp/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone_number: formData.phone_number,
+          country_code: formData.country_code,
+          phone_otp: otpData.phone_otp,
+          email: formData.email,
+          email_otp: otpData.email_otp
+        })
+      });
+      
+      if (!verifyResponse.ok) {
+        const error = await verifyResponse.json();
+        throw new Error(error.detail || 'Invalid OTP');
+      }
+      
+      // Signup with verified OTP
+      const signupResponse = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/auth/signup-with-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          phone_otp: otpData.phone_otp,
+          email_otp: otpData.email_otp
+        })
+      });
+      
+      if (!signupResponse.ok) {
+        const error = await signupResponse.json();
+        throw new Error(error.detail || 'Signup failed');
+      }
+      
+      const data = await signupResponse.json();
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      
       toast.success('Account created successfully!');
-      navigate('/member');
+      navigate('/dashboard/member');
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Signup failed');
+      toast.error(error.message || 'Signup failed');
     } finally {
       setLoading(false);
     }
@@ -206,110 +309,215 @@ export const Signup = () => {
           </div>
 
           <div className="glass-card p-8">
-            <h2 className="text-3xl font-bold uppercase tracking-tight mb-2" style={{ fontFamily: 'Barlow Condensed' }}>
-              Create Account
-            </h2>
-            <p className="text-zinc-500 mb-6">Join F3 Fitness Gym today</p>
+            {/* Step indicator */}
+            <div className="flex items-center justify-center gap-2 mb-6">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step >= 1 ? 'bg-cyan-500 text-black' : 'bg-zinc-700 text-zinc-400'}`}>1</div>
+              <div className={`w-12 h-0.5 ${step >= 2 ? 'bg-cyan-500' : 'bg-zinc-700'}`} />
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step >= 2 ? 'bg-cyan-500 text-black' : 'bg-zinc-700 text-zinc-400'}`}>2</div>
+            </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label className="text-xs uppercase tracking-wider text-zinc-500">Full Name</Label>
-                <Input
-                  data-testid="signup-name-input"
-                  type="text"
-                  className="input-dark mt-2"
-                  placeholder="Enter your name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                />
-              </div>
+            {step === 1 ? (
+              <>
+                <h2 className="text-3xl font-bold uppercase tracking-tight mb-2" style={{ fontFamily: 'Barlow Condensed' }}>
+                  Create Account
+                </h2>
+                <p className="text-zinc-500 mb-6">Join F3 Fitness Gym today</p>
 
-              <div>
-                <Label className="text-xs uppercase tracking-wider text-zinc-500">Email</Label>
-                <Input
-                  data-testid="signup-email-input"
-                  type="email"
-                  className="input-dark mt-2"
-                  placeholder="Enter your email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
-                />
-              </div>
+                <form onSubmit={handleStep1Submit} className="space-y-4">
+                  <div>
+                    <Label className="text-xs uppercase tracking-wider text-zinc-500">Full Name *</Label>
+                    <Input
+                      data-testid="signup-name-input"
+                      type="text"
+                      className="input-dark mt-2"
+                      placeholder="Enter your name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      required
+                    />
+                  </div>
 
-              <div>
-                <Label className="text-xs uppercase tracking-wider text-zinc-500">Phone Number</Label>
-                <Input
-                  data-testid="signup-phone-input"
-                  type="tel"
-                  className="input-dark mt-2"
-                  placeholder="Enter phone number"
-                  value={formData.phone_number}
-                  onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
-                  required
-                />
-              </div>
+                  <div>
+                    <Label className="text-xs uppercase tracking-wider text-zinc-500">Email *</Label>
+                    <Input
+                      data-testid="signup-email-input"
+                      type="email"
+                      className="input-dark mt-2"
+                      placeholder="Enter your email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      required
+                    />
+                  </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Gender</Label>
-                  <select
-                    data-testid="signup-gender-select"
-                    className="input-dark mt-2 w-full h-10 px-3 rounded-md bg-zinc-900/50 border border-zinc-800"
-                    value={formData.gender}
-                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                  <div>
+                    <Label className="text-xs uppercase tracking-wider text-zinc-500">Phone Number *</Label>
+                    <div className="flex gap-2 mt-2">
+                      <select
+                        data-testid="signup-country-code-select"
+                        className="input-dark w-24 h-10 px-2 rounded-md bg-zinc-900/50 border border-zinc-800 text-sm"
+                        value={formData.country_code}
+                        onChange={(e) => setFormData({ ...formData, country_code: e.target.value })}
+                      >
+                        <option value="+91">+91</option>
+                        <option value="+1">+1</option>
+                        <option value="+44">+44</option>
+                        <option value="+971">+971</option>
+                      </select>
+                      <Input
+                        data-testid="signup-phone-input"
+                        type="tel"
+                        className="input-dark flex-1"
+                        placeholder="9876543210"
+                        value={formData.phone_number}
+                        onChange={(e) => setFormData({ ...formData, phone_number: e.target.value.replace(/\D/g, '') })}
+                        required
+                        maxLength={10}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs uppercase tracking-wider text-zinc-500">Gender</Label>
+                      <select
+                        data-testid="signup-gender-select"
+                        className="input-dark mt-2 w-full h-10 px-3 rounded-md bg-zinc-900/50 border border-zinc-800"
+                        value={formData.gender}
+                        onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                      >
+                        <option value="">Select</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <Label className="text-xs uppercase tracking-wider text-zinc-500">Date of Birth</Label>
+                      <Input
+                        data-testid="signup-dob-input"
+                        type="date"
+                        className="input-dark mt-2"
+                        value={formData.date_of_birth}
+                        onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="text-xs uppercase tracking-wider text-zinc-500">Password *</Label>
+                    <div className="relative mt-2">
+                      <Input
+                        data-testid="signup-password-input"
+                        type={showPassword ? 'text' : 'password'}
+                        className="input-dark pr-10"
+                        placeholder="Create a password (min 6 chars)"
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        required
+                        minLength={6}
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <Button
+                    data-testid="signup-send-otp-btn"
+                    type="submit"
+                    className="btn-primary w-full mt-6"
+                    disabled={otpSending}
                   >
-                    <option value="">Select</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-                <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Date of Birth</Label>
-                  <Input
-                    data-testid="signup-dob-input"
-                    type="date"
-                    className="input-dark mt-2"
-                    value={formData.date_of_birth}
-                    onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
-                  />
-                </div>
-              </div>
+                    {otpSending ? 'Sending OTP...' : 'Continue & Verify'}
+                    <ArrowRight size={18} className="ml-2" />
+                  </Button>
+                </form>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => setStep(1)}
+                  className="text-zinc-500 hover:text-white mb-4 flex items-center gap-2 text-sm"
+                >
+                  <ArrowRight size={16} className="rotate-180" /> Back to details
+                </button>
+                
+                <h2 className="text-3xl font-bold uppercase tracking-tight mb-2" style={{ fontFamily: 'Barlow Condensed' }}>
+                  Verify OTP
+                </h2>
+                <p className="text-zinc-500 mb-6">
+                  Enter the codes sent to your phone ({formData.country_code} {formData.phone_number}) and email ({formData.email})
+                </p>
 
-              <div>
-                <Label className="text-xs uppercase tracking-wider text-zinc-500">Password</Label>
-                <div className="relative mt-2">
-                  <Input
-                    data-testid="signup-password-input"
-                    type={showPassword ? 'text' : 'password'}
-                    className="input-dark pr-10"
-                    placeholder="Create a password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    required
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
-                    onClick={() => setShowPassword(!showPassword)}
+                <form onSubmit={handleVerifyAndSignup} className="space-y-4">
+                  <div>
+                    <Label className="text-xs uppercase tracking-wider text-zinc-500 flex items-center gap-2">
+                      <span className="inline-flex items-center justify-center w-5 h-5 bg-green-500/20 text-green-400 rounded text-xs">W</span>
+                      WhatsApp OTP
+                    </Label>
+                    <Input
+                      data-testid="signup-phone-otp-input"
+                      type="text"
+                      className="input-dark mt-2 text-center text-2xl tracking-[0.5em] font-mono"
+                      placeholder="• • • • • •"
+                      value={otpData.phone_otp}
+                      onChange={(e) => setOtpData({ ...otpData, phone_otp: e.target.value.replace(/\D/g, '').slice(0, 6) })}
+                      maxLength={6}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-xs uppercase tracking-wider text-zinc-500 flex items-center gap-2">
+                      <span className="inline-flex items-center justify-center w-5 h-5 bg-cyan-500/20 text-cyan-400 rounded text-xs">@</span>
+                      Email OTP
+                    </Label>
+                    <Input
+                      data-testid="signup-email-otp-input"
+                      type="text"
+                      className="input-dark mt-2 text-center text-2xl tracking-[0.5em] font-mono"
+                      placeholder="• • • • • •"
+                      value={otpData.email_otp}
+                      onChange={(e) => setOtpData({ ...otpData, email_otp: e.target.value.replace(/\D/g, '').slice(0, 6) })}
+                      maxLength={6}
+                      required
+                    />
+                  </div>
+
+                  <div className="text-center">
+                    {resendTimer > 0 ? (
+                      <p className="text-zinc-500 text-sm">
+                        Resend OTP in <span className="text-cyan-400 font-mono">{resendTimer}s</span>
+                      </p>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={sendOTP}
+                        disabled={otpSending}
+                        className="text-cyan-400 hover:text-cyan-300 text-sm font-semibold"
+                      >
+                        {otpSending ? 'Sending...' : 'Resend OTP'}
+                      </button>
+                    )}
+                  </div>
+
+                  <Button
+                    data-testid="signup-verify-btn"
+                    type="submit"
+                    className="btn-primary w-full mt-6"
+                    disabled={loading}
                   >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </div>
-
-              <Button
-                data-testid="signup-submit-btn"
-                type="submit"
-                className="btn-primary w-full mt-6"
-                disabled={loading}
-              >
-                {loading ? 'Creating Account...' : 'Create Account'}
-                <ArrowRight size={18} className="ml-2" />
-              </Button>
-            </form>
+                    {loading ? 'Creating Account...' : 'Verify & Create Account'}
+                    <ArrowRight size={18} className="ml-2" />
+                  </Button>
+                </form>
+              </>
+            )}
 
             <p className="text-center text-zinc-500 mt-6">
               Already have an account?{' '}
