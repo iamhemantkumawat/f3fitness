@@ -764,6 +764,9 @@ export const CreateMember = () => {
   const urlParams = new URLSearchParams(window.location.search);
   const role = urlParams.get('role') || 'member';
   
+  // Get today's date in YYYY-MM-DD format
+  const today = new Date().toISOString().split('T')[0];
+  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -771,6 +774,7 @@ export const CreateMember = () => {
     password: '',
     gender: '',
     date_of_birth: '',
+    joining_date: today, // Default to today
     address: '',
     city: '',
     zip_code: '',
@@ -887,6 +891,17 @@ export const CreateMember = () => {
                     onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
                   />
                 </div>
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Joining Date *</Label>
+                  <Input
+                    data-testid="input-joining-date"
+                    type="date"
+                    className="input-dark mt-2"
+                    value={formData.joining_date}
+                    onChange={(e) => setFormData({ ...formData, joining_date: e.target.value })}
+                    required
+                  />
+                </div>
                 <div className="md:col-span-2">
                   <Label className="text-xs uppercase tracking-wider text-zinc-500">Address</Label>
                   <Input
@@ -937,6 +952,279 @@ export const CreateMember = () => {
                 </Button>
                 <Button type="submit" className="btn-primary" disabled={loading} data-testid="submit-btn">
                   {loading ? 'Creating...' : 'Create & Send Credentials'}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </DashboardLayout>
+  );
+};
+
+// Edit Member Component
+export const EditMember = () => {
+  const navigate = useNavigate();
+  const { userId } = useParams();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = React.useRef(null);
+  
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone_number: '',
+    gender: '',
+    date_of_birth: '',
+    joining_date: '',
+    address: '',
+    city: '',
+    zip_code: '',
+    emergency_phone: '',
+    profile_photo_url: ''
+  });
+
+  useEffect(() => {
+    fetchUser();
+  }, [userId]);
+
+  const fetchUser = async () => {
+    try {
+      const response = await usersAPI.getById(userId);
+      const user = response.data;
+      setFormData({
+        name: user.name || '',
+        email: user.email || '',
+        phone_number: user.phone_number || '',
+        gender: user.gender || '',
+        date_of_birth: user.date_of_birth ? user.date_of_birth.split('T')[0] : '',
+        joining_date: user.joining_date ? user.joining_date.split('T')[0] : '',
+        address: user.address || '',
+        city: user.city || '',
+        zip_code: user.zip_code || '',
+        emergency_phone: user.emergency_phone || '',
+        profile_photo_url: user.profile_photo_url || ''
+      });
+    } catch (error) {
+      toast.error('Failed to load user');
+      navigate('/dashboard/admin/members');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+    
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB');
+      return;
+    }
+    
+    setUploading(true);
+    try {
+      const photoFormData = new FormData();
+      photoFormData.append('file', file);
+      
+      const response = await uploadAPI.profilePhoto(photoFormData);
+      setFormData({ ...formData, profile_photo_url: response.data.url });
+      toast.success('Photo uploaded');
+    } catch (error) {
+      toast.error('Failed to upload photo');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await usersAPI.update(userId, formData);
+      toast.success('Member updated successfully');
+      navigate('/dashboard/admin/members');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to update member');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const getAvatarUrl = () => {
+    if (formData.profile_photo_url) return formData.profile_photo_url;
+    if (formData.gender === 'male') return MALE_AVATAR;
+    if (formData.gender === 'female') return FEMALE_AVATAR;
+    return DEFAULT_AVATAR;
+  };
+
+  if (loading) {
+    return (
+      <DashboardLayout role="admin">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-zinc-500">Loading...</div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout role="admin">
+      <div className="max-w-2xl mx-auto space-y-6 animate-fade-in" data-testid="edit-member-form">
+        <div>
+          <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
+            Edit Member
+          </h1>
+          <p className="text-zinc-500">Update member details and profile photo</p>
+        </div>
+
+        <Card className="glass-card">
+          <CardContent className="p-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Profile Photo Section */}
+              <div className="flex flex-col items-center gap-4 pb-6 border-b border-zinc-800">
+                <Avatar className="w-24 h-24">
+                  <AvatarImage src={getAvatarUrl()} />
+                  <AvatarFallback className="bg-cyan-500/20 text-cyan-400 text-3xl">
+                    {formData.name?.charAt(0)?.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handlePhotoUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  data-testid="upload-photo-btn"
+                >
+                  <Camera size={16} className="mr-2" />
+                  {uploading ? 'Uploading...' : 'Change Photo'}
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Full Name *</Label>
+                  <Input
+                    data-testid="edit-name"
+                    className="input-dark mt-2"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Email *</Label>
+                  <Input
+                    data-testid="edit-email"
+                    type="email"
+                    className="input-dark mt-2"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Phone Number *</Label>
+                  <Input
+                    data-testid="edit-phone"
+                    className="input-dark mt-2"
+                    value={formData.phone_number}
+                    onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Gender</Label>
+                  <select
+                    data-testid="edit-gender"
+                    className="input-dark mt-2 w-full h-10 px-3 rounded-md bg-zinc-900/50 border border-zinc-800"
+                    value={formData.gender}
+                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                  >
+                    <option value="">Select</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Date of Birth</Label>
+                  <Input
+                    data-testid="edit-dob"
+                    type="date"
+                    className="input-dark mt-2"
+                    value={formData.date_of_birth}
+                    onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Joining Date *</Label>
+                  <Input
+                    data-testid="edit-joining-date"
+                    type="date"
+                    className="input-dark mt-2"
+                    value={formData.joining_date}
+                    onChange={(e) => setFormData({ ...formData, joining_date: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Address</Label>
+                  <Input
+                    data-testid="edit-address"
+                    className="input-dark mt-2"
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-zinc-500">City</Label>
+                  <Input
+                    data-testid="edit-city"
+                    className="input-dark mt-2"
+                    value={formData.city}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-zinc-500">ZIP Code</Label>
+                  <Input
+                    data-testid="edit-zip"
+                    className="input-dark mt-2"
+                    value={formData.zip_code}
+                    onChange={(e) => setFormData({ ...formData, zip_code: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Emergency Phone</Label>
+                  <Input
+                    data-testid="edit-emergency"
+                    className="input-dark mt-2"
+                    value={formData.emergency_phone}
+                    onChange={(e) => setFormData({ ...formData, emergency_phone: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <Button type="button" className="btn-secondary" onClick={() => navigate(-1)}>
+                  Cancel
+                </Button>
+                <Button type="submit" className="btn-primary" disabled={saving} data-testid="save-btn">
+                  {saving ? 'Saving...' : 'Save Changes'}
                 </Button>
               </div>
             </form>
