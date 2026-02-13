@@ -494,6 +494,18 @@ def create_access_token(data: dict) -> str:
 def generate_otp(length: int = 6) -> str:
     return ''.join(random.choices(string.digits, k=length))
 
+async def log_activity(user_id: str, action: str, description: str, ip_address: str = None, metadata: dict = None):
+    """Log user activity"""
+    await db.activity_logs.insert_one({
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "action": action,
+        "description": description,
+        "ip_address": ip_address,
+        "metadata": metadata or {},
+        "timestamp": get_ist_now().isoformat()
+    })
+
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     try:
         payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
