@@ -157,6 +157,7 @@ function AppRoutes() {
       {/* Member Routes - under /dashboard/member */}
       <Route path="/dashboard/member" element={<ProtectedRoute allowedRoles={['member']}><MemberDashboard /></ProtectedRoute>} />
       <Route path="/dashboard/member/plans" element={<ProtectedRoute allowedRoles={['member']}><MemberPlans /></ProtectedRoute>} />
+      <Route path="/dashboard/member/health" element={<ProtectedRoute allowedRoles={['member']}><HealthTracking /></ProtectedRoute>} />
       <Route path="/dashboard/member/profile" element={<ProtectedRoute allowedRoles={['member']}><MemberProfile /></ProtectedRoute>} />
 
       {/* Trainer Routes - under /dashboard/trainer */}
