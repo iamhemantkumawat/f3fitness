@@ -160,10 +160,7 @@ export const Signup = () => {
     gender: '',
     date_of_birth: ''
   });
-  const [otpData, setOtpData] = useState({
-    phone_otp: '',
-    email_otp: ''
-  });
+  const [otp, setOtp] = useState(''); // Single OTP for both channels
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [otpSending, setOtpSending] = useState(false);
@@ -191,9 +188,10 @@ export const Signup = () => {
         })
       });
       
+      const data = await response.json();
+      
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || 'Failed to send OTP');
+        throw new Error(data.detail || 'Failed to send OTP');
       }
       
       toast.success('OTP sent to your phone and email!');
@@ -226,8 +224,8 @@ export const Signup = () => {
   const handleVerifyAndSignup = async (e) => {
     e.preventDefault();
     
-    if (!otpData.phone_otp || !otpData.email_otp) {
-      toast.error('Please enter both OTPs');
+    if (!otp || otp.length !== 6) {
+      toast.error('Please enter the 6-digit OTP');
       return;
     }
     
@@ -240,15 +238,16 @@ export const Signup = () => {
         body: JSON.stringify({
           phone_number: formData.phone_number,
           country_code: formData.country_code,
-          phone_otp: otpData.phone_otp,
+          phone_otp: otp,
           email: formData.email,
-          email_otp: otpData.email_otp
+          email_otp: otp
         })
       });
       
+      const verifyData = await verifyResponse.json();
+      
       if (!verifyResponse.ok) {
-        const error = await verifyResponse.json();
-        throw new Error(error.detail || 'Invalid OTP');
+        throw new Error(verifyData.detail || 'Invalid OTP');
       }
       
       // Signup with verified OTP
@@ -257,19 +256,19 @@ export const Signup = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          phone_otp: otpData.phone_otp,
-          email_otp: otpData.email_otp
+          phone_otp: otp,
+          email_otp: otp
         })
       });
       
+      const signupData = await signupResponse.json();
+      
       if (!signupResponse.ok) {
-        const error = await signupResponse.json();
-        throw new Error(error.detail || 'Signup failed');
+        throw new Error(signupData.detail || 'Signup failed');
       }
       
-      const data = await signupResponse.json();
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('token', signupData.token);
+      localStorage.setItem('user', JSON.stringify(signupData.user));
       
       toast.success('Account created successfully!');
       navigate('/dashboard/member');
