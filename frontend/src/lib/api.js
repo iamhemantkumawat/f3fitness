@@ -46,7 +46,8 @@ export const usersAPI = {
   getById: (id) => api.get(`/users/${id}`),
   create: (data, role = 'member') => api.post(`/users?role=${role}`, data),
   update: (id, data) => api.put(`/users/${id}`, data),
-  delete: (id) => api.delete(`/users/${id}`)
+  delete: (id) => api.delete(`/users/${id}`),
+  changePassword: (data) => api.post('/users/change-password', data)
 };
 
 // Plans APIs
