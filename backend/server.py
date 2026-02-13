@@ -1483,7 +1483,7 @@ async def get_payment_summary(
     return {"total": total, "count": len(payments), "by_method": by_method}
 
 @api_router.post("/payments", response_model=PaymentResponse)
-async def create_payment(payment: PaymentCreate, current_user: dict = Depends(get_admin_user)):
+async def create_payment(payment: PaymentCreate, background_tasks: BackgroundTasks, current_user: dict = Depends(get_admin_user)):
     user = await db.users.find_one({"id": payment.user_id}, {"_id": 0})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -1494,10 +1494,12 @@ async def create_payment(payment: PaymentCreate, current_user: dict = Depends(ge
     )
     
     payment_id = str(uuid.uuid4())
+    receipt_no = f"F3-{datetime.now().strftime('%Y%m%d')}-{payment_id[:8].upper()}"
     now = get_ist_now().isoformat()
     
     payment_doc = {
         "id": payment_id,
+        "receipt_no": receipt_no,
         "membership_id": membership["id"] if membership else None,
         "user_id": payment.user_id,
         "amount_paid": payment.amount_paid,
@@ -1508,6 +1510,15 @@ async def create_payment(payment: PaymentCreate, current_user: dict = Depends(ge
     }
     
     await db.payments.insert_one(payment_doc)
+    
+    # Send payment notification
+    await send_notification(user, "payment_received", {
+        "receipt_no": receipt_no,
+        "amount": payment.amount_paid,
+        "payment_mode": payment.payment_method,
+        "payment_date": datetime.now().strftime("%d %b %Y"),
+        "description": payment.notes or "Gym Payment"
+    }, background_tasks)
     
     result = {k: v for k, v in payment_doc.items() if k != "_id"}
     result["user_name"] = user["name"]
