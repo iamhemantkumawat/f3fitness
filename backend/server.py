@@ -2070,10 +2070,23 @@ async def create_health_log(log: HealthLogCreate, current_user: dict = Depends(g
     log_id = str(uuid.uuid4())
     now = get_ist_now().isoformat()
     
+    # Get user's stored height if not provided
+    height = log.height
+    if not height:
+        user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0})
+        height = user.get("height")
+    
+    # If height is provided, save it to user profile
+    if log.height:
+        await db.users.update_one(
+            {"id": current_user["id"]},
+            {"$set": {"height": log.height}}
+        )
+    
     # Calculate BMI if height and weight provided
     bmi = None
-    if log.weight and log.height:
-        height_m = log.height / 100
+    if log.weight and height:
+        height_m = height / 100
         bmi = round(log.weight / (height_m * height_m), 1)
     
     log_doc = {
@@ -2081,7 +2094,7 @@ async def create_health_log(log: HealthLogCreate, current_user: dict = Depends(g
         "user_id": current_user["id"],
         "weight": log.weight,
         "body_fat": log.body_fat,
-        "height": log.height,
+        "height": height,
         "bmi": bmi,
         "notes": log.notes,
         "logged_at": now
@@ -2089,6 +2102,88 @@ async def create_health_log(log: HealthLogCreate, current_user: dict = Depends(g
     
     await db.health_logs.insert_one(log_doc)
     return {k: v for k, v in log_doc.items() if k != "_id"}
+
+# ==================== CALORIE TRACKING ROUTES ====================
+
+@api_router.get("/calorie-logs")
+async def get_calorie_logs(date: Optional[str] = None, current_user: dict = Depends(get_current_user)):
+    query = {"user_id": current_user["id"]}
+    if date:
+        query["date"] = date
+    
+    logs = await db.calorie_logs.find(query, {"_id": 0}).sort("logged_at", -1).to_list(100)
+    return logs
+
+@api_router.post("/calorie-logs", response_model=CalorieLogResponse)
+async def create_calorie_log(log: CalorieLogCreate, current_user: dict = Depends(get_current_user)):
+    log_id = str(uuid.uuid4())
+    now = get_ist_now()
+    
+    log_doc = {
+        "id": log_id,
+        "user_id": current_user["id"],
+        "calories": log.calories,
+        "protein": log.protein,
+        "carbs": log.carbs,
+        "fats": log.fats,
+        "meal_type": log.meal_type,
+        "food_items": log.food_items,
+        "notes": log.notes,
+        "logged_at": now.isoformat(),
+        "date": now.strftime("%Y-%m-%d")
+    }
+    
+    await db.calorie_logs.insert_one(log_doc)
+    return {k: v for k, v in log_doc.items() if k != "_id"}
+
+@api_router.delete("/calorie-logs/{log_id}")
+async def delete_calorie_log(log_id: str, current_user: dict = Depends(get_current_user)):
+    result = await db.calorie_logs.delete_one({"id": log_id, "user_id": current_user["id"]})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Log not found")
+    return {"message": "Log deleted"}
+
+@api_router.get("/calorie-summary")
+async def get_calorie_summary(date: Optional[str] = None, current_user: dict = Depends(get_current_user)):
+    target_date = date or get_ist_now().strftime("%Y-%m-%d")
+    
+    # Get user's calorie goal
+    user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0})
+    target_calories = user.get("target_calories", 2000)
+    goal_type = user.get("calorie_goal_type", "maintenance")
+    
+    # Get today's logs
+    logs = await db.calorie_logs.find({
+        "user_id": current_user["id"],
+        "date": target_date
+    }, {"_id": 0}).to_list(100)
+    
+    total_calories = sum(log.get("calories", 0) for log in logs)
+    total_protein = sum(log.get("protein", 0) or 0 for log in logs)
+    total_carbs = sum(log.get("carbs", 0) or 0 for log in logs)
+    total_fats = sum(log.get("fats", 0) or 0 for log in logs)
+    
+    return {
+        "date": target_date,
+        "total_calories": total_calories,
+        "total_protein": total_protein,
+        "total_carbs": total_carbs,
+        "total_fats": total_fats,
+        "target_calories": target_calories,
+        "difference": total_calories - target_calories,
+        "goal_type": goal_type
+    }
+
+@api_router.put("/calorie-goal")
+async def update_calorie_goal(goal: CalorieGoalUpdate, current_user: dict = Depends(get_current_user)):
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {"$set": {
+            "target_calories": goal.target_calories,
+            "calorie_goal_type": goal.goal_type
+        }}
+    )
+    return {"message": "Calorie goal updated", "target_calories": goal.target_calories, "goal_type": goal.goal_type}
 
 # ==================== DIET PLAN ROUTES ====================
 
