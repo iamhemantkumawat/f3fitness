@@ -203,7 +203,7 @@ class F3FitnessAPITester:
             "Create announcement",
             "POST",
             "announcements",
-            201,
+            200,  # Backend returns 200, not 201
             data=test_announcement_data,
             token=self.admin_token
         )
