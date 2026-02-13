@@ -254,7 +254,7 @@ export const MembersList = () => {
                 <div className="flex gap-3 pt-4 border-t border-zinc-800">
                   <Button
                     className="btn-secondary flex-1"
-                    onClick={() => navigate(`/admin/members/${selectedMember.id}/edit`)}
+                    onClick={() => navigate(`/dashboard/admin/members/${selectedMember.id}/edit`)}
                     data-testid="edit-member-btn"
                   >
                     <Edit size={16} className="mr-2" />
