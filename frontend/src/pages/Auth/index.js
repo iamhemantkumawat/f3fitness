@@ -248,58 +248,60 @@ export const Signup = () => {
       return;
     }
     
+    const makeRequest = (url, body) => {
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', url, true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.onload = function() {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            resolve({ ok: xhr.status >= 200 && xhr.status < 300, data, status: xhr.status });
+          } catch (e) {
+            resolve({ ok: false, data: { detail: 'Server error' }, status: xhr.status });
+          }
+        };
+        xhr.onerror = function() {
+          reject(new Error('Network error'));
+        };
+        xhr.send(JSON.stringify(body));
+      });
+    };
+    
     setLoading(true);
     try {
       // Verify OTP first
-      const verifyResponse = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/otp/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const verifyResult = await makeRequest(
+        `${process.env.REACT_APP_BACKEND_URL}/api/otp/verify`,
+        {
           phone_number: formData.phone_number,
           country_code: formData.country_code,
           phone_otp: otp,
           email: formData.email,
           email_otp: otp
-        })
-      });
+        }
+      );
       
-      const verifyText = await verifyResponse.text();
-      let verifyData;
-      try {
-        verifyData = JSON.parse(verifyText);
-      } catch (e) {
-        verifyData = { detail: 'Server error' };
-      }
-      
-      if (!verifyResponse.ok) {
-        throw new Error(verifyData.detail || 'Invalid OTP');
+      if (!verifyResult.ok) {
+        throw new Error(verifyResult.data.detail || 'Invalid OTP');
       }
       
       // Signup with verified OTP
-      const signupResponse = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/auth/signup-with-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const signupResult = await makeRequest(
+        `${process.env.REACT_APP_BACKEND_URL}/api/auth/signup-with-otp`,
+        {
           ...formData,
           phone_otp: otp,
           email_otp: otp
-        })
-      });
+        }
+      );
       
-      const signupText = await signupResponse.text();
-      let signupData;
-      try {
-        signupData = JSON.parse(signupText);
-      } catch (e) {
-        signupData = { detail: 'Server error' };
+      if (!signupResult.ok) {
+        throw new Error(signupResult.data.detail || 'Signup failed');
       }
       
-      if (!signupResponse.ok) {
-        throw new Error(signupData.detail || 'Signup failed');
-      }
-      
-      localStorage.setItem('token', signupData.token);
-      localStorage.setItem('user', JSON.stringify(signupData.user));
+      localStorage.setItem('token', signupResult.data.token);
+      localStorage.setItem('user', JSON.stringify(signupResult.data.user));
       
       toast.success('Account created successfully!');
       navigate('/dashboard/member');
