@@ -129,6 +129,7 @@ function AppRoutes() {
       <Route path="/admin/members" element={<ProtectedRoute allowedRoles={['admin']}><MembersList /></ProtectedRoute>} />
       <Route path="/admin/trainers" element={<ProtectedRoute allowedRoles={['admin']}><TrainersList /></ProtectedRoute>} />
       <Route path="/admin/members/new" element={<ProtectedRoute allowedRoles={['admin']}><CreateMember /></ProtectedRoute>} />
+      <Route path="/admin/members/:userId/assign-plan" element={<ProtectedRoute allowedRoles={['admin']}><AssignPlan /></ProtectedRoute>} />
       <Route path="/admin/payments" element={<ProtectedRoute allowedRoles={['admin']}><PaymentsList /></ProtectedRoute>} />
       <Route path="/admin/payments/new" element={<ProtectedRoute allowedRoles={['admin']}><AddPayment /></ProtectedRoute>} />
       <Route path="/admin/payments/reports" element={<ProtectedRoute allowedRoles={['admin']}><PaymentReports /></ProtectedRoute>} />
