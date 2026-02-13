@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { DashboardLayout } from '../../components/Layout/DashboardLayout';
-import { usersAPI, membershipsAPI } from '../../lib/api';
+import { usersAPI, membershipsAPI, uploadAPI } from '../../lib/api';
 import { formatDate, getStatusBadge } from '../../lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -15,7 +15,7 @@ import {
   Search, Plus, User, Phone, Mail, Calendar, MapPin, 
   CreditCard, Edit, Trash2, Eye, ChevronRight, EyeOff,
   ArrowUpDown, ArrowUp, ArrowDown, UserX, UserCheck,
-  Ban, RotateCcw, Key, MoreHorizontal, CheckSquare, Square
+  Ban, RotateCcw, Key, MoreHorizontal, CheckSquare, Square, Camera
 } from 'lucide-react';
 import { toast } from 'sonner';
 
