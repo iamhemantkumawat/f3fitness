@@ -1802,7 +1802,7 @@ async def get_announcements():
     return announcements
 
 @api_router.post("/announcements", response_model=AnnouncementResponse)
-async def create_announcement(announcement: AnnouncementCreate, current_user: dict = Depends(get_admin_user)):
+async def create_announcement(announcement: AnnouncementCreate, background_tasks: BackgroundTasks, current_user: dict = Depends(get_admin_user)):
     announcement_id = str(uuid.uuid4())
     now = get_ist_now().isoformat()
     
@@ -1813,6 +1813,13 @@ async def create_announcement(announcement: AnnouncementCreate, current_user: di
     }
     
     await db.announcements.insert_one(announcement_doc)
+    
+    # Send notification to all members
+    await send_notification_to_all("announcement", {
+        "announcement_title": announcement.title,
+        "announcement_content": announcement.content
+    }, background_tasks)
+    
     return {k: v for k, v in announcement_doc.items() if k != "_id"}
 
 @api_router.delete("/announcements/{announcement_id}")
