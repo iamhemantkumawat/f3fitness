@@ -188,7 +188,15 @@ export const Signup = () => {
         })
       });
       
-      const data = await response.json();
+      // Clone the response before reading to avoid stream issues
+      const responseClone = response.clone();
+      let data;
+      try {
+        data = await responseClone.json();
+      } catch (jsonError) {
+        console.error('JSON parse error:', jsonError);
+        data = { detail: 'Server error occurred' };
+      }
       
       if (!response.ok) {
         throw new Error(data.detail || 'Failed to send OTP');
@@ -198,7 +206,9 @@ export const Signup = () => {
       setStep(2);
       setResendTimer(60); // 60 seconds cooldown
     } catch (error) {
-      toast.error(error.message || 'Failed to send OTP');
+      console.error('SendOTP error:', error);
+      const errorMsg = error.message || 'Failed to send OTP';
+      toast.error(errorMsg);
     } finally {
       setOtpSending(false);
     }
