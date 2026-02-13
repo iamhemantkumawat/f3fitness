@@ -6,15 +6,16 @@ Creates default admin user and settings
 
 import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
-from passlib.context import CryptContext
+import bcrypt
 from datetime import datetime, timezone
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Password hashing (using bcrypt directly like server.py)
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 async def seed_database():
     # Connect to MongoDB
