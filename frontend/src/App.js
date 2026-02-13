@@ -15,7 +15,7 @@ import { MembersList, TrainersList, CreateMember } from './pages/Admin/Members';
 import { AssignPlan } from './pages/Admin/AssignPlan';
 import { PaymentsList, AddPayment, PaymentReports, PendingPayments } from './pages/Admin/Payments';
 import { MarkAttendance, TodayAttendance, AttendanceHistory } from './pages/Admin/Attendance';
-import { PlansSettings, AnnouncementsSettings, HolidaysSettings, SMTPSettings, WhatsAppSettings } from './pages/Admin/Settings';
+import { PlansSettings, AnnouncementsSettings, HolidaysSettings, SMTPSettings, WhatsAppSettings, ActivityLogsSettings, PaymentGatewaySettings } from './pages/Admin/Settings';
 import { AdminProfile, MemberProfile, TrainerProfile } from './pages/Admin/Profile';
 
 // Member Pages
