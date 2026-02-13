@@ -301,11 +301,15 @@ export const Signup = () => {
         throw new Error(signupResult.data.detail || 'Signup failed');
       }
       
-      localStorage.setItem('token', signupResult.data.token);
-      localStorage.setItem('user', JSON.stringify(signupResult.data.user));
+      // Use login to update auth context and then navigate
+      // This ensures the token/user state is properly set before navigation
+      await login({
+        email_or_phone: formData.email,
+        password: formData.password
+      });
       
       toast.success('Account created successfully!');
-      navigate('/dashboard/member');
+      // Navigation will happen automatically via PublicRoute redirect
     } catch (error) {
       console.error('Signup error:', error);
       toast.error(error.message || 'Signup failed');
