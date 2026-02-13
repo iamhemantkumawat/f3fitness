@@ -81,6 +81,7 @@ const adminMenuItems = [
 const memberMenuItems = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard/member' },
   { label: 'Plans', icon: ClipboardList, path: '/dashboard/member/plans' },
+  { label: 'Health Tracking', icon: Activity, path: '/dashboard/member/health' },
   { label: 'My Profile', icon: User, path: '/dashboard/member/profile' }
 ];
 
