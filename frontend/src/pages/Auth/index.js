@@ -388,14 +388,32 @@ export const Signup = () => {
                     <div className="flex gap-2 mt-2">
                       <select
                         data-testid="signup-country-code-select"
-                        className="input-dark w-24 h-10 px-2 rounded-md bg-zinc-900/50 border border-zinc-800 text-sm"
+                        className="input-dark w-28 h-10 px-2 rounded-md bg-zinc-900/50 border border-zinc-800 text-sm"
                         value={formData.country_code}
                         onChange={(e) => setFormData({ ...formData, country_code: e.target.value })}
                       >
-                        <option value="+91">+91</option>
-                        <option value="+1">+1</option>
-                        <option value="+44">+44</option>
-                        <option value="+971">+971</option>
+                        <option value="+91">🇮🇳 +91</option>
+                        <option value="+1">🇺🇸 +1</option>
+                        <option value="+44">🇬🇧 +44</option>
+                        <option value="+971">🇦🇪 +971</option>
+                        <option value="+61">🇦🇺 +61</option>
+                        <option value="+65">🇸🇬 +65</option>
+                        <option value="+60">🇲🇾 +60</option>
+                        <option value="+966">🇸🇦 +966</option>
+                        <option value="+974">🇶🇦 +974</option>
+                        <option value="+968">🇴🇲 +968</option>
+                        <option value="+973">🇧🇭 +973</option>
+                        <option value="+965">🇰🇼 +965</option>
+                        <option value="+977">🇳🇵 +977</option>
+                        <option value="+94">🇱🇰 +94</option>
+                        <option value="+880">🇧🇩 +880</option>
+                        <option value="+92">🇵🇰 +92</option>
+                        <option value="+49">🇩🇪 +49</option>
+                        <option value="+33">🇫🇷 +33</option>
+                        <option value="+39">🇮🇹 +39</option>
+                        <option value="+81">🇯🇵 +81</option>
+                        <option value="+86">🇨🇳 +86</option>
+                        <option value="+82">🇰🇷 +82</option>
                       </select>
                       <Input
                         data-testid="signup-phone-input"
