@@ -177,38 +177,47 @@ export const Signup = () => {
 
   const sendOTP = async () => {
     setOtpSending(true);
+    
+    const makeRequest = (url, body) => {
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', url, true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.onload = function() {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            resolve({ ok: xhr.status >= 200 && xhr.status < 300, data, status: xhr.status });
+          } catch (e) {
+            resolve({ ok: false, data: { detail: 'Server error' }, status: xhr.status });
+          }
+        };
+        xhr.onerror = function() {
+          reject(new Error('Network error'));
+        };
+        xhr.send(JSON.stringify(body));
+      });
+    };
+    
     try {
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/otp/send`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const result = await makeRequest(
+        `${process.env.REACT_APP_BACKEND_URL}/api/otp/send`,
+        {
           phone_number: formData.phone_number,
           country_code: formData.country_code,
           email: formData.email
-        })
-      });
+        }
+      );
       
-      // Read as text first to avoid stream issues
-      const responseText = await response.text();
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (jsonError) {
-        console.error('JSON parse error:', jsonError, 'Response:', responseText);
-        data = { detail: 'Server error occurred' };
-      }
-      
-      if (!response.ok) {
-        throw new Error(data.detail || 'Failed to send OTP');
+      if (!result.ok) {
+        throw new Error(result.data.detail || 'Failed to send OTP');
       }
       
       toast.success('OTP sent to your phone and email!');
       setStep(2);
-      setResendTimer(60); // 60 seconds cooldown
+      setResendTimer(60);
     } catch (error) {
       console.error('SendOTP error:', error);
-      const errorMsg = error.message || 'Failed to send OTP';
-      toast.error(errorMsg);
+      toast.error(error.message || 'Failed to send OTP');
     } finally {
       setOtpSending(false);
     }
