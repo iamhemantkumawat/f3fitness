@@ -33,6 +33,10 @@ Build a complete gym management webapp for "F3 Fitness Gym" from Jaipur with:
 
 ## What's Been Implemented (February 2026)
 
+### Bug Fixes - Session 2
+- ✅ **SMTP Integration Fixed** - Changed from `use_tls=True` to `start_tls=True` for port 587 (STARTTLS)
+- ✅ **WhatsApp Integration Fixed** - Phone numbers now cleaned of spaces/dashes for E.164 format
+
 ### Landing Page (f3fitness.in)
 - ✅ Hero section with rotating gym images
 - ✅ About section
@@ -48,17 +52,30 @@ Build a complete gym management webapp for "F3 Fitness Gym" from Jaipur with:
 
 ### Dashboard Portal (/dashboard/*)
 - ✅ Admin Dashboard with enhanced stats:
-  - Today's birthdays
-  - Upcoming birthdays
-  - Upcoming renewals
-  - Regular absentees (7+ days)
+  - Today's birthdays widget
+  - Upcoming birthdays (7 days) widget
+  - Upcoming renewals widget
+  - Regular absentees (7+ days) widget
 - ✅ Member management with PT assignment
 - ✅ Payment management with reports
 - ✅ Attendance tracking
 - ✅ Plans CRUD (with PT sessions option)
 - ✅ PT Packages CRUD
 - ✅ Announcements, Holidays, Templates
-- ✅ SMTP & WhatsApp settings
+- ✅ SMTP & WhatsApp settings (with working test buttons)
+
+### Authentication
+- ✅ **OTP-based Signup Flow** - 2-step process:
+  - Step 1: Enter details with +91 default country code
+  - Step 2: Verify WhatsApp OTP and Email OTP
+- ✅ JWT-based login
+- ✅ Forgot password flow
+
+### Member Features
+- ✅ **Health Tracking Page** - Log weight, BMI, body fat
+  - Auto-calculates BMI from weight and height
+  - Shows progress history with color-coded BMI categories
+  - Weight change tracking
 
 ### Backend APIs
 - ✅ OTP send/verify (WhatsApp + Email)
@@ -74,11 +91,11 @@ Build a complete gym management webapp for "F3 Fitness Gym" from Jaipur with:
 - ✅ Regular absentees detection
 
 ### Integrations
-- ✅ Twilio WhatsApp (sandbox configured)
+- ✅ Twilio WhatsApp (WORKING)
   - Account SID: AC90629793b1b80228b667f3a239ffb773
   - Sandbox: +14155238886
-- ✅ SMTP Email (configurable)
-- ✅ Razorpay (placeholder)
+- ✅ SMTP Email (WORKING)
+- ⏳ Razorpay (placeholder)
 
 ## Twilio Sandbox Testing
 To test WhatsApp:
@@ -89,20 +106,23 @@ To test WhatsApp:
 - Email: admin@f3fitness.com
 - Password: admin123
 
-## Trainer Credentials
-- Email: trainer@f3fitness.com
-- Password: trainer123
+## Test Member Credentials
+- Email: testmember_102810@example.com
+- Password: test123
 
 ## Prioritized Backlog
 
-### P0 (Critical) - Done for MVP
+### P0 (Critical) - COMPLETED
+- ✅ SMTP bug fix
+- ✅ WhatsApp bug fix
 
-### P1 (High Priority)
-- OTP signup flow UI (phone verification screen)
-- Member health tracking UI
-- Diet/Workout plan creation UI
-- Template editor in admin panel
-- Scheduled birthday/renewal notifications
+### P1 (High Priority) - PARTIALLY COMPLETE
+- ✅ OTP signup flow UI with +91 default
+- ✅ Admin Dashboard birthdays/renewals widgets
+- ✅ Member health tracking page
+- ⏳ Diet/Workout plan creation UI for trainers
+- ⏳ Template editor in admin panel (rich text)
+- ⏳ Scheduled birthday/renewal notifications (cron)
 
 ### P2 (Medium Priority)
 - Razorpay payment verification flow
@@ -116,8 +136,12 @@ To test WhatsApp:
 - Mobile app (React Native)
 
 ## Next Tasks
-1. Create OTP verification UI for signup
-2. Add health tracking page for members
-3. Implement diet/workout plan editor
-4. Set up scheduled notification cron jobs
-5. Deploy to Ubuntu VPS with domain setup
+1. Create Diet/Workout plan editor UI for trainers/admins
+2. Build Template Management UI with rich text editor
+3. Implement scheduled notification cron jobs
+4. Integrate Razorpay for online payments
+5. Create deployment guide for Ubuntu VPS
+
+## Test Reports
+- /app/test_reports/iteration_2.json - SMTP/WhatsApp bug fixes
+- /app/test_reports/iteration_3.json - New features (OTP, Dashboard widgets, Health Tracking)
