@@ -1,0 +1,129 @@
+{
+  "project_name": "F3 Fitness Gym",
+  "design_philosophy": {
+    "identity": "The Industrial Athlete",
+    "core_values": [
+      "High Performance",
+      "Precision",
+      "Intensity",
+      "Modernity"
+    ],
+    "mood": "Dark, moody, electric, premium. Think 'Nike Pro' meets 'Cyberpunk Gym'.",
+    "theme_mode": "dark"
+  },
+  "typography": {
+    "font_family": {
+      "heading": "Barlow Condensed, sans-serif",
+      "body": "Manrope, sans-serif",
+      "mono": "JetBrains Mono, monospace"
+    },
+    "scale": {
+      "h1": "text-5xl md:text-7xl font-black tracking-tighter uppercase",
+      "h2": "text-4xl md:text-5xl font-bold tracking-tight uppercase",
+      "h3": "text-2xl md:text-3xl font-bold tracking-tight",
+      "h4": "text-xl font-semibold tracking-wide uppercase",
+      "body_lg": "text-lg font-medium leading-relaxed",
+      "body_base": "text-base font-normal leading-relaxed text-zinc-400",
+      "caption": "text-sm font-medium tracking-wider uppercase text-zinc-500"
+    },
+    "imports": [
+      "@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Manrope:wght@300;400;500;600;700&display=swap');"
+    ]
+  },
+  "colors": {
+    "palette": {
+      "background": "#09090b",
+      "foreground": "#fafafa",
+      "card": "#18181b",
+      "card_foreground": "#fafafa",
+      "popover": "#09090b",
+      "popover_foreground": "#fafafa",
+      "primary": "#06b6d4",
+      "primary_foreground": "#000000",
+      "secondary": "#f97316",
+      "secondary_foreground": "#ffffff",
+      "muted": "#27272a",
+      "muted_foreground": "#a1a1aa",
+      "accent": "#27272a",
+      "accent_foreground": "#fafafa",
+      "destructive": "#ef4444",
+      "destructive_foreground": "#fafafa",
+      "border": "#27272a",
+      "input": "#27272a",
+      "ring": "#06b6d4"
+    },
+    "gradients": {
+      "hero_glow": "bg-gradient-to-tr from-cyan-500/20 via-transparent to-orange-500/20",
+      "card_surface": "bg-gradient-to-b from-zinc-800/50 to-zinc-900/50",
+      "active_border": "bg-gradient-to-r from-cyan-500 to-blue-600"
+    }
+  },
+  "layout": {
+    "container": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+    "spacing": {
+      "section_gap": "py-24",
+      "element_gap": "gap-6"
+    },
+    "grid_system": {
+      "dashboard_bento": "grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-6",
+      "marketing_hero": "grid grid-cols-1 lg:grid-cols-12 gap-12 items-center"
+    },
+    "border_radius": {
+      "card": "rounded-xl",
+      "button": "rounded-none",
+      "input": "rounded-md"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-primary text-primary-foreground hover:bg-cyan-400 font-bold uppercase tracking-wider px-8 py-3 rounded-none transition-all duration-300 hover:shadow-[0_0_20px_rgba(6,182,212,0.5)]",
+      "secondary": "bg-transparent border border-zinc-700 text-white hover:border-white hover:bg-white/5 font-semibold uppercase tracking-wider px-8 py-3 rounded-none transition-all duration-300",
+      "ghost": "hover:bg-zinc-800 text-zinc-400 hover:text-white"
+    },
+    "cards": {
+      "base": "bg-card/40 backdrop-blur-md border border-white/5 rounded-xl p-6 hover:border-white/10 transition-colors duration-300",
+      "glass": "bg-black/40 backdrop-blur-xl border border-white/10 rounded-xl",
+      "highlight": "bg-gradient-to-br from-zinc-900 to-black border border-cyan-500/30 shadow-[0_0_30px_-10px_rgba(6,182,212,0.2)]"
+    },
+    "inputs": {
+      "base": "bg-zinc-900/50 border-zinc-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all duration-300 rounded-md placeholder:text-zinc-600"
+    }
+  },
+  "assets": {
+    "logo_url": "https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png",
+    "images": {
+      "hero_bg": "https://images.unsplash.com/photo-1741940513798-4ce04b95ffda?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1OTN8MHwxfHNlYXJjaHwxfHxkYXJrJTIwbW9kZXJuJTIwZ3ltJTIwaW50ZXJpb3IlMjBuZW9uJTIwbGlnaHRzfGVufDB8fHx8MTc3MDk3NzYzOHww&ixlib=rb-4.1.0&q=85",
+      "gym_interior_1": "https://images.unsplash.com/photo-1761971976282-b2bb051a5474?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1OTN8MHwxfHNlYXJjaHw0fHxkYXJrJTIwbW9kZXJuJTIwZ3ltJTIwaW50ZXJpb3IlMjBuZW9uJTIwbGlnaHRzfGVufDB8fHx8MTc3MDk3NzYzOHww&ixlib=rb-4.1.0&q=85",
+      "gym_interior_2": "https://images.unsplash.com/photo-1671970922029-0430d2ae122c?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1OTN8MHwxfHNlYXJjaHwyfHxkYXJrJTIwbW9kZXJuJTIwZ3ltJTIwaW50ZXJpb3IlMjBuZW9uJTIwbGlnaHRzfGVufDB8fHx8MTc3MDk3NzYzOHww&ixlib=rb-4.1.0&q=85",
+      "trainer_1": "https://images.unsplash.com/photo-1750698545009-679820502908?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1OTN8MHwxfHNlYXJjaHwzfHxpbmRpYW4lMjBmaXRuZXNzJTIwdHJhaW5lciUyMHBvcnRyYWl0JTIwcHJvZmVzc2lvbmFsfGVufDB8fHx8MTc3MDk3NzYzOXww&ixlib=rb-4.1.0&q=85",
+      "trainer_2": "https://images.unsplash.com/photo-1639496908204-6f949b0f46e1?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1OTN8MHwxfHNlYXJjaHwyfHxpbmRpYW4lMjBmaXRuZXNzJTIwdHJhaW5lciUyMHBvcnRyYWl0JTIwcHJvZmVzc2lvbmFsfGVufDB8fHx8MTc3MDk3NzYzOXww&ixlib=rb-4.1.0&q=85",
+      "food_bowl": "https://images.unsplash.com/photo-1766396703211-6d1404d5ea8b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njd8MHwxfHNlYXJjaHwyfHxoZWFsdGh5JTIwZm9vZCUyMGJvd2wlMjBudXRyaXRpb24lMjBkYXJrJTIwYmFja2dyb3VuZHxlbnwwfHx8fDE3NzA5Nzc2NDB8MA&ixlib=rb-4.1.0&q=85",
+      "athlete_lifting": "https://images.unsplash.com/photo-1709315957145-a4bad1feef28?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzNzl8MHwxfHNlYXJjaHwzfHxpbnRlbnNlJTIwd29ya291dCUyMGF0aGxldGUlMjBkcmFtYXRpYyUyMGxpZ2h0aW5nfGVufDB8fHx8MTc3MDk3NzY0Mnww&ixlib=rb-4.1.0&q=85"
+    },
+    "icons": "Use 'lucide-react' for all icons."
+  },
+  "motion": {
+    "page_transition": {
+      "initial": { "opacity": 0, "y": 20 },
+      "animate": { "opacity": 1, "y": 0 },
+      "exit": { "opacity": 0, "y": -20 },
+      "transition": { "duration": 0.4, "ease": "easeOut" }
+    },
+    "hover_lift": "hover:-translate-y-1 transition-transform duration-300",
+    "stagger_list": "staggerChildren: 0.1"
+  },
+  "accessibility": {
+    "contrast": "Ensure all text on dark backgrounds is at least zinc-400 (4.5:1 ratio).",
+    "focus_states": "focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+  },
+  "universal_guidelines": [
+    "Do NOT use gradients for text.",
+    "Do NOT use rounded-full buttons unless it is an icon button.",
+    "Inputs should have a subtle background, not just a border.",
+    "Use uppercase for labels and small headers to add structure.",
+    "Always use 'Manrope' for numbers (prices, stats, dates).",
+    "Dashboard cards should have a subtle 1px border of white/10.",
+    "Use data-testid attributes for all interactive elements."
+  ],
+  "instructions_to_main_agent": "Implement the 'Dark Industrial' theme strictly. Use the provided colors and fonts. Do not revert to default Tailwind colors. Ensure all charts in the dashboard use the cyan/orange/white palette. Use the provided image URLs for the respective sections."
+}
