@@ -740,52 +740,52 @@ const LandingPage = () => {
                     <MapPin className="text-cyan-500" />
                   </div>
                   <div>
-                    <p className="font-semibold text-white">Address</p>
-                    <p className="text-zinc-400">4th Avenue Plot No 4R-B, Mode, near Mandir Marg, Sector 4, Vidyadhar Nagar, Jaipur, Rajasthan 302039</p>
+                    <p className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Address</p>
+                    <p className={theme === 'dark' ? 'text-zinc-400' : 'text-gray-600'}>4th Avenue Plot No 4R-B, Mode, near Mandir Marg, Sector 4, Vidyadhar Nagar, Jaipur, Rajasthan 302039</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-cyan-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Phone className="text-cyan-400" />
+                  <div className={`w-12 h-12 ${theme === 'dark' ? 'bg-cyan-500/20' : 'bg-cyan-100'} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                    <Phone className="text-cyan-500" />
                   </div>
                   <div>
-                    <p className="font-semibold text-white">Phone</p>
-                    <a href="tel:07230052193" className="text-cyan-400 hover:text-cyan-300">072300 52193</a>
+                    <p className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Phone</p>
+                    <a href="tel:07230052193" className="text-cyan-500 hover:text-cyan-400">072300 52193</a>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-cyan-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Mail className="text-cyan-400" />
+                  <div className={`w-12 h-12 ${theme === 'dark' ? 'bg-cyan-500/20' : 'bg-cyan-100'} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                    <Mail className="text-cyan-500" />
                   </div>
                   <div>
-                    <p className="font-semibold text-white">Email</p>
-                    <a href="mailto:info@f3fitness.in" className="text-cyan-400 hover:text-cyan-300">info@f3fitness.in</a>
+                    <p className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Email</p>
+                    <a href="mailto:info@f3fitness.in" className="text-cyan-500 hover:text-cyan-400">info@f3fitness.in</a>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-pink-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Instagram className="text-pink-400" />
+                  <div className={`w-12 h-12 ${theme === 'dark' ? 'bg-pink-500/20' : 'bg-pink-100'} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                    <Instagram className="text-pink-500" />
                   </div>
                   <div>
-                    <p className="font-semibold text-white">Instagram</p>
-                    <a href="https://instagram.com/f3fitnessclub" target="_blank" rel="noopener noreferrer" className="text-pink-400 hover:text-pink-300">@f3fitnessclub</a>
+                    <p className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Instagram</p>
+                    <a href="https://instagram.com/f3fitnessclub" target="_blank" rel="noopener noreferrer" className="text-pink-500 hover:text-pink-400">@f3fitnessclub</a>
                   </div>
                 </div>
               </div>
 
               <div className="mt-8">
-                <p className="font-semibold text-white mb-2">Opening Hours</p>
-                <p className="text-zinc-400">Monday - Saturday: 5:00 AM - 10:00 PM</p>
-                <p className="text-zinc-400">Sunday: 6:00 AM - 12:00 PM</p>
+                <p className={`font-semibold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Opening Hours</p>
+                <p className={theme === 'dark' ? 'text-zinc-400' : 'text-gray-600'}>Monday - Saturday: 5:00 AM - 10:00 PM</p>
+                <p className={theme === 'dark' ? 'text-zinc-400' : 'text-gray-600'}>Sunday: 6:00 AM - 12:00 PM</p>
               </div>
             </div>
 
             <div>
               {/* Google Maps Embed - F3 Fitness Location */}
-              <div className="rounded-xl overflow-hidden h-[400px] border border-zinc-800">
+              <div className={`rounded-xl overflow-hidden h-[400px] border ${theme === 'dark' ? 'border-zinc-800' : 'border-gray-300'}`}>
                 <iframe
                   src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3556.892936!2d75.7833333!3d26.9375!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x396db4fb1b8e8e1d%3A0x5f3f3f3f3f3f3f3f!2sXQ5P%2B6G%2C%20Vidyadhar%20Nagar%2C%20Jaipur%2C%20Rajasthan!5e0!3m2!1sen!2sin!4v1707825600000!5m2!1sen!2sin"
                   width="100%"
@@ -797,7 +797,7 @@ const LandingPage = () => {
                   title="F3 Fitness Location"
                 />
               </div>
-              <p className="text-center text-zinc-500 text-sm mt-3">
+              <p className={`text-center text-sm mt-3 ${theme === 'dark' ? 'text-zinc-500' : 'text-gray-500'}`}>
                 Plus Code: XQ5P+6G Jaipur, Rajasthan
               </p>
             </div>
@@ -806,13 +806,13 @@ const LandingPage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 relative overflow-hidden">
+      <section className={`py-24 relative overflow-hidden ${theme === 'dark' ? '' : 'bg-white'}`}>
         <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 via-transparent to-orange-500/20" />
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-6" style={{ fontFamily: 'Barlow Condensed' }}>
+          <h2 className={`text-4xl md:text-6xl font-black uppercase tracking-tighter mb-6 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`} style={{ fontFamily: 'Barlow Condensed' }}>
             Ready to Transform?
           </h2>
-          <p className="text-xl text-zinc-400 mb-8">
+          <p className={`text-xl mb-8 ${theme === 'dark' ? 'text-zinc-400' : 'text-gray-600'}`}>
             Join F3 Fitness today and start your journey to a healthier, stronger you.
           </p>
           <Link to="/signup">
