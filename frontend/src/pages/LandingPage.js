@@ -829,7 +829,7 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-4">
-              <img src={LOGO_URL} alt="F3 Fitness" className="h-10 invert" />
+              <img src={theme === 'dark' ? LOGO_DARK : LOGO_LIGHT} alt="F3 Fitness" className="h-10" />
             </div>
             <div className="flex items-center gap-6">
               <a href="https://instagram.com/f3fitnessclub" target="_blank" rel="noopener noreferrer" className="text-zinc-500 hover:text-pink-400">
