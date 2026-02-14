@@ -1015,19 +1015,13 @@ export const TrainersList = () => {
             </div>
 
             {/* Actions */}
-            <div className="flex justify-between pt-4 border-t border-zinc-800">
-              <Button variant="outline" onClick={handleResetPassword}>
-                <Key size={14} className="mr-2" />
-                Reset Password
+            <div className="flex justify-end gap-2 pt-4 border-t border-zinc-800">
+              <Button variant="outline" onClick={() => setEditMode(false)}>
+                Cancel
               </Button>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setEditMode(false)}>
-                  Cancel
-                </Button>
-                <Button className="btn-primary" onClick={handleSave} disabled={saving}>
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </Button>
-              </div>
+              <Button className="btn-primary" onClick={handleSave} disabled={saving}>
+                {saving ? 'Saving...' : 'Save Changes'}
+              </Button>
             </div>
           </div>
         </DialogContent>
