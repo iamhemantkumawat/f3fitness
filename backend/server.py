@@ -1264,20 +1264,8 @@ async def forgot_password(req: ForgotPasswordRequest, background_tasks: Backgrou
         "used": False
     })
     
-    # Send OTP via Email
-    email_body = f"""
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #09090b; color: #fff; padding: 40px;">
-        <img src="https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png" style="width: 150px; margin-bottom: 20px;" />
-        <h1 style="color: #06b6d4;">Password Reset OTP</h1>
-        <p>Hello {user['name']},</p>
-        <p>Use the following OTP to reset your password:</p>
-        <div style="background: #18181b; padding: 20px; text-align: center; margin: 20px 0;">
-            <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #06b6d4;">{otp}</span>
-        </div>
-        <p style="color: #71717a;">This OTP is valid for 10 minutes. Do not share it with anyone.</p>
-    </div>
-    """
-    background_tasks.add_task(send_email, user["email"], "Password Reset OTP - F3 Fitness Gym", email_body)
+    # Use template system for password reset notifications
+    await send_notification(user, "password_reset", {"otp": otp}, background_tasks)
     
     # Send OTP via WhatsApp
     if user.get("phone_number"):
