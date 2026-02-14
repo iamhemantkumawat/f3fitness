@@ -580,7 +580,7 @@ const LandingPage = () => {
                   ₹4,000
                 </p>
                 <Link to="/signup">
-                  <Button className="w-full bg-cyan-500 hover:bg-cyan-600 text-black">
+                  <Button className="w-full bg-cyan-500 hover:bg-cyan-600 text-black font-bold">
                     Get Started
                   </Button>
                 </Link>
@@ -588,19 +588,19 @@ const LandingPage = () => {
             </Card>
 
             {/* 6 Month */}
-            <Card className="bg-zinc-900 border-zinc-800">
+            <Card className={`${theme === 'dark' ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200 shadow-md'}`}>
               <CardContent className="p-6">
                 <span className="inline-block bg-orange-500 text-black text-xs font-bold uppercase px-2 py-1 rounded mb-4">
                   Best Value
                 </span>
-                <h3 className="text-xl font-bold text-white mb-2">6 Months</h3>
-                <p className="text-zinc-500 mb-4">180 days</p>
-                <p className="text-lg text-zinc-500 line-through mb-1">₹9,000</p>
-                <p className="text-4xl font-bold text-cyan-400 mb-6">
+                <h3 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-2`}>6 Months</h3>
+                <p className={`${theme === 'dark' ? 'text-zinc-500' : 'text-gray-500'} mb-4`}>180 days</p>
+                <p className={`text-lg ${theme === 'dark' ? 'text-zinc-500' : 'text-gray-400'} line-through mb-1`}>₹9,000</p>
+                <p className="text-4xl font-bold text-cyan-500 mb-6">
                   ₹6,000
                 </p>
                 <Link to="/signup">
-                  <Button className="w-full bg-zinc-800 hover:bg-zinc-700">
+                  <Button className={`w-full ${theme === 'dark' ? 'bg-zinc-800 hover:bg-zinc-700 text-white' : 'bg-gray-900 hover:bg-gray-800 text-white'}`}>
                     Get Started
                   </Button>
                 </Link>
@@ -608,16 +608,16 @@ const LandingPage = () => {
             </Card>
 
             {/* 12 Month */}
-            <Card className="bg-zinc-900 border-zinc-800">
+            <Card className={`${theme === 'dark' ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200 shadow-md'}`}>
               <CardContent className="p-6">
-                <h3 className="text-xl font-bold text-white mb-2">Yearly</h3>
-                <p className="text-zinc-500 mb-4">365 days</p>
-                <p className="text-lg text-zinc-500 line-through mb-1">₹12,000</p>
-                <p className="text-4xl font-bold text-cyan-400 mb-6">
+                <h3 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-2`}>Yearly</h3>
+                <p className={`${theme === 'dark' ? 'text-zinc-500' : 'text-gray-500'} mb-4`}>365 days</p>
+                <p className={`text-lg ${theme === 'dark' ? 'text-zinc-500' : 'text-gray-400'} line-through mb-1`}>₹12,000</p>
+                <p className="text-4xl font-bold text-cyan-500 mb-6">
                   ₹10,000
                 </p>
                 <Link to="/signup">
-                  <Button className="w-full bg-zinc-800 hover:bg-zinc-700">
+                  <Button className={`w-full ${theme === 'dark' ? 'bg-zinc-800 hover:bg-zinc-700 text-white' : 'bg-gray-900 hover:bg-gray-800 text-white'}`}>
                     Get Started
                   </Button>
                 </Link>
