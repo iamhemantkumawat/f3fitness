@@ -572,6 +572,63 @@ def get_ist_today_end():
     ist_now = get_ist_now()
     return datetime(ist_now.year, ist_now.month, ist_now.day, 23, 59, 59)
 
+def wrap_email_in_template(content: str, title: str = "F3 Fitness Notification") -> str:
+    """Wrap email content in professional F3 Fitness template - light/white theme"""
+    return f'''<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{title}</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body {{ margin:0; padding:0; font-family: 'Poppins', Arial, sans-serif; background: linear-gradient(135deg,#f4f6f8,#eef1f5); }}
+.wrapper {{ padding:40px 15px; }}
+.container {{ max-width:620px; margin:0 auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 15px 40px rgba(0,0,0,0.08); border:1px solid #eaeaea; }}
+.top-accent {{ height:6px; background: linear-gradient(90deg,#06b6d4,#0891b2); }}
+.header {{ padding:35px 30px 25px 30px; text-align:center; background:#f9fafb; }}
+.logo {{ max-width:170px; margin-bottom:10px; }}
+.tagline {{ font-size:13px; letter-spacing:2px; text-transform:uppercase; color:#888888; margin-top:5px; }}
+.content {{ padding:10px 35px 35px 35px; color:#333333; font-size:15px; line-height:1.8; }}
+.content h2 {{ margin-top:0; font-size:22px; color:#111111; }}
+.highlight-box {{ background:#f0fdfa; border:1px solid #99f6e4; padding:18px; border-radius:10px; margin:20px 0; font-size:14px; color:#0f766e; }}
+.button {{ display:inline-block; margin-top:25px; background: linear-gradient(90deg,#06b6d4,#0891b2); color:#ffffff; padding:14px 32px; text-decoration:none; border-radius:50px; font-weight:600; font-size:14px; letter-spacing:0.5px; box-shadow:0 8px 20px rgba(6,182,212,0.25); }}
+.footer {{ background:#f0f0f0; padding:30px 30px 25px 30px; color:#444444; font-size:13px; text-align:center; border-top:1px solid #e0e0e0; }}
+.footer strong {{ font-size:14px; color:#111111; }}
+.footer a {{ color:#06b6d4; text-decoration:none; font-weight:500; }}
+.small {{ margin-top:15px; font-size:11px; color:#888888; }}
+.divider {{ height:1px; background:#e5e5e5; margin:25px 0; }}
+.otp-code {{ background:#f0fdfa; border:2px solid #06b6d4; padding:20px; border-radius:10px; text-align:center; font-size:32px; font-weight:700; color:#0891b2; letter-spacing:8px; }}
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="container">
+    <div class="top-accent"></div>
+    <div class="header">
+      <img src="https://customer-assets.emergentagent.com/job_95d2df03-ae00-4d05-9720-77eacf98b25a/artifacts/zb82ezlf_f3logo%20for%20light%20theme.png" alt="F3 Fitness Logo" class="logo">
+      <div class="tagline">Train • Transform • Triumph</div>
+    </div>
+    <div class="content">
+      {content}
+    </div>
+    <div class="footer">
+      <strong>F3 Fitness Health Club</strong><br><br>
+      4th Avenue Plot No 4R-B, Mode, near Mandir Marg,<br>
+      Sector 4, Vidyadhar Nagar, Jaipur, Rajasthan 302039<br><br>
+      📞 072300 52193 | 📧 info@f3fitness.in<br>
+      🕒 Monday – Saturday: 5:00 AM – 10:00 PM | Sunday: 6:00 AM – 12:00 PM<br><br>
+      Follow us on Instagram: <a href="https://instagram.com/f3fitnessclub">@f3fitnessclub</a>
+      <div class="small">
+        This email was sent from alerts@f3fitness.in<br>
+        © 2026 F3 Fitness Health Club. All rights reserved.
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>'''
+
 async def get_template(template_type: str, channel: str) -> dict:
     """Get notification template"""
     template = await db.templates.find_one({"template_type": template_type, "channel": channel}, {"_id": 0})
