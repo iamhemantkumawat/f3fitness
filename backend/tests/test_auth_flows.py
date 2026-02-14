@@ -9,7 +9,7 @@ import random
 import string
 from pymongo import MongoClient
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://fitness-staging.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://f3-admin-portal.preview.emergentagent.com').rstrip('/')
 
 # Test credentials from context
 ADMIN_CREDS = {"email_or_phone": "admin@f3fitness.com", "password": "admin123"}
