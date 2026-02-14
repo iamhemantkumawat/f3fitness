@@ -1424,6 +1424,14 @@ async def get_users_with_membership(
     all_memberships = await db.memberships.find({"status": "active"}, {"_id": 0}).to_list(10000)
     membership_map = {m["user_id"]: m for m in all_memberships}
     
+    # Get all payments grouped by membership_id
+    all_payments = await db.payments.find({}, {"_id": 0, "membership_id": 1, "amount_paid": 1}).to_list(10000)
+    payment_totals = {}
+    for p in all_payments:
+        mid = p.get("membership_id")
+        if mid:
+            payment_totals[mid] = payment_totals.get(mid, 0) + p.get("amount_paid", 0)
+    
     # Get all plans
     all_plans = await db.plans.find({}, {"_id": 0}).to_list(100)
     plan_map = {p["id"]: p for p in all_plans}
@@ -1435,13 +1443,19 @@ async def get_users_with_membership(
         user_data = {**user}
         if membership:
             plan = plan_map.get(membership.get("plan_id"))
+            final_price = membership.get("final_price", 0)
+            amount_paid = payment_totals.get(membership.get("id"), 0)
+            amount_due = final_price - amount_paid
             user_data["active_membership"] = {
                 "id": membership.get("id"),
                 "plan_id": membership.get("plan_id"),
                 "plan_name": plan["name"] if plan else "Unknown",
                 "start_date": membership.get("start_date"),
                 "end_date": membership.get("end_date"),
-                "status": membership.get("status")
+                "status": membership.get("status"),
+                "final_price": final_price,
+                "amount_paid": amount_paid,
+                "amount_due": amount_due
             }
         else:
             user_data["active_membership"] = None
