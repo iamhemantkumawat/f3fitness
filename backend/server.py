@@ -2082,8 +2082,10 @@ async def create_payment_request(req: PaymentRequestCreate, current_user: dict =
 @api_router.put("/payment-requests/{request_id}/approve")
 async def approve_payment_request(
     request_id: str,
+    background_tasks: BackgroundTasks,
     discount: float = 0,
     payment_method: str = "cash",
+    amount_paid: float = 0,
     current_user: dict = Depends(get_admin_user)
 ):
     request = await db.payment_requests.find_one({"id": request_id})
@@ -2097,14 +2099,30 @@ async def approve_payment_request(
         user_id=request["user_id"],
         plan_id=request["plan_id"],
         discount_amount=discount,
-        initial_payment=0,
+        initial_payment=amount_paid,
         payment_method=payment_method
     )
     
-    await create_membership(membership_data, current_user)
+    await create_membership(membership_data, background_tasks, current_user)
     await db.payment_requests.update_one({"id": request_id}, {"$set": {"status": "completed"}})
     
     return {"message": "Payment request approved and membership created"}
+
+@api_router.put("/payment-requests/{request_id}/reject")
+async def reject_payment_request(
+    request_id: str,
+    current_user: dict = Depends(get_admin_user)
+):
+    request = await db.payment_requests.find_one({"id": request_id})
+    if not request:
+        raise HTTPException(status_code=404, detail="Request not found")
+    
+    if request["status"] != "pending":
+        raise HTTPException(status_code=400, detail="Request already processed")
+    
+    await db.payment_requests.update_one({"id": request_id}, {"$set": {"status": "rejected"}})
+    
+    return {"message": "Payment request rejected"}
 
 # ==================== ATTENDANCE ROUTES ====================
 
