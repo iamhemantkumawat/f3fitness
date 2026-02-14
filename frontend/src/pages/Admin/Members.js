@@ -787,20 +787,20 @@ export const TrainersList = () => {
     }
   };
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+
   const handleResetPassword = async () => {
-    const newPassword = window.prompt('Enter new password for trainer (min 6 characters):');
-    if (newPassword === null) {
-      return; // User cancelled
-    }
     if (newPassword.length < 6) {
       toast.error('Password must be at least 6 characters');
       return;
     }
     try {
       await usersAPI.adminResetPassword(selectedTrainer.id, newPassword);
-      toast.success('Password reset successfully');
+      toast.success('Password updated successfully');
+      setNewPassword('');
     } catch (error) {
-      toast.error('Failed to reset password');
+      toast.error('Failed to update password');
     }
   };
 
