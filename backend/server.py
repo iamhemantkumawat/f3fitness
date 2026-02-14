@@ -926,10 +926,12 @@ async def send_notification(user: dict, template_type: str, variables: dict, bac
     email_template = await get_template(template_type, "email")
     whatsapp_template = await get_template(template_type, "whatsapp")
     
-    # Send email
+    # Send email - wrap in professional template
     if user.get("email") and email_template.get("content"):
         subject = replace_template_vars(email_template.get("subject", "F3 Fitness Notification"), vars_with_user)
-        body = replace_template_vars(email_template["content"], vars_with_user)
+        content = replace_template_vars(email_template["content"], vars_with_user)
+        # Wrap content in professional template
+        body = wrap_email_in_template(content, subject)
         if background_tasks:
             background_tasks.add_task(send_email, user["email"], subject, body)
         else:
