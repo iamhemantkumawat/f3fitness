@@ -327,14 +327,24 @@ const LandingPage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {trainers.map((trainer, index) => (
-              <Card key={index} className="bg-zinc-900 border-zinc-800 overflow-hidden group">
+              <Card key={trainer.id || index} className="bg-zinc-900 border-zinc-800 overflow-hidden group">
                 <div className="relative h-80 overflow-hidden">
                   <img 
-                    src={trainer.image} 
+                    src={trainer.image || "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400"} 
                     alt={trainer.name}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />
+                  {trainer.instagram_url && (
+                    <a 
+                      href={trainer.instagram_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="absolute top-4 right-4 bg-black/50 p-2 rounded-full hover:bg-pink-500 transition-colors"
+                    >
+                      <Instagram size={20} className="text-white" />
+                    </a>
+                  )}
                 </div>
                 <CardContent className="p-6 relative -mt-20 z-10">
                   <h3 className="text-xl font-bold text-white">{trainer.name}</h3>
