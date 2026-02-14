@@ -498,19 +498,19 @@ const LandingPage = () => {
                 </Button>
 
                 {calorieResult && (
-                  <div className="mt-6 p-4 bg-zinc-800 rounded-lg">
+                  <div className={`mt-6 p-4 ${theme === 'dark' ? 'bg-zinc-800' : 'bg-orange-50 border border-orange-200'} rounded-lg`}>
                     <div className="grid grid-cols-3 gap-4 text-center">
                       <div>
-                        <p className="text-2xl font-bold text-red-400">{calorieResult.weight_loss}</p>
-                        <p className="text-xs text-zinc-500">Weight Loss</p>
+                        <p className="text-2xl font-bold text-red-500">{calorieResult.weight_loss}</p>
+                        <p className={`text-xs ${theme === 'dark' ? 'text-zinc-500' : 'text-gray-600'}`}>Weight Loss</p>
                       </div>
                       <div>
-                        <p className="text-2xl font-bold text-cyan-400">{calorieResult.maintenance_calories}</p>
-                        <p className="text-xs text-zinc-500">Maintenance</p>
+                        <p className="text-2xl font-bold text-cyan-500">{calorieResult.maintenance_calories}</p>
+                        <p className={`text-xs ${theme === 'dark' ? 'text-zinc-500' : 'text-gray-600'}`}>Maintenance</p>
                       </div>
                       <div>
-                        <p className="text-2xl font-bold text-green-400">{calorieResult.weight_gain}</p>
-                        <p className="text-xs text-zinc-500">Weight Gain</p>
+                        <p className="text-2xl font-bold text-green-500">{calorieResult.weight_gain}</p>
+                        <p className={`text-xs ${theme === 'dark' ? 'text-zinc-500' : 'text-gray-600'}`}>Weight Gain</p>
                       </div>
                     </div>
                   </div>
@@ -522,28 +522,28 @@ const LandingPage = () => {
       </section>
 
       {/* Pricing Preview */}
-      <section className="py-24 bg-zinc-900/50">
+      <section className={`py-24 ${theme === 'dark' ? 'bg-zinc-900/50' : 'bg-gray-100'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold uppercase tracking-tight mb-4" style={{ fontFamily: 'Barlow Condensed' }}>
-              Membership <span className="text-cyan-400">Plans</span>
+            <h2 className={`text-4xl md:text-5xl font-bold uppercase tracking-tight mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`} style={{ fontFamily: 'Barlow Condensed' }}>
+              Membership <span className="text-cyan-500">Plans</span>
             </h2>
-            <p className="text-zinc-400 max-w-2xl mx-auto">
+            <p className={`${theme === 'dark' ? 'text-zinc-400' : 'text-gray-600'} max-w-2xl mx-auto`}>
               Choose a plan that fits your fitness goals
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
             {/* 1 Day Pass */}
-            <Card className="bg-zinc-900 border-zinc-800">
+            <Card className={`${theme === 'dark' ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200 shadow-md'}`}>
               <CardContent className="p-6">
-                <h3 className="text-xl font-bold text-white mb-2">Day Pass</h3>
-                <p className="text-zinc-500 mb-4">1 day access</p>
-                <p className="text-4xl font-bold text-cyan-400 mb-6">
+                <h3 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-2`}>Day Pass</h3>
+                <p className={`${theme === 'dark' ? 'text-zinc-500' : 'text-gray-500'} mb-4`}>1 day access</p>
+                <p className="text-4xl font-bold text-cyan-500 mb-6">
                   ₹300
                 </p>
                 <Link to="/signup">
-                  <Button className="w-full bg-zinc-800 hover:bg-zinc-700">
+                  <Button className={`w-full ${theme === 'dark' ? 'bg-zinc-800 hover:bg-zinc-700 text-white' : 'bg-gray-900 hover:bg-gray-800 text-white'}`}>
                     Get Started
                   </Button>
                 </Link>
@@ -551,16 +551,16 @@ const LandingPage = () => {
             </Card>
 
             {/* Monthly */}
-            <Card className="bg-zinc-900 border-zinc-800">
+            <Card className={`${theme === 'dark' ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200 shadow-md'}`}>
               <CardContent className="p-6">
-                <h3 className="text-xl font-bold text-white mb-2">Monthly</h3>
-                <p className="text-zinc-500 mb-4">30 days</p>
-                <p className="text-lg text-zinc-500 line-through mb-1">₹2,500</p>
-                <p className="text-4xl font-bold text-cyan-400 mb-6">
+                <h3 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-2`}>Monthly</h3>
+                <p className={`${theme === 'dark' ? 'text-zinc-500' : 'text-gray-500'} mb-4`}>30 days</p>
+                <p className={`text-lg ${theme === 'dark' ? 'text-zinc-500' : 'text-gray-400'} line-through mb-1`}>₹2,500</p>
+                <p className="text-4xl font-bold text-cyan-500 mb-6">
                   ₹2,000
                 </p>
                 <Link to="/signup">
-                  <Button className="w-full bg-zinc-800 hover:bg-zinc-700">
+                  <Button className={`w-full ${theme === 'dark' ? 'bg-zinc-800 hover:bg-zinc-700 text-white' : 'bg-gray-900 hover:bg-gray-800 text-white'}`}>
                     Get Started
                   </Button>
                 </Link>
@@ -568,15 +568,15 @@ const LandingPage = () => {
             </Card>
 
             {/* Quarterly - Popular */}
-            <Card className="bg-zinc-900 border-zinc-800 ring-2 ring-cyan-500">
+            <Card className={`${theme === 'dark' ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200 shadow-md'} ring-2 ring-cyan-500`}>
               <CardContent className="p-6">
                 <span className="inline-block bg-cyan-500 text-black text-xs font-bold uppercase px-2 py-1 rounded mb-4">
                   Popular
                 </span>
-                <h3 className="text-xl font-bold text-white mb-2">Quarterly</h3>
-                <p className="text-zinc-500 mb-4">90 days</p>
-                <p className="text-lg text-zinc-500 line-through mb-1">₹6,000</p>
-                <p className="text-4xl font-bold text-cyan-400 mb-6">
+                <h3 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-2`}>Quarterly</h3>
+                <p className={`${theme === 'dark' ? 'text-zinc-500' : 'text-gray-500'} mb-4`}>90 days</p>
+                <p className={`text-lg ${theme === 'dark' ? 'text-zinc-500' : 'text-gray-400'} line-through mb-1`}>₹6,000</p>
+                <p className="text-4xl font-bold text-cyan-500 mb-6">
                   ₹4,000
                 </p>
                 <Link to="/signup">
