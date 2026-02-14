@@ -121,11 +121,11 @@
 
 /* Sidebar Styles */
 .sidebar-link {
-  @apply flex items-center gap-3 px-4 py-3 text-zinc-400 hover:text-white hover:bg-white/5 rounded-lg transition-all duration-200;
+  @apply flex items-center gap-3 px-4 py-3 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-all duration-200;
 }
 
 .sidebar-link.active {
-  @apply text-cyan-400 bg-cyan-500/10;
+  @apply text-primary bg-primary/10;
 }
 
 /* Stats Card Animation */
