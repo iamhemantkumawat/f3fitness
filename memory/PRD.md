@@ -192,9 +192,33 @@ To test WhatsApp:
 ### P3 (Low Priority) - BACKLOG
 - Scheduled birthday/renewal notifications (cron)
 - QR code check-in
-- Dark/Light theme toggle
+- ✅ ~~Dark/Light theme toggle~~ - COMPLETED Session 8
 - Multi-language support
 - Mobile app (React Native)
+
+## Session 8 Updates (February 2026)
+
+### Bug Fixes
+- ✅ **Trainer Password Reset** - Fixed API call from `adminResetPassword` to `resetPassword` 
+- ✅ **Theme Toggle** - Fixed CSS variables for dark/light themes, added ThemeToggle to dashboard header
+
+### New Features
+- ✅ **Dark/Light Theme Toggle** - Toggle button in dashboard header with Sun/Moon icons
+- ✅ **WhatsApp Broadcast** - Admin can send messages to all/active/inactive members
+- ✅ **Email Broadcast** - Admin can send professional HTML emails to members
+- ✅ **Email Templates Settings** - Edit and customize automated email notifications
+- ✅ **WhatsApp Templates Settings** - Edit and customize automated WhatsApp messages
+
+### New Routes
+- `/dashboard/admin/broadcast/whatsapp` - WhatsApp Broadcast page
+- `/dashboard/admin/broadcast/email` - Email Broadcast page
+- `/dashboard/admin/settings/email-templates` - Email templates management
+- `/dashboard/admin/settings/whatsapp-templates` - WhatsApp templates management
+
+### New API Endpoints
+- `POST /api/broadcast/whatsapp` - Send WhatsApp broadcast
+- `POST /api/broadcast/email?subject=X` - Send Email broadcast  
+- `DELETE /api/templates/{type}/{channel}` - Reset template to default
 
 ## Next Tasks
 1. Integrate Razorpay for online payments
