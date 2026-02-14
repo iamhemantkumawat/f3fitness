@@ -193,7 +193,7 @@ const LandingPage = () => {
         </div>
       </nav>
 
-      {/* Hero Section */}
+      {/* Hero Section - Always dark overlay so text is always white */}
       <section className="relative h-screen flex items-center">
         <div 
           className="absolute inset-0 bg-cover bg-center transition-all duration-1000"
@@ -203,14 +203,14 @@ const LandingPage = () => {
         
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-2xl">
-            <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6" style={{ fontFamily: 'Barlow Condensed' }}>
+            <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6 text-white" style={{ fontFamily: 'Barlow Condensed' }}>
               Transform Your
               <span className="text-cyan-400"> Body</span>,
               <br />
               Transform Your
               <span className="text-orange-500"> Life</span>
             </h1>
-            <p className="text-xl text-zinc-400 mb-8 max-w-lg">
+            <p className="text-xl text-zinc-300 mb-8 max-w-lg">
               Join Jaipur's premier fitness destination. State-of-the-art equipment, expert trainers, and a community that motivates.
             </p>
             <div className="flex flex-wrap gap-4">
@@ -231,15 +231,15 @@ const LandingPage = () => {
             <div className="flex gap-8 mt-12">
               <div>
                 <p className="text-4xl font-bold text-cyan-400">500+</p>
-                <p className="text-zinc-500">Active Members</p>
+                <p className="text-zinc-300">Active Members</p>
               </div>
               <div>
                 <p className="text-4xl font-bold text-orange-500">10+</p>
-                <p className="text-zinc-500">Expert Trainers</p>
+                <p className="text-zinc-300">Expert Trainers</p>
               </div>
               <div>
                 <p className="text-4xl font-bold text-white">5★</p>
-                <p className="text-zinc-500">Rating</p>
+                <p className="text-zinc-300">Rating</p>
               </div>
             </div>
           </div>
@@ -247,17 +247,17 @@ const LandingPage = () => {
       </section>
 
       {/* About Section */}
-      <section id="about" className="py-24 bg-zinc-900/50">
+      <section id="about" className={`py-24 ${theme === 'dark' ? 'bg-zinc-900/50' : 'bg-gray-100'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-4xl md:text-5xl font-bold uppercase tracking-tight mb-6" style={{ fontFamily: 'Barlow Condensed' }}>
-                About <span className="text-cyan-400">F3 Fitness</span>
+              <h2 className={`text-4xl md:text-5xl font-bold uppercase tracking-tight mb-6 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`} style={{ fontFamily: 'Barlow Condensed' }}>
+                About <span className="text-cyan-500">F3 Fitness</span>
               </h2>
-              <p className="text-zinc-400 text-lg mb-6">
+              <p className={`text-lg mb-6 ${theme === 'dark' ? 'text-zinc-400' : 'text-gray-600'}`}>
                 Located in the heart of Vidyadhar Nagar, Jaipur, F3 Fitness Health Club is more than just a gym – it's a community dedicated to transforming lives through fitness.
               </p>
-              <p className="text-zinc-400 mb-8">
+              <p className={`mb-8 ${theme === 'dark' ? 'text-zinc-400' : 'text-gray-600'}`}>
                 With cutting-edge equipment, certified trainers, and a motivating atmosphere, we provide everything you need to achieve your fitness goals. Whether you're a beginner or a seasoned athlete, F3 Fitness has something for everyone.
               </p>
               
