@@ -10,6 +10,8 @@ import { toast } from 'sonner';
 
 const WHATSAPP_TEMPLATE_TYPES = [
   { type: 'welcome', label: 'Welcome Message', description: 'Sent when a new member joins' },
+  { type: 'otp', label: 'OTP Verification', description: 'Sent for email/phone verification' },
+  { type: 'password_reset', label: 'Password Reset', description: 'Sent when user requests password reset' },
   { type: 'attendance', label: 'Attendance Confirmation', description: 'Sent when attendance is marked' },
   { type: 'membership_activated', label: 'Membership Activated', description: 'Sent when membership is activated' },
   { type: 'payment_received', label: 'Payment Receipt', description: 'Sent after payment is received' },
