@@ -170,6 +170,13 @@ const LandingPage = () => {
             </div>
 
             <div className="flex items-center gap-3">
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-full bg-zinc-800/50 hover:bg-zinc-700/50 transition-colors"
+                title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              >
+                {theme === 'dark' ? <Sun size={20} className="text-yellow-400" /> : <Moon size={20} className="text-zinc-400" />}
+              </button>
               <Link to="/login">
                 <Button variant="ghost" className="text-white hover:bg-white/10" data-testid="nav-login">
                   Login
