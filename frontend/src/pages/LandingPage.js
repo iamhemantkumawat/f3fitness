@@ -11,7 +11,8 @@ import {
   Activity, Heart, Zap, Target, CheckCircle, Sun, Moon
 } from 'lucide-react';
 
-const LOGO_URL = "https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png";
+const LOGO_DARK = "https://customer-assets.emergentagent.com/job_95d2df03-ae00-4d05-9720-77eacf98b25a/artifacts/6v6gfdbr_f3logo%20for%20dark%20theme.png";
+const LOGO_LIGHT = "https://customer-assets.emergentagent.com/job_95d2df03-ae00-4d05-9720-77eacf98b25a/artifacts/zb82ezlf_f3logo%20for%20light%20theme.png";
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 // Hero Images
