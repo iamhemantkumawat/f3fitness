@@ -693,6 +693,16 @@ async def get_template(template_type: str, channel: str) -> dict:
         ("welcome", "whatsapp"): {
             "content": "🏋️ Welcome to F3 Fitness Gym, {{name}}!\n\nYour Member ID: *{{member_id}}*\n\nLet's crush your fitness goals together! 💪\n\n- F3 Fitness Team"
         },
+        ("attendance", "email"): {
+            "subject": "Attendance Marked - F3 Fitness Gym ✅",
+            "content": """<h2>Great Job, {{name}}! ✅</h2>
+<p>Your attendance has been marked for today.</p>
+<div class="highlight-box">
+  Keep showing up consistently - that's the key to achieving your fitness goals! 💪
+</div>
+<p>See you at the gym!</p>
+<p><strong>Your F3 Fitness Team</strong></p>"""
+        },
         ("attendance", "whatsapp"): {
             "content": "✅ Attendance marked!\n\nGreat job showing up today, {{name}}. Keep the momentum going! 🔥\n\n- F3 Fitness"
         },
