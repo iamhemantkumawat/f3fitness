@@ -2986,17 +2986,39 @@ async def verify_razorpay_payment(payment: RazorpayPaymentVerify, current_user: 
 # ==================== FILE UPLOAD ROUTES ====================
 
 @api_router.post("/upload/profile-photo")
-async def upload_profile_photo(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
+async def upload_profile_photo(
+    file: UploadFile = File(...), 
+    user_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File must be an image")
     
+    # Check file size (max 2MB)
     content = await file.read()
+    if len(content) > 2 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image must be less than 2MB")
+    
+    # Determine which user to update
+    target_user_id = current_user["id"]
+    if user_id and current_user["role"] == "admin":
+        target_user_id = user_id
+    
     base64_content = base64.b64encode(content).decode()
     data_url = f"data:{file.content_type};base64,{base64_content}"
     
-    await db.users.update_one({"id": current_user["id"]}, {"$set": {"profile_photo_url": data_url}})
+    await db.users.update_one({"id": target_user_id}, {"$set": {"profile_photo_url": data_url}})
     
-    return {"profile_photo_url": data_url}
+    return {"profile_photo_url": data_url, "url": data_url}
+
+@api_router.delete("/upload/profile-photo/{user_id}")
+async def delete_profile_photo(user_id: str, current_user: dict = Depends(get_current_user)):
+    # Only admin or the user themselves can delete
+    if current_user["role"] != "admin" and current_user["id"] != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    await db.users.update_one({"id": user_id}, {"$set": {"profile_photo_url": None}})
+    return {"message": "Profile photo deleted"}
 
 @api_router.post("/upload/plan-pdf")
 async def upload_plan_pdf(file: UploadFile = File(...), current_user: dict = Depends(get_trainer_or_admin)):
