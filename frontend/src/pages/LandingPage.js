@@ -324,20 +324,20 @@ const LandingPage = () => {
       </section>
 
       {/* Trainers Section */}
-      <section id="trainers" className="py-24 bg-zinc-900/50">
+      <section id="trainers" className={`py-24 ${theme === 'dark' ? 'bg-zinc-900/50' : 'bg-gray-100'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold uppercase tracking-tight mb-4" style={{ fontFamily: 'Barlow Condensed' }}>
+            <h2 className={`text-4xl md:text-5xl font-bold uppercase tracking-tight mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`} style={{ fontFamily: 'Barlow Condensed' }}>
               Meet Our <span className="text-orange-500">Trainers</span>
             </h2>
-            <p className="text-zinc-400 max-w-2xl mx-auto">
+            <p className={`max-w-2xl mx-auto ${theme === 'dark' ? 'text-zinc-400' : 'text-gray-600'}`}>
               Certified professionals dedicated to your fitness journey
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {trainers.map((trainer, index) => (
-              <Card key={trainer.id || index} className="bg-zinc-900 border-zinc-800 overflow-hidden group">
+              <Card key={trainer.id || index} className={`${theme === 'dark' ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200 shadow-lg'} overflow-hidden group`}>
                 <div className="relative h-80 overflow-hidden">
                   <img 
                     src={trainer.image || "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400"} 
@@ -359,7 +359,7 @@ const LandingPage = () => {
                 <CardContent className="p-6 relative -mt-20 z-10">
                   <h3 className="text-xl font-bold text-white">{trainer.name}</h3>
                   <p className="text-cyan-400 font-semibold">{trainer.role}</p>
-                  <p className="text-zinc-500 text-sm mt-1">{trainer.speciality}</p>
+                  <p className="text-zinc-400 text-sm mt-1">{trainer.speciality}</p>
                 </CardContent>
               </Card>
             ))}
