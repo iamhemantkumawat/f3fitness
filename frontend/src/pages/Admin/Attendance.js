@@ -271,10 +271,7 @@ export const TodayAttendance = () => {
                     </div>
                     {view === 'present' && (
                       <p className="text-sm text-zinc-500">
-                        {new Date(item.check_in_time).toLocaleTimeString('en-IN', { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })}
+                        {item.check_in_time?.split('T')[1]?.substring(0, 5) || '--:--'}
                       </p>
                     )}
                   </div>
