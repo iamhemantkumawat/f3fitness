@@ -7,13 +7,13 @@ import { Users, CreditCard, UserCheck, UserX, Bell, Dumbbell, Cake, CalendarCloc
 import { toast } from 'sonner';
 
 const StatCard = ({ title, value, icon: Icon, color, subtext }) => (
-  <Card className="glass-card stat-card hover:border-white/10 transition-all duration-300">
+  <Card className="glass-card stat-card hover:border-border transition-all duration-300">
     <CardContent className="p-6">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-xs uppercase tracking-wider text-zinc-500 mb-2">{title}</p>
-          <p className="text-3xl font-bold text-white" style={{ fontFamily: 'Manrope' }}>{value}</p>
-          {subtext && <p className="text-sm text-zinc-500 mt-1">{subtext}</p>}
+          <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">{title}</p>
+          <p className="text-3xl font-bold text-foreground" style={{ fontFamily: 'Manrope' }}>{value}</p>
+          {subtext && <p className="text-sm text-muted-foreground mt-1">{subtext}</p>}
         </div>
         <div className={`p-3 rounded-lg ${color}`}>
           <Icon size={24} />
