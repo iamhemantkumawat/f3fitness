@@ -1023,8 +1023,8 @@ export const EditMember = () => {
       return;
     }
     
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image must be less than 5MB');
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image must be less than 2MB');
       return;
     }
     
@@ -1033,13 +1033,23 @@ export const EditMember = () => {
       const photoFormData = new FormData();
       photoFormData.append('file', file);
       
-      const response = await uploadAPI.profilePhoto(photoFormData);
-      setFormData({ ...formData, profile_photo_url: response.data.url });
+      const response = await uploadAPI.profilePhoto(photoFormData, userId);
+      setFormData({ ...formData, profile_photo_url: response.data.profile_photo_url || response.data.url });
       toast.success('Photo uploaded');
     } catch (error) {
-      toast.error('Failed to upload photo');
+      toast.error(error.response?.data?.detail || 'Failed to upload photo');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleDeletePhoto = async () => {
+    try {
+      await uploadAPI.deletePhoto(userId);
+      setFormData({ ...formData, profile_photo_url: '' });
+      toast.success('Photo removed');
+    } catch (error) {
+      toast.error('Failed to remove photo');
     }
   };
 
