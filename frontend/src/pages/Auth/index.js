@@ -60,11 +60,11 @@ export const Login = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-transparent" />
         <div className="relative z-10 flex flex-col justify-center px-12">
           <img src={LOGO_URL} alt="F3 Fitness" className="w-48 mb-8 invert" />
-          <h1 className="text-5xl font-black uppercase tracking-tighter text-white mb-4" style={{ fontFamily: 'Barlow Condensed' }}>
+          <h1 className="text-5xl font-black uppercase tracking-tighter text-foreground mb-4" style={{ fontFamily: 'Barlow Condensed' }}>
             Transform Your
             <span className="text-cyan-400"> Body</span>
           </h1>
-          <p className="text-zinc-400 text-lg max-w-md">
+          <p className="text-muted-foreground text-lg max-w-md">
             Join Jaipur's premier fitness community. Your journey to a stronger you starts here.
           </p>
         </div>
@@ -81,11 +81,11 @@ export const Login = () => {
             <h2 className="text-3xl font-bold uppercase tracking-tight mb-2" style={{ fontFamily: 'Barlow Condensed' }}>
               Welcome Back
             </h2>
-            <p className="text-zinc-500 mb-8">Sign in to your account</p>
+            <p className="text-muted-foreground mb-8">Sign in to your account</p>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <Label className="text-xs uppercase tracking-wider text-zinc-500">Email or Phone</Label>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Email or Phone</Label>
                 <Input
                   data-testid="login-email-input"
                   type="text"
@@ -98,7 +98,7 @@ export const Login = () => {
               </div>
 
               <div>
-                <Label className="text-xs uppercase tracking-wider text-zinc-500">Password</Label>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Password</Label>
                 <div className="relative mt-2">
                   <Input
                     data-testid="login-password-input"
@@ -111,7 +111,7 @@ export const Login = () => {
                   />
                   <button
                     type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -127,7 +127,7 @@ export const Login = () => {
                     onChange={(e) => setFormData({ ...formData, rememberMe: e.target.checked })}
                     className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-cyan-500 focus:ring-cyan-500"
                   />
-                  <span className="text-sm text-zinc-400">Remember me</span>
+                  <span className="text-sm text-muted-foreground">Remember me</span>
                 </label>
                 <Link to="/forgot-password" className="text-sm text-cyan-400 hover:text-cyan-300">
                   Forgot password?
@@ -145,7 +145,7 @@ export const Login = () => {
               </Button>
             </form>
 
-            <p className="text-center text-zinc-500 mt-6">
+            <p className="text-center text-muted-foreground mt-6">
               Don't have an account?{' '}
               <Link to="/signup" className="text-cyan-400 hover:text-cyan-300 font-semibold">
                 Sign Up
@@ -338,11 +338,11 @@ export const Signup = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-transparent" />
         <div className="relative z-10 flex flex-col justify-center px-12">
           <img src={LOGO_URL} alt="F3 Fitness" className="w-48 mb-8 invert" />
-          <h1 className="text-5xl font-black uppercase tracking-tighter text-white mb-4" style={{ fontFamily: 'Barlow Condensed' }}>
+          <h1 className="text-5xl font-black uppercase tracking-tighter text-foreground mb-4" style={{ fontFamily: 'Barlow Condensed' }}>
             Start Your
             <span className="text-orange-500"> Journey</span>
           </h1>
-          <p className="text-zinc-400 text-lg max-w-md">
+          <p className="text-muted-foreground text-lg max-w-md">
             Join thousands of members who have transformed their lives at F3 Fitness Gym.
           </p>
         </div>
@@ -358,9 +358,9 @@ export const Signup = () => {
           <div className="glass-card p-8">
             {/* Step indicator */}
             <div className="flex items-center justify-center gap-2 mb-6">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step >= 1 ? 'bg-cyan-500 text-black' : 'bg-zinc-700 text-zinc-400'}`}>1</div>
-              <div className={`w-12 h-0.5 ${step >= 2 ? 'bg-cyan-500' : 'bg-zinc-700'}`} />
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step >= 2 ? 'bg-cyan-500 text-black' : 'bg-zinc-700 text-zinc-400'}`}>2</div>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step >= 1 ? 'bg-cyan-500 text-black' : 'bg-muted text-muted-foreground'}`}>1</div>
+              <div className={`w-12 h-0.5 ${step >= 2 ? 'bg-cyan-500' : 'bg-muted'}`} />
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step >= 2 ? 'bg-cyan-500 text-black' : 'bg-muted text-muted-foreground'}`}>2</div>
             </div>
 
             {step === 1 ? (
@@ -368,11 +368,11 @@ export const Signup = () => {
                 <h2 className="text-3xl font-bold uppercase tracking-tight mb-2" style={{ fontFamily: 'Barlow Condensed' }}>
                   Create Account
                 </h2>
-                <p className="text-zinc-500 mb-6">Join F3 Fitness Gym today</p>
+                <p className="text-muted-foreground mb-6">Join F3 Fitness Gym today</p>
 
                 <form onSubmit={handleStep1Submit} className="space-y-4">
                   <div>
-                    <Label className="text-xs uppercase tracking-wider text-zinc-500">Full Name *</Label>
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Full Name *</Label>
                     <Input
                       data-testid="signup-name-input"
                       type="text"
@@ -385,7 +385,7 @@ export const Signup = () => {
                   </div>
 
                   <div>
-                    <Label className="text-xs uppercase tracking-wider text-zinc-500">Email *</Label>
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Email *</Label>
                     <Input
                       data-testid="signup-email-input"
                       type="email"
@@ -398,11 +398,11 @@ export const Signup = () => {
                   </div>
 
                   <div>
-                    <Label className="text-xs uppercase tracking-wider text-zinc-500">Phone Number *</Label>
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Phone Number *</Label>
                     <div className="flex gap-2 mt-2">
                       <select
                         data-testid="signup-country-code-select"
-                        className="input-dark w-28 h-10 px-2 rounded-md bg-zinc-900/50 border border-zinc-800 text-sm"
+                        className="input-dark w-28 h-10 px-2 rounded-md bg-muted/50 border border-border text-sm"
                         value={formData.country_code}
                         onChange={(e) => setFormData({ ...formData, country_code: e.target.value })}
                       >
@@ -444,10 +444,10 @@ export const Signup = () => {
 
                   <div className="grid grid-cols-3 gap-4">
                     <div className="col-span-1">
-                      <Label className="text-xs uppercase tracking-wider text-zinc-500">Gender</Label>
+                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Gender</Label>
                       <select
                         data-testid="signup-gender-select"
-                        className="input-dark mt-2 w-full h-10 px-2 rounded-md bg-zinc-900/50 border border-zinc-800 text-sm"
+                        className="input-dark mt-2 w-full h-10 px-2 rounded-md bg-muted/50 border border-border text-sm"
                         value={formData.gender}
                         onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
                       >
@@ -458,11 +458,11 @@ export const Signup = () => {
                       </select>
                     </div>
                     <div className="col-span-2">
-                      <Label className="text-xs uppercase tracking-wider text-zinc-500">Date of Birth</Label>
+                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Date of Birth</Label>
                       <div className="flex gap-2 mt-2">
                         <select
                           data-testid="signup-dob-day"
-                          className="input-dark w-16 h-10 px-2 rounded-md bg-zinc-900/50 border border-zinc-800 text-sm"
+                          className="input-dark w-16 h-10 px-2 rounded-md bg-muted/50 border border-border text-sm"
                           value={formData.date_of_birth ? new Date(formData.date_of_birth).getDate() : ''}
                           onChange={(e) => {
                             const day = e.target.value;
@@ -480,7 +480,7 @@ export const Signup = () => {
                         </select>
                         <select
                           data-testid="signup-dob-month"
-                          className="input-dark flex-1 h-10 px-2 rounded-md bg-zinc-900/50 border border-zinc-800 text-sm"
+                          className="input-dark flex-1 h-10 px-2 rounded-md bg-muted/50 border border-border text-sm"
                           value={formData.date_of_birth ? new Date(formData.date_of_birth).getMonth() : ''}
                           onChange={(e) => {
                             const month = e.target.value;
@@ -498,7 +498,7 @@ export const Signup = () => {
                         </select>
                         <select
                           data-testid="signup-dob-year"
-                          className="input-dark w-20 h-10 px-2 rounded-md bg-zinc-900/50 border border-zinc-800 text-sm"
+                          className="input-dark w-20 h-10 px-2 rounded-md bg-muted/50 border border-border text-sm"
                           value={formData.date_of_birth ? new Date(formData.date_of_birth).getFullYear() : ''}
                           onChange={(e) => {
                             const year = e.target.value;
@@ -520,7 +520,7 @@ export const Signup = () => {
                   </div>
 
                   <div>
-                    <Label className="text-xs uppercase tracking-wider text-zinc-500">Password *</Label>
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Password *</Label>
                     <div className="relative mt-2">
                       <Input
                         data-testid="signup-password-input"
@@ -534,7 +534,7 @@ export const Signup = () => {
                       />
                       <button
                         type="button"
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                         onClick={() => setShowPassword(!showPassword)}
                       >
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -557,7 +557,7 @@ export const Signup = () => {
               <>
                 <button
                   onClick={() => setStep(1)}
-                  className="text-zinc-500 hover:text-white mb-4 flex items-center gap-2 text-sm"
+                  className="text-muted-foreground hover:text-foreground mb-4 flex items-center gap-2 text-sm"
                 >
                   <ArrowRight size={16} className="rotate-180" /> Back to details
                 </button>
@@ -565,13 +565,13 @@ export const Signup = () => {
                 <h2 className="text-3xl font-bold uppercase tracking-tight mb-2" style={{ fontFamily: 'Barlow Condensed' }}>
                   Verify OTP
                 </h2>
-                <p className="text-zinc-500 mb-6">
+                <p className="text-muted-foreground mb-6">
                   Enter the OTP sent to your phone ({formData.country_code} {formData.phone_number}) and email ({formData.email})
                 </p>
 
                 <form onSubmit={handleVerifyAndSignup} className="space-y-4">
                   <div>
-                    <Label className="text-xs uppercase tracking-wider text-zinc-500 flex items-center justify-center gap-2 mb-2">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center justify-center gap-2 mb-2">
                       <span className="inline-flex items-center justify-center w-5 h-5 bg-cyan-500/20 text-cyan-400 rounded text-xs">OTP</span>
                       Enter 6-digit OTP
                     </Label>
@@ -586,14 +586,14 @@ export const Signup = () => {
                       required
                       autoFocus
                     />
-                    <p className="text-xs text-zinc-500 text-center mt-2">
+                    <p className="text-xs text-muted-foreground text-center mt-2">
                       Same OTP has been sent to both WhatsApp and Email
                     </p>
                   </div>
 
                   <div className="text-center">
                     {resendTimer > 0 ? (
-                      <p className="text-zinc-500 text-sm">
+                      <p className="text-muted-foreground text-sm">
                         Resend OTP in <span className="text-cyan-400 font-mono">{resendTimer}s</span>
                       </p>
                     ) : (
@@ -621,7 +621,7 @@ export const Signup = () => {
               </>
             )}
 
-            <p className="text-center text-zinc-500 mt-6">
+            <p className="text-center text-muted-foreground mt-6">
               Already have an account?{' '}
               <Link to="/login" className="text-cyan-400 hover:text-cyan-300 font-semibold">
                 Sign In
@@ -727,11 +727,11 @@ export const ForgotPassword = () => {
               <h2 className="text-3xl font-bold uppercase tracking-tight mb-2" style={{ fontFamily: 'Barlow Condensed' }}>
                 Forgot Password?
               </h2>
-              <p className="text-zinc-500 mb-6">Enter your email or phone to reset your password</p>
+              <p className="text-muted-foreground mb-6">Enter your email or phone to reset your password</p>
 
               <form onSubmit={handleSendOTP} className="space-y-6">
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Email or Phone</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Email or Phone</Label>
                   <Input
                     data-testid="forgot-email-input"
                     type="text"
@@ -754,7 +754,7 @@ export const ForgotPassword = () => {
                 </Button>
               </form>
 
-              <p className="text-center text-zinc-500 mt-6">
+              <p className="text-center text-muted-foreground mt-6">
                 Remember your password?{' '}
                 <Link to="/login" className="text-cyan-400 hover:text-cyan-300 font-semibold">
                   Sign In
@@ -767,7 +767,7 @@ export const ForgotPassword = () => {
             <>
               <button
                 onClick={() => setStep(1)}
-                className="text-zinc-500 hover:text-white mb-4 flex items-center gap-2 text-sm"
+                className="text-muted-foreground hover:text-foreground mb-4 flex items-center gap-2 text-sm"
               >
                 <ArrowRight size={16} className="rotate-180" /> Back
               </button>
@@ -775,13 +775,13 @@ export const ForgotPassword = () => {
               <h2 className="text-3xl font-bold uppercase tracking-tight mb-2" style={{ fontFamily: 'Barlow Condensed' }}>
                 Reset Password
               </h2>
-              <p className="text-zinc-500 mb-6">
+              <p className="text-muted-foreground mb-6">
                 Enter the OTP sent to your email/phone and set a new password
               </p>
 
               <form onSubmit={handleResetPassword} className="space-y-4">
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500 flex items-center gap-2 mb-2">
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-2 mb-2">
                     <span className="inline-flex items-center justify-center w-5 h-5 bg-cyan-500/20 text-cyan-400 rounded text-xs">OTP</span>
                     Enter 6-digit OTP
                   </Label>
@@ -800,7 +800,7 @@ export const ForgotPassword = () => {
 
                 <div className="text-center mb-4">
                   {resendTimer > 0 ? (
-                    <p className="text-zinc-500 text-sm">
+                    <p className="text-muted-foreground text-sm">
                       Resend OTP in <span className="text-cyan-400 font-mono">{resendTimer}s</span>
                     </p>
                   ) : (
@@ -816,7 +816,7 @@ export const ForgotPassword = () => {
                 </div>
 
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">New Password</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">New Password</Label>
                   <div className="relative mt-2">
                     <Input
                       data-testid="reset-password-input"
@@ -830,7 +830,7 @@ export const ForgotPassword = () => {
                     />
                     <button
                       type="button"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -839,7 +839,7 @@ export const ForgotPassword = () => {
                 </div>
 
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Confirm New Password</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Confirm New Password</Label>
                   <Input
                     data-testid="reset-confirm-input"
                     type={showPassword ? 'text' : 'password'}
@@ -873,7 +873,7 @@ export const ForgotPassword = () => {
               <h2 className="text-2xl font-bold uppercase tracking-tight mb-2" style={{ fontFamily: 'Barlow Condensed' }}>
                 Password Reset!
               </h2>
-              <p className="text-zinc-500 mb-6">
+              <p className="text-muted-foreground mb-6">
                 Your password has been reset successfully. You can now login with your new password.
               </p>
               <Button onClick={() => navigate('/login')} className="btn-primary">
