@@ -628,20 +628,20 @@ const LandingPage = () => {
       </section>
 
       {/* Instagram Testimonials / Reels */}
-      <section className="py-24 bg-zinc-900/30">
+      <section className={`py-24 ${theme === 'dark' ? 'bg-zinc-900/30' : 'bg-white'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold uppercase tracking-tight mb-4" style={{ fontFamily: 'Barlow Condensed' }}>
+            <h2 className={`text-4xl md:text-5xl font-bold uppercase tracking-tight mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`} style={{ fontFamily: 'Barlow Condensed' }}>
               Real <span className="text-pink-500">Transformations</span>
             </h2>
-            <p className="text-zinc-400 max-w-2xl mx-auto mb-4">
+            <p className={`max-w-2xl mx-auto mb-4 ${theme === 'dark' ? 'text-zinc-400' : 'text-gray-600'}`}>
               Check out our member success stories on Instagram
             </p>
             <a 
               href="https://www.instagram.com/f3fitnessclub" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-pink-400 hover:text-pink-300 font-semibold"
+              className="inline-flex items-center gap-2 text-pink-500 hover:text-pink-400 font-semibold"
             >
               <Instagram size={20} />
               @f3fitnessclub
@@ -657,7 +657,7 @@ const LandingPage = () => {
                 rel="noopener noreferrer"
                 className="group block"
               >
-                <Card className="bg-zinc-900/50 border-zinc-800 overflow-hidden hover:border-pink-500/50 transition-all">
+                <Card className={`${theme === 'dark' ? 'bg-zinc-900/50 border-zinc-800' : 'bg-gray-50 border-gray-200 shadow-md'} overflow-hidden hover:border-pink-500/50 transition-all`}>
                   <CardContent className="p-0">
                     <div className="relative aspect-[9/16] bg-gradient-to-br from-pink-500/20 to-purple-500/20 flex items-center justify-center">
                       <iframe
@@ -692,27 +692,27 @@ const LandingPage = () => {
 
       {/* Written Testimonials */}
       {testimonials.length > 0 && (
-        <section className="py-24">
+        <section className={`py-24 ${theme === 'dark' ? '' : 'bg-gray-100'}`}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold uppercase tracking-tight mb-4" style={{ fontFamily: 'Barlow Condensed' }}>
+              <h2 className={`text-4xl md:text-5xl font-bold uppercase tracking-tight mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`} style={{ fontFamily: 'Barlow Condensed' }}>
                 What Our <span className="text-orange-500">Members</span> Say
               </h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {testimonials.map((testimonial) => (
-                <Card key={testimonial.id} className="bg-zinc-900/50 border-zinc-800">
+                <Card key={testimonial.id} className={`${theme === 'dark' ? 'bg-zinc-900/50 border-zinc-800' : 'bg-white border-gray-200 shadow-md'}`}>
                   <CardContent className="p-6">
                     <div className="flex gap-1 mb-4">
                       {[...Array(testimonial.rating)].map((_, i) => (
                         <Star key={i} className="text-yellow-500 fill-yellow-500" size={18} />
                       ))}
                     </div>
-                    <p className="text-zinc-300 mb-4 italic">"{testimonial.content}"</p>
+                    <p className={`mb-4 italic ${theme === 'dark' ? 'text-zinc-300' : 'text-gray-700'}`}>"{testimonial.content}"</p>
                     <div>
-                      <p className="font-semibold text-white">{testimonial.name}</p>
-                      <p className="text-zinc-500 text-sm">{testimonial.role}</p>
+                      <p className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{testimonial.name}</p>
+                      <p className={`text-sm ${theme === 'dark' ? 'text-zinc-500' : 'text-gray-500'}`}>{testimonial.role}</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -723,21 +723,21 @@ const LandingPage = () => {
       )}
 
       {/* Contact Section */}
-      <section id="contact" className="py-24 bg-zinc-900/50">
+      <section id="contact" className={`py-24 ${theme === 'dark' ? 'bg-zinc-900/50' : 'bg-gray-100'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             <div>
-              <h2 className="text-4xl md:text-5xl font-bold uppercase tracking-tight mb-6" style={{ fontFamily: 'Barlow Condensed' }}>
-                Get In <span className="text-cyan-400">Touch</span>
+              <h2 className={`text-4xl md:text-5xl font-bold uppercase tracking-tight mb-6 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`} style={{ fontFamily: 'Barlow Condensed' }}>
+                Get In <span className="text-cyan-500">Touch</span>
               </h2>
-              <p className="text-zinc-400 mb-8">
+              <p className={`mb-8 ${theme === 'dark' ? 'text-zinc-400' : 'text-gray-600'}`}>
                 Ready to start your fitness journey? Visit us or get in touch!
               </p>
 
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-cyan-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <MapPin className="text-cyan-400" />
+                  <div className={`w-12 h-12 ${theme === 'dark' ? 'bg-cyan-500/20' : 'bg-cyan-100'} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                    <MapPin className="text-cyan-500" />
                   </div>
                   <div>
                     <p className="font-semibold text-white">Address</p>
