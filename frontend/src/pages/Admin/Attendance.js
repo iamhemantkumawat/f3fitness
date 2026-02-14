@@ -12,9 +12,11 @@ import {
 import { toast } from 'sonner';
 
 export const MarkAttendance = () => {
-  const [memberId, setMemberId] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [recentAttendance, setRecentAttendance] = useState([]);
+  const [searchResults, setSearchResults] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
 
   useEffect(() => {
     fetchRecentAttendance();
@@ -30,17 +32,43 @@ export const MarkAttendance = () => {
     }
   };
 
+  // Search users as admin types
+  const handleSearchChange = async (value) => {
+    setSearchQuery(value);
+    if (value.length >= 2) {
+      try {
+        const response = await usersAPI.getAll({ search: value });
+        setSearchResults(response.data.filter(u => u.role === 'member').slice(0, 5));
+        setShowDropdown(true);
+      } catch (error) {
+        console.error('Search failed');
+      }
+    } else {
+      setSearchResults([]);
+      setShowDropdown(false);
+    }
+  };
+
+  // Select user from dropdown
+  const selectUser = (user) => {
+    setSearchQuery(user.member_id || user.name);
+    setShowDropdown(false);
+    setSearchResults([]);
+  };
+
   const handleMarkAttendance = async (e) => {
     e.preventDefault();
-    if (!memberId.trim()) {
-      toast.error('Please enter a member ID');
+    if (!searchQuery.trim()) {
+      toast.error('Please enter member name, phone, email or ID');
       return;
     }
     setLoading(true);
+    setShowDropdown(false);
     try {
-      const response = await attendanceAPI.mark(memberId.trim());
+      const response = await attendanceAPI.mark(searchQuery.trim());
       toast.success(`Attendance marked for ${response.data.user_name}`);
-      setMemberId('');
+      setSearchQuery('');
+      setSearchResults([]);
       fetchRecentAttendance();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to mark attendance');
@@ -56,7 +84,7 @@ export const MarkAttendance = () => {
           <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
             Mark Attendance
           </h1>
-          <p className="text-zinc-500">Enter member ID to mark attendance</p>
+          <p className="text-zinc-500">Search by Name, Phone, Email or Member ID</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -64,16 +92,41 @@ export const MarkAttendance = () => {
           <Card className="highlight-card">
             <CardContent className="p-8">
               <form onSubmit={handleMarkAttendance} className="space-y-6">
-                <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Member ID</Label>
-                  <Input
-                    data-testid="member-id-input"
-                    className="input-dark mt-2 text-2xl font-mono text-center h-16"
-                    placeholder="F3-0001"
-                    value={memberId}
-                    onChange={(e) => setMemberId(e.target.value.toUpperCase())}
-                    autoFocus
-                  />
+                <div className="relative">
+                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Search Member</Label>
+                  <div className="relative mt-2">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={20} />
+                    <Input
+                      data-testid="member-id-input"
+                      className="input-dark pl-12 text-xl h-16"
+                      placeholder="Name, Phone, Email or F3-0001"
+                      value={searchQuery}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      onFocus={() => searchResults.length > 0 && setShowDropdown(true)}
+                      autoFocus
+                      autoComplete="off"
+                    />
+                  </div>
+                  
+                  {/* Search Dropdown */}
+                  {showDropdown && searchResults.length > 0 && (
+                    <div className="absolute z-20 w-full mt-2 bg-zinc-900 border border-zinc-700 rounded-lg overflow-hidden shadow-xl">
+                      {searchResults.map((user) => (
+                        <button
+                          key={user.id}
+                          type="button"
+                          className="w-full p-4 text-left hover:bg-zinc-800 flex items-center justify-between border-b border-zinc-800 last:border-0"
+                          onClick={() => selectUser(user)}
+                        >
+                          <div>
+                            <p className="font-medium text-white">{user.name}</p>
+                            <p className="text-sm text-zinc-400">{user.phone} • {user.email}</p>
+                          </div>
+                          <span className="font-mono text-cyan-400 text-sm">{user.member_id}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <Button 
                   type="submit" 
@@ -97,7 +150,7 @@ export const MarkAttendance = () => {
             <CardHeader>
               <CardTitle className="text-lg uppercase tracking-wide flex items-center gap-2" style={{ fontFamily: 'Barlow Condensed' }}>
                 <Clock size={20} className="text-cyan-400" />
-                Recent Check-ins
+                Recent Check-ins (Today)
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -114,7 +167,8 @@ export const MarkAttendance = () => {
                       <p className="text-sm text-zinc-500">
                         {new Date(att.check_in_time).toLocaleTimeString('en-IN', { 
                           hour: '2-digit', 
-                          minute: '2-digit' 
+                          minute: '2-digit',
+                          timeZone: 'Asia/Kolkata'
                         })}
                       </p>
                     </div>
