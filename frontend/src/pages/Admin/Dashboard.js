@@ -108,22 +108,22 @@ export const AdminDashboard = () => {
 
         {/* Announcements */}
         <Card className="glass-card">
-          <CardHeader className="border-b border-zinc-800">
+          <CardHeader className="border-b border-border">
             <CardTitle className="flex items-center gap-2 text-lg uppercase tracking-wide" style={{ fontFamily: 'Barlow Condensed' }}>
-              <Bell size={20} className="text-cyan-400" />
+              <Bell size={20} className="text-primary" />
               Recent Announcements
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             {announcements.length === 0 ? (
-              <p className="text-zinc-500 text-center py-8">No announcements yet</p>
+              <p className="text-muted-foreground text-center py-8">No announcements yet</p>
             ) : (
               <div className="space-y-4">
                 {announcements.map((announcement) => (
-                  <div key={announcement.id} className="p-4 bg-zinc-900/50 rounded-lg border border-zinc-800">
-                    <h3 className="font-semibold text-white mb-1">{announcement.title}</h3>
-                    <p className="text-zinc-400 text-sm">{announcement.content}</p>
-                    <p className="text-zinc-600 text-xs mt-2">
+                  <div key={announcement.id} className="p-4 bg-muted/50 rounded-lg border border-border">
+                    <h3 className="font-semibold text-foreground mb-1">{announcement.title}</h3>
+                    <p className="text-muted-foreground text-sm">{announcement.content}</p>
+                    <p className="text-muted-foreground/60 text-xs mt-2">
                       {new Date(announcement.created_at).toLocaleDateString('en-IN', {
                         day: '2-digit',
                         month: 'short',
