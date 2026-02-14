@@ -6,6 +6,39 @@
 
 @layer base {
   :root {
+    --radius: 0.5rem;
+    --chart-1: 187 80% 43%;
+    --chart-2: 24 95% 53%;
+    --chart-3: 173 58% 39%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+  }
+
+  /* Light Theme */
+  :root, .light {
+    --background: 0 0% 98%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 187 80% 40%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 24 95% 50%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 240 5% 92%;
+    --muted-foreground: 240 4% 46%;
+    --accent: 240 5% 92%;
+    --accent-foreground: 240 10% 3.9%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 6% 85%;
+    --input: 240 6% 85%;
+    --ring: 187 80% 40%;
+  }
+
+  /* Dark Theme */
+  .dark {
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
     --card: 240 6% 10%;
@@ -25,35 +58,6 @@
     --border: 240 4% 16%;
     --input: 240 4% 16%;
     --ring: 187 80% 43%;
-    --radius: 0.5rem;
-    --chart-1: 187 80% 43%;
-    --chart-2: 24 95% 53%;
-    --chart-3: 173 58% 39%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-  }
-
-  /* Light Theme */
-  .light {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 98%;
-    --card-foreground: 240 10% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 187 80% 40%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 24 95% 50%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 240 5% 92%;
-    --muted-foreground: 240 4% 46%;
-    --accent: 240 5% 92%;
-    --accent-foreground: 240 10% 3.9%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 240 6% 85%;
-    --input: 240 6% 85%;
-    --ring: 187 80% 40%;
   }
 }
 
