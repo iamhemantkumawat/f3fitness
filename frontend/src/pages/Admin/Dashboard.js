@@ -106,106 +106,7 @@ export const AdminDashboard = () => {
           />
         </div>
 
-        {/* Announcements */}
-        <Card className="glass-card">
-          <CardHeader className="border-b border-border">
-            <CardTitle className="flex items-center gap-2 text-lg uppercase tracking-wide" style={{ fontFamily: 'Barlow Condensed' }}>
-              <Bell size={20} className="text-primary" />
-              Recent Announcements
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            {announcements.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">No announcements yet</p>
-            ) : (
-              <div className="space-y-4">
-                {announcements.map((announcement) => (
-                  <div key={announcement.id} className="p-4 bg-muted/50 rounded-lg border border-border">
-                    <h3 className="font-semibold text-foreground mb-1">{announcement.title}</h3>
-                    <p className="text-muted-foreground text-sm">{announcement.content}</p>
-                    <p className="text-muted-foreground/60 text-xs mt-2">
-                      {new Date(announcement.created_at).toLocaleDateString('en-IN', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric'
-                      })}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Birthday and Renewal Widgets Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Today's Birthdays */}
-          <Card className="glass-card">
-            <CardHeader className="border-b border-border py-4">
-              <CardTitle className="flex items-center gap-2 text-lg uppercase tracking-wide" style={{ fontFamily: 'Barlow Condensed' }}>
-                <Cake size={20} className="text-pink-400" />
-                Today's Birthdays
-                {stats?.today_birthdays?.length > 0 && (
-                  <span className="ml-auto bg-pink-500/20 text-pink-400 text-xs px-2 py-1 rounded-full">
-                    {stats.today_birthdays.length}
-                  </span>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4">
-              {!stats?.today_birthdays?.length ? (
-                <p className="text-muted-foreground text-center py-6 text-sm">No birthdays today</p>
-              ) : (
-                <div className="space-y-2">
-                  {stats.today_birthdays.map((member, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 bg-pink-500/5 rounded-lg border border-pink-500/10">
-                      <div>
-                        <p className="font-medium text-foreground">{member.name}</p>
-                        <p className="text-xs text-muted-foreground">{member.member_id}</p>
-                      </div>
-                      {member.phone_number && (
-                        <a href={`tel:${member.phone_number}`} className="text-pink-400 hover:text-pink-300">
-                          <Phone size={16} />
-                        </a>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Upcoming Birthdays */}
-          <Card className="glass-card">
-            <CardHeader className="border-b border-border py-4">
-              <CardTitle className="flex items-center gap-2 text-lg uppercase tracking-wide" style={{ fontFamily: 'Barlow Condensed' }}>
-                <Cake size={20} className="text-purple-400" />
-                Upcoming Birthdays (7 days)
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4">
-              {!stats?.upcoming_birthdays?.length ? (
-                <p className="text-muted-foreground text-center py-6 text-sm">No upcoming birthdays</p>
-              ) : (
-                <div className="space-y-2">
-                  {stats.upcoming_birthdays.map((member, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 bg-purple-500/5 rounded-lg border border-purple-500/10">
-                      <div>
-                        <p className="font-medium text-foreground">{member.name}</p>
-                        <p className="text-xs text-muted-foreground">{member.member_id}</p>
-                      </div>
-                      <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded">
-                        {member.days_until === 1 ? 'Tomorrow' : `In ${member.days_until} days`}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Renewals and Absentees Grid */}
+        {/* Renewals and Absentees Grid - PRIORITY */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Upcoming Renewals */}
           <Card className="glass-card">
@@ -288,6 +189,105 @@ export const AdminDashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Birthday Widgets Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Today's Birthdays */}
+          <Card className="glass-card">
+            <CardHeader className="border-b border-border py-4">
+              <CardTitle className="flex items-center gap-2 text-lg uppercase tracking-wide" style={{ fontFamily: 'Barlow Condensed' }}>
+                <Cake size={20} className="text-pink-400" />
+                Today's Birthdays
+                {stats?.today_birthdays?.length > 0 && (
+                  <span className="ml-auto bg-pink-500/20 text-pink-400 text-xs px-2 py-1 rounded-full">
+                    {stats.today_birthdays.length}
+                  </span>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              {!stats?.today_birthdays?.length ? (
+                <p className="text-muted-foreground text-center py-6 text-sm">No birthdays today</p>
+              ) : (
+                <div className="space-y-2">
+                  {stats.today_birthdays.map((member, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-pink-500/5 rounded-lg border border-pink-500/10">
+                      <div>
+                        <p className="font-medium text-foreground">{member.name}</p>
+                        <p className="text-xs text-muted-foreground">{member.member_id}</p>
+                      </div>
+                      {member.phone_number && (
+                        <a href={`tel:${member.phone_number}`} className="text-pink-400 hover:text-pink-300">
+                          <Phone size={16} />
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Upcoming Birthdays */}
+          <Card className="glass-card">
+            <CardHeader className="border-b border-border py-4">
+              <CardTitle className="flex items-center gap-2 text-lg uppercase tracking-wide" style={{ fontFamily: 'Barlow Condensed' }}>
+                <Cake size={20} className="text-purple-400" />
+                Upcoming Birthdays (7 days)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              {!stats?.upcoming_birthdays?.length ? (
+                <p className="text-muted-foreground text-center py-6 text-sm">No upcoming birthdays</p>
+              ) : (
+                <div className="space-y-2">
+                  {stats.upcoming_birthdays.map((member, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-purple-500/5 rounded-lg border border-purple-500/10">
+                      <div>
+                        <p className="font-medium text-foreground">{member.name}</p>
+                        <p className="text-xs text-muted-foreground">{member.member_id}</p>
+                      </div>
+                      <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded">
+                        {member.days_until === 1 ? 'Tomorrow' : `In ${member.days_until} days`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Announcements */}
+        <Card className="glass-card">
+          <CardHeader className="border-b border-border">
+            <CardTitle className="flex items-center gap-2 text-lg uppercase tracking-wide" style={{ fontFamily: 'Barlow Condensed' }}>
+              <Bell size={20} className="text-primary" />
+              Recent Announcements
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            {announcements.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">No announcements yet</p>
+            ) : (
+              <div className="space-y-4">
+                {announcements.map((announcement) => (
+                  <div key={announcement.id} className="p-4 bg-muted/50 rounded-lg border border-border">
+                    <h3 className="font-semibold text-foreground mb-1">{announcement.title}</h3>
+                    <p className="text-muted-foreground text-sm">{announcement.content}</p>
+                    <p className="text-muted-foreground/60 text-xs mt-2">
+                      {new Date(announcement.created_at).toLocaleDateString('en-IN', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );
