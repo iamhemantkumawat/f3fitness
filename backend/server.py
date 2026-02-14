@@ -1801,6 +1801,9 @@ async def create_membership(membership: MembershipCreate, background_tasks: Back
     end_date = start_date + timedelta(days=plan["duration_days"])
     
     final_price = plan["price"] - membership.discount_amount
+    amount_paid = membership.initial_payment
+    amount_due = final_price - amount_paid
+    
     membership_id = str(uuid.uuid4())
     now = get_ist_now().isoformat()
     
@@ -1814,6 +1817,8 @@ async def create_membership(membership: MembershipCreate, background_tasks: Back
         "original_price": plan["price"],
         "discount_amount": membership.discount_amount,
         "final_price": final_price,
+        "amount_paid": amount_paid,
+        "amount_due": amount_due,
         "created_at": now
     }
     
