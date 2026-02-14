@@ -165,11 +165,7 @@ export const MarkAttendance = () => {
                         <p className="text-sm text-cyan-400 font-mono">{att.member_id}</p>
                       </div>
                       <p className="text-sm text-zinc-500">
-                        {new Date(att.check_in_time).toLocaleTimeString('en-IN', { 
-                          hour: '2-digit', 
-                          minute: '2-digit',
-                          timeZone: 'Asia/Kolkata'
-                        })}
+                        {att.check_in_time.split('T')[1]?.substring(0, 5) || '--:--'}
                       </p>
                     </div>
                   ))}
