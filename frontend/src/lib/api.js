@@ -161,7 +161,7 @@ export const seedAPI = {
 // Broadcast APIs
 export const broadcastAPI = {
   sendWhatsApp: (data) => api.post('/broadcast/whatsapp', data),
-  sendEmail: (data) => api.post('/broadcast/email', data)
+  sendEmail: (data) => api.post(`/broadcast/email?subject=${encodeURIComponent(data.subject)}`, { message: data.message, target_audience: data.target_audience })
 };
 
 // Templates APIs
