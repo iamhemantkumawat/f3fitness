@@ -83,8 +83,9 @@ export const paymentsAPI = {
 export const paymentRequestsAPI = {
   getAll: (status) => api.get('/payment-requests', { params: { status } }),
   create: (data) => api.post('/payment-requests', data),
-  approve: (id, discount, paymentMethod) => 
-    api.put(`/payment-requests/${id}/approve?discount=${discount}&payment_method=${paymentMethod}`)
+  approve: (id, discount, paymentMethod, amountPaid) => 
+    api.put(`/payment-requests/${id}/approve?discount=${discount}&payment_method=${paymentMethod}&amount_paid=${amountPaid}`),
+  reject: (id) => api.put(`/payment-requests/${id}/reject`)
 };
 
 // Attendance APIs
