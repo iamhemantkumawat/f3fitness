@@ -143,13 +143,13 @@ export const razorpayAPI = {
 
 // Upload APIs
 export const uploadAPI = {
-  profilePhoto: (file) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    return api.post('/upload/profile-photo', formData, {
+  profilePhoto: (formData, userId = null) => {
+    const url = userId ? `/upload/profile-photo?user_id=${userId}` : '/upload/profile-photo';
+    return api.post(url, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
-  }
+  },
+  deletePhoto: (userId) => api.delete(`/upload/profile-photo/${userId}`)
 };
 
 // Seed API
