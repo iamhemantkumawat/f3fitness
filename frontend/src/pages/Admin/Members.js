@@ -115,7 +115,7 @@ export const MembersList = () => {
   };
 
   const getSortIcon = (key) => {
-    if (sortConfig.key !== key) return <ArrowUpDown size={14} className="text-zinc-600" />;
+    if (sortConfig.key !== key) return <ArrowUpDown size={14} className="text-muted-foreground" />;
     return sortConfig.direction === 'asc' 
       ? <ArrowUp size={14} className="text-cyan-400" /> 
       : <ArrowDown size={14} className="text-cyan-400" />;
@@ -236,7 +236,7 @@ export const MembersList = () => {
       if (daysLeft <= 7) return { label: `${daysLeft}d left`, class: 'bg-orange-500/20 text-orange-400' };
       return { label: 'Active', class: 'bg-emerald-500/20 text-emerald-400' };
     }
-    return { label: 'No Plan', class: 'bg-zinc-500/20 text-zinc-400' };
+    return { label: 'No Plan', class: 'bg-zinc-500/20 text-muted-foreground' };
   };
 
   return (
@@ -247,7 +247,7 @@ export const MembersList = () => {
             <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
               Members
             </h1>
-            <p className="text-zinc-500">Manage gym members ({members.length} total)</p>
+            <p className="text-muted-foreground">Manage gym members ({members.length} total)</p>
           </div>
           <div className="flex gap-2">
             {selectedIds.length > 0 && (
@@ -274,7 +274,7 @@ export const MembersList = () => {
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
             <Input
               data-testid="member-search"
               className="input-dark pl-10"
@@ -284,7 +284,7 @@ export const MembersList = () => {
             />
           </div>
           <select
-            className="input-dark h-10 px-3 rounded-md bg-zinc-900/50 border border-zinc-800 text-sm"
+            className="input-dark h-10 px-3 rounded-md bg-muted/50 border border-border text-sm"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             data-testid="status-filter"
@@ -303,10 +303,10 @@ export const MembersList = () => {
               <thead>
                 <tr>
                   <th className="pl-4 w-10">
-                    <button onClick={toggleSelectAll} className="p-1 hover:bg-white/10 rounded">
+                    <button onClick={toggleSelectAll} className="p-1 hover:bg-accent rounded">
                       {selectedIds.length === members.length && members.length > 0 
                         ? <CheckSquare size={18} className="text-cyan-400" />
-                        : <Square size={18} className="text-zinc-500" />
+                        : <Square size={18} className="text-muted-foreground" />
                       }
                     </button>
                   </th>
@@ -336,13 +336,13 @@ export const MembersList = () => {
                   [...Array(5)].map((_, i) => (
                     <tr key={i}>
                       <td colSpan={10} className="pl-4">
-                        <div className="h-12 bg-zinc-800/50 rounded animate-pulse" />
+                        <div className="h-12 bg-muted/50 rounded animate-pulse" />
                       </td>
                     </tr>
                   ))
                 ) : sortedMembers.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="text-center text-zinc-500 py-8 pl-4">
+                    <td colSpan={10} className="text-center text-muted-foreground py-8 pl-4">
                       No members found
                     </td>
                   </tr>
@@ -358,11 +358,11 @@ export const MembersList = () => {
                         <td className="pl-4" onClick={(e) => e.stopPropagation()}>
                           <button 
                             onClick={() => toggleSelect(member.id)} 
-                            className="p-1 hover:bg-white/10 rounded"
+                            className="p-1 hover:bg-accent rounded"
                           >
                             {selectedIds.includes(member.id) 
                               ? <CheckSquare size={18} className="text-cyan-400" />
-                              : <Square size={18} className="text-zinc-500" />
+                              : <Square size={18} className="text-muted-foreground" />
                             }
                           </button>
                         </td>
@@ -377,19 +377,19 @@ export const MembersList = () => {
                         <td className="font-mono text-cyan-400 cursor-pointer" onClick={() => openMemberDetail(member)}>
                           {member.member_id}
                         </td>
-                        <td className="font-medium text-white cursor-pointer" onClick={() => openMemberDetail(member)}>
+                        <td className="font-medium text-foreground cursor-pointer" onClick={() => openMemberDetail(member)}>
                           {member.name}
                         </td>
-                        <td className="text-zinc-400 cursor-pointer" onClick={() => openMemberDetail(member)}>
+                        <td className="text-muted-foreground cursor-pointer" onClick={() => openMemberDetail(member)}>
                           {member.phone_number}
                         </td>
                         <td className="cursor-pointer" onClick={() => openMemberDetail(member)}>
-                          <span className={member.active_membership ? 'text-white' : 'text-zinc-500'}>
+                          <span className={member.active_membership ? 'text-foreground' : 'text-muted-foreground'}>
                             {member.active_membership?.plan_name || '-'}
                           </span>
                         </td>
                         <td className="cursor-pointer" onClick={() => openMemberDetail(member)}>
-                          <span className={member.active_membership ? 'text-white' : 'text-zinc-500'}>
+                          <span className={member.active_membership ? 'text-foreground' : 'text-muted-foreground'}>
                             {member.active_membership?.end_date 
                               ? formatDate(member.active_membership.end_date)
                               : '-'}
@@ -403,7 +403,7 @@ export const MembersList = () => {
                           ) : member.active_membership ? (
                             <span className="text-emerald-400">Paid</span>
                           ) : (
-                            <span className="text-zinc-500">-</span>
+                            <span className="text-muted-foreground">-</span>
                           )}
                         </td>
                         <td>
@@ -413,7 +413,7 @@ export const MembersList = () => {
                         </td>
                         <td className="pr-6">
                           <button 
-                            className="text-zinc-500 hover:text-white p-1 hover:bg-white/10 rounded"
+                            className="text-muted-foreground hover:text-foreground p-1 hover:bg-accent rounded"
                             onClick={() => openMemberDetail(member)}
                           >
                             <ChevronRight size={18} />
@@ -430,7 +430,7 @@ export const MembersList = () => {
 
         {/* Member Detail Sheet */}
         <Sheet open={!!selectedMember} onOpenChange={() => setSelectedMember(null)}>
-          <SheetContent className="bg-card border-zinc-800 w-full sm:max-w-lg overflow-y-auto">
+          <SheetContent className="bg-card border-border w-full sm:max-w-lg overflow-y-auto">
             {selectedMember && (
               <div className="space-y-6">
                 <SheetHeader>
@@ -440,7 +440,7 @@ export const MembersList = () => {
                 </SheetHeader>
 
                 {/* Profile Section */}
-                <div className="flex items-center gap-4 p-4 bg-zinc-900/50 rounded-lg">
+                <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
                   <Avatar className="w-16 h-16">
                     <AvatarImage src={getAvatarUrl(selectedMember)} />
                     <AvatarFallback className="bg-cyan-500/20 text-cyan-400 text-2xl">
@@ -448,7 +448,7 @@ export const MembersList = () => {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h3 className="text-xl font-bold text-white">{selectedMember.name}</h3>
+                    <h3 className="text-xl font-bold text-foreground">{selectedMember.name}</h3>
                     <p className="text-cyan-400 font-mono">{selectedMember.member_id}</p>
                     {selectedMember.is_disabled && (
                       <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">
@@ -460,18 +460,18 @@ export const MembersList = () => {
 
                 {/* Contact Info */}
                 <div className="space-y-3">
-                  <h4 className="text-xs uppercase tracking-wider text-zinc-500 font-semibold">Contact Info</h4>
+                  <h4 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Contact Info</h4>
                   <div className="space-y-2">
-                    <div className="flex items-center gap-3 text-zinc-400">
+                    <div className="flex items-center gap-3 text-muted-foreground">
                       <Mail size={16} />
                       <span>{selectedMember.email}</span>
                     </div>
-                    <div className="flex items-center gap-3 text-zinc-400">
+                    <div className="flex items-center gap-3 text-muted-foreground">
                       <Phone size={16} />
                       <span>{selectedMember.phone_number}</span>
                     </div>
                     {selectedMember.address && (
-                      <div className="flex items-center gap-3 text-zinc-400">
+                      <div className="flex items-center gap-3 text-muted-foreground">
                         <MapPin size={16} />
                         <span>{selectedMember.address}, {selectedMember.city}</span>
                       </div>
@@ -481,37 +481,37 @@ export const MembersList = () => {
 
                 {/* Personal Info */}
                 <div className="space-y-3">
-                  <h4 className="text-xs uppercase tracking-wider text-zinc-500 font-semibold">Personal Info</h4>
+                  <h4 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Personal Info</h4>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-xs text-zinc-500">Gender</p>
-                      <p className="text-white capitalize">{selectedMember.gender || '-'}</p>
+                      <p className="text-xs text-muted-foreground">Gender</p>
+                      <p className="text-foreground capitalize">{selectedMember.gender || '-'}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-zinc-500">Date of Birth</p>
-                      <p className="text-white">{formatDate(selectedMember.date_of_birth)}</p>
+                      <p className="text-xs text-muted-foreground">Date of Birth</p>
+                      <p className="text-foreground">{formatDate(selectedMember.date_of_birth)}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-zinc-500">Joining Date</p>
-                      <p className="text-white">{formatDate(selectedMember.joining_date)}</p>
+                      <p className="text-xs text-muted-foreground">Joining Date</p>
+                      <p className="text-foreground">{formatDate(selectedMember.joining_date)}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-zinc-500">Emergency Contact</p>
-                      <p className="text-white">{selectedMember.emergency_phone || '-'}</p>
+                      <p className="text-xs text-muted-foreground">Emergency Contact</p>
+                      <p className="text-foreground">{selectedMember.emergency_phone || '-'}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Membership Info */}
                 <div className="space-y-3">
-                  <h4 className="text-xs uppercase tracking-wider text-zinc-500 font-semibold">Membership</h4>
+                  <h4 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Membership</h4>
                   {selectedMember.active_membership ? (
                     <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-semibold text-white">{selectedMember.active_membership.plan_name}</span>
+                        <span className="font-semibold text-foreground">{selectedMember.active_membership.plan_name}</span>
                         <span className="badge-active">{selectedMember.active_membership.status}</span>
                       </div>
-                      <p className="text-sm text-zinc-400">
+                      <p className="text-sm text-muted-foreground">
                         {formatDate(selectedMember.active_membership.start_date)} - {formatDate(selectedMember.active_membership.end_date)}
                       </p>
                       <Button
@@ -526,8 +526,8 @@ export const MembersList = () => {
                       </Button>
                     </div>
                   ) : (
-                    <div className="p-4 bg-zinc-900/50 rounded-lg text-center">
-                      <p className="text-zinc-500 mb-3">No active membership</p>
+                    <div className="p-4 bg-muted/50 rounded-lg text-center">
+                      <p className="text-muted-foreground mb-3">No active membership</p>
                       <Button
                         className="btn-primary text-sm"
                         onClick={() => navigate(`/dashboard/admin/members/${selectedMember.id}/assign-plan`)}
@@ -542,7 +542,7 @@ export const MembersList = () => {
 
                 {/* Quick Actions */}
                 <div className="space-y-3">
-                  <h4 className="text-xs uppercase tracking-wider text-zinc-500 font-semibold">Quick Actions</h4>
+                  <h4 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Quick Actions</h4>
                   <div className="grid grid-cols-2 gap-2">
                     <Button
                       variant="outline"
@@ -581,7 +581,7 @@ export const MembersList = () => {
                 </div>
 
                 {/* Main Actions */}
-                <div className="flex gap-3 pt-4 border-t border-zinc-800">
+                <div className="flex gap-3 pt-4 border-t border-border">
                   <Button
                     className="btn-secondary flex-1"
                     onClick={() => navigate(`/dashboard/admin/members/${selectedMember.id}/edit`)}
@@ -607,11 +607,11 @@ export const MembersList = () => {
 
         {/* Bulk Delete Dialog */}
         <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-          <DialogContent className="bg-card border-zinc-800">
+          <DialogContent className="bg-card border-border">
             <DialogHeader>
               <DialogTitle className="text-xl">Confirm Bulk Delete</DialogTitle>
             </DialogHeader>
-            <p className="text-zinc-400">
+            <p className="text-muted-foreground">
               Are you sure you want to delete {selectedIds.length} member(s)? 
               This action cannot be undone. All related data (memberships, attendance, health logs) will also be deleted.
             </p>
@@ -632,17 +632,17 @@ export const MembersList = () => {
 
         {/* Reset Password Dialog */}
         <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
-          <DialogContent className="bg-card border-zinc-800">
+          <DialogContent className="bg-card border-border">
             <DialogHeader>
               <DialogTitle className="text-xl">Reset Password</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <p className="text-zinc-400">
-                Set a new password for <strong className="text-white">{selectedMember?.name}</strong>. 
+              <p className="text-muted-foreground">
+                Set a new password for <strong className="text-foreground">{selectedMember?.name}</strong>. 
                 The new password will be sent to the member via Email and WhatsApp.
               </p>
               <div>
-                <Label className="text-xs uppercase tracking-wider text-zinc-500">New Password</Label>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">New Password</Label>
                 <div className="relative mt-2">
                   <Input
                     type={showNewPassword ? 'text' : 'password'}
@@ -654,7 +654,7 @@ export const MembersList = () => {
                   />
                   <button
                     type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     onClick={() => setShowNewPassword(!showNewPassword)}
                   >
                     {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -812,7 +812,7 @@ export const TrainersList = () => {
             <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
               Trainers
             </h1>
-            <p className="text-zinc-500">Manage gym trainers - shown on landing page</p>
+            <p className="text-muted-foreground">Manage gym trainers - shown on landing page</p>
           </div>
           <Button 
             className="btn-primary" 
@@ -829,13 +829,13 @@ export const TrainersList = () => {
             [...Array(3)].map((_, i) => (
               <Card key={i} className="glass-card animate-pulse">
                 <CardContent className="p-6">
-                  <div className="h-20 bg-zinc-800 rounded" />
+                  <div className="h-20 bg-muted rounded" />
                 </CardContent>
               </Card>
             ))
           ) : trainers.length === 0 ? (
             <Card className="glass-card col-span-full">
-              <CardContent className="p-8 text-center text-zinc-500">
+              <CardContent className="p-8 text-center text-muted-foreground">
                 No trainers found. Add your first trainer!
               </CardContent>
             </Card>
@@ -855,16 +855,16 @@ export const TrainersList = () => {
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
-                      <h3 className="font-semibold text-white">{trainer.name}</h3>
+                      <h3 className="font-semibold text-foreground">{trainer.name}</h3>
                       <p className="text-sm text-cyan-400">{trainer.speciality || 'Fitness Coach'}</p>
-                      <p className="text-sm text-zinc-500">{trainer.phone_number}</p>
+                      <p className="text-sm text-muted-foreground">{trainer.phone_number}</p>
                       {trainer.is_visible_on_website !== false && (
                         <span className="inline-block mt-1 text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded">
                           Visible on Website
                         </span>
                       )}
                     </div>
-                    <Edit size={18} className="text-zinc-500" />
+                    <Edit size={18} className="text-muted-foreground" />
                   </div>
                 </CardContent>
               </Card>
@@ -875,7 +875,7 @@ export const TrainersList = () => {
 
       {/* Edit Trainer Dialog */}
       <Dialog open={editMode} onOpenChange={setEditMode}>
-        <DialogContent className="bg-zinc-900 border-zinc-800 max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-zinc-900 border-border max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">Edit Trainer</DialogTitle>
           </DialogHeader>
@@ -918,13 +918,13 @@ export const TrainersList = () => {
                   </Button>
                 )}
               </div>
-              <p className="text-xs text-zinc-500">Max 2MB • JPG, PNG, WebP</p>
+              <p className="text-xs text-muted-foreground">Max 2MB • JPG, PNG, WebP</p>
             </div>
 
             {/* Form Fields */}
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
-                <Label className="text-xs text-zinc-500">Full Name</Label>
+                <Label className="text-xs text-muted-foreground">Full Name</Label>
                 <Input
                   className="input-dark mt-1"
                   value={editData.name}
@@ -932,7 +932,7 @@ export const TrainersList = () => {
                 />
               </div>
               <div>
-                <Label className="text-xs text-zinc-500">Email</Label>
+                <Label className="text-xs text-muted-foreground">Email</Label>
                 <Input
                   className="input-dark mt-1"
                   type="email"
@@ -941,7 +941,7 @@ export const TrainersList = () => {
                 />
               </div>
               <div>
-                <Label className="text-xs text-zinc-500">Phone</Label>
+                <Label className="text-xs text-muted-foreground">Phone</Label>
                 <Input
                   className="input-dark mt-1"
                   value={editData.phone_number}
@@ -949,7 +949,7 @@ export const TrainersList = () => {
                 />
               </div>
               <div>
-                <Label className="text-xs text-zinc-500">Role/Title (shown on website)</Label>
+                <Label className="text-xs text-muted-foreground">Role/Title (shown on website)</Label>
                 <Input
                   className="input-dark mt-1"
                   placeholder="e.g. Head Trainer"
@@ -958,7 +958,7 @@ export const TrainersList = () => {
                 />
               </div>
               <div>
-                <Label className="text-xs text-zinc-500">Speciality (shown on website)</Label>
+                <Label className="text-xs text-muted-foreground">Speciality (shown on website)</Label>
                 <Input
                   className="input-dark mt-1"
                   placeholder="e.g. Strength & Conditioning"
@@ -967,7 +967,7 @@ export const TrainersList = () => {
                 />
               </div>
               <div className="col-span-2">
-                <Label className="text-xs text-zinc-500">Instagram URL</Label>
+                <Label className="text-xs text-muted-foreground">Instagram URL</Label>
                 <Input
                   className="input-dark mt-1"
                   placeholder="https://instagram.com/username"
@@ -985,8 +985,8 @@ export const TrainersList = () => {
             </div>
 
             {/* Password Change Section */}
-            <div className="pt-4 border-t border-zinc-800">
-              <Label className="text-xs text-zinc-500 mb-2 block">Change Password</Label>
+            <div className="pt-4 border-t border-border">
+              <Label className="text-xs text-muted-foreground mb-2 block">Change Password</Label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Input
@@ -998,7 +998,7 @@ export const TrainersList = () => {
                   />
                   <button 
                     type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -1015,7 +1015,7 @@ export const TrainersList = () => {
             </div>
 
             {/* Actions */}
-            <div className="flex justify-end gap-2 pt-4 border-t border-zinc-800">
+            <div className="flex justify-end gap-2 pt-4 border-t border-border">
               <Button variant="outline" onClick={() => setEditMode(false)}>
                 Cancel
               </Button>
@@ -1083,7 +1083,7 @@ export const CreateMember = () => {
           <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
             Add New {role === 'trainer' ? 'Trainer' : 'Member'}
           </h1>
-          <p className="text-zinc-500">Fill in the details below. Welcome message with credentials will be sent automatically.</p>
+          <p className="text-muted-foreground">Fill in the details below. Welcome message with credentials will be sent automatically.</p>
         </div>
 
         <Card className="glass-card">
@@ -1091,7 +1091,7 @@ export const CreateMember = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Full Name *</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Full Name *</Label>
                   <Input
                     data-testid="input-name"
                     className="input-dark mt-2"
@@ -1101,7 +1101,7 @@ export const CreateMember = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Email *</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Email *</Label>
                   <Input
                     data-testid="input-email"
                     type="email"
@@ -1112,9 +1112,9 @@ export const CreateMember = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Phone Number *</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Phone Number *</Label>
                   <div className="flex gap-2 mt-2">
-                    <span className="flex items-center px-3 bg-zinc-800 rounded-l-md border border-r-0 border-zinc-700 text-zinc-400">
+                    <span className="flex items-center px-3 bg-muted rounded-l-md border border-r-0 border-border text-muted-foreground">
                       +91
                     </span>
                     <Input
@@ -1129,7 +1129,7 @@ export const CreateMember = () => {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Password *</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Password *</Label>
                   <div className="flex gap-2 mt-2">
                     <Input
                       data-testid="input-password"
@@ -1144,13 +1144,13 @@ export const CreateMember = () => {
                       <RotateCcw size={16} />
                     </Button>
                   </div>
-                  <p className="text-xs text-zinc-500 mt-1">This will be sent to the member</p>
+                  <p className="text-xs text-muted-foreground mt-1">This will be sent to the member</p>
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Gender</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Gender</Label>
                   <select
                     data-testid="input-gender"
-                    className="input-dark mt-2 w-full h-10 px-3 rounded-md bg-zinc-900/50 border border-zinc-800"
+                    className="input-dark mt-2 w-full h-10 px-3 rounded-md bg-muted/50 border border-border"
                     value={formData.gender}
                     onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
                   >
@@ -1161,7 +1161,7 @@ export const CreateMember = () => {
                   </select>
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Date of Birth</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Date of Birth</Label>
                   <Input
                     data-testid="input-dob"
                     type="date"
@@ -1171,7 +1171,7 @@ export const CreateMember = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Joining Date *</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Joining Date *</Label>
                   <Input
                     data-testid="input-joining-date"
                     type="date"
@@ -1182,7 +1182,7 @@ export const CreateMember = () => {
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Address</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Address</Label>
                   <Input
                     data-testid="input-address"
                     className="input-dark mt-2"
@@ -1191,7 +1191,7 @@ export const CreateMember = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">City</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">City</Label>
                   <Input
                     data-testid="input-city"
                     className="input-dark mt-2"
@@ -1200,7 +1200,7 @@ export const CreateMember = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">ZIP Code</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">ZIP Code</Label>
                   <Input
                     data-testid="input-zip"
                     className="input-dark mt-2"
@@ -1209,7 +1209,7 @@ export const CreateMember = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Emergency Phone</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Emergency Phone</Label>
                   <Input
                     data-testid="input-emergency"
                     className="input-dark mt-2"
@@ -1357,7 +1357,7 @@ export const EditMember = () => {
     return (
       <DashboardLayout role="admin">
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-zinc-500">Loading...</div>
+          <div className="text-muted-foreground">Loading...</div>
         </div>
       </DashboardLayout>
     );
@@ -1370,14 +1370,14 @@ export const EditMember = () => {
           <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
             Edit Member
           </h1>
-          <p className="text-zinc-500">Update member details and profile photo</p>
+          <p className="text-muted-foreground">Update member details and profile photo</p>
         </div>
 
         <Card className="glass-card">
           <CardContent className="p-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Profile Photo Section */}
-              <div className="flex flex-col items-center gap-4 pb-6 border-b border-zinc-800">
+              <div className="flex flex-col items-center gap-4 pb-6 border-b border-border">
                 <Avatar className="w-24 h-24">
                   <AvatarImage src={getAvatarUrl()} />
                   <AvatarFallback className="bg-cyan-500/20 text-cyan-400 text-3xl">
@@ -1413,14 +1413,14 @@ export const EditMember = () => {
                     </Button>
                   )}
                 </div>
-                <p className="text-xs text-zinc-500 text-center">
+                <p className="text-xs text-muted-foreground text-center">
                   Max size: 2MB • Formats: JPG, PNG, WebP • Recommended: 300x300px
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Full Name *</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Full Name *</Label>
                   <Input
                     data-testid="edit-name"
                     className="input-dark mt-2"
@@ -1430,7 +1430,7 @@ export const EditMember = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Email *</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Email *</Label>
                   <Input
                     data-testid="edit-email"
                     type="email"
@@ -1441,9 +1441,9 @@ export const EditMember = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Phone Number *</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Phone Number *</Label>
                   <div className="flex gap-0 mt-2">
-                    <span className="flex items-center px-3 bg-zinc-800 rounded-l-md border border-r-0 border-zinc-700 text-zinc-400">
+                    <span className="flex items-center px-3 bg-muted rounded-l-md border border-r-0 border-border text-muted-foreground">
                       +91
                     </span>
                     <Input
@@ -1458,10 +1458,10 @@ export const EditMember = () => {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Gender</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Gender</Label>
                   <select
                     data-testid="edit-gender"
-                    className="input-dark mt-2 w-full h-10 px-3 rounded-md bg-zinc-900/50 border border-zinc-800"
+                    className="input-dark mt-2 w-full h-10 px-3 rounded-md bg-muted/50 border border-border"
                     value={formData.gender}
                     onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
                   >
@@ -1472,7 +1472,7 @@ export const EditMember = () => {
                   </select>
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Date of Birth</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Date of Birth</Label>
                   <Input
                     data-testid="edit-dob"
                     type="date"
@@ -1482,7 +1482,7 @@ export const EditMember = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Joining Date *</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Joining Date *</Label>
                   <Input
                     data-testid="edit-joining-date"
                     type="date"
@@ -1493,7 +1493,7 @@ export const EditMember = () => {
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Address</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Address</Label>
                   <Input
                     data-testid="edit-address"
                     className="input-dark mt-2"
@@ -1502,7 +1502,7 @@ export const EditMember = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">City</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">City</Label>
                   <Input
                     data-testid="edit-city"
                     className="input-dark mt-2"
@@ -1511,7 +1511,7 @@ export const EditMember = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">ZIP Code</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">ZIP Code</Label>
                   <Input
                     data-testid="edit-zip"
                     className="input-dark mt-2"
@@ -1520,7 +1520,7 @@ export const EditMember = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Emergency Phone</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Emergency Phone</Label>
                   <Input
                     data-testid="edit-emergency"
                     className="input-dark mt-2"
