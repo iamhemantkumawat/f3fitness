@@ -153,33 +153,33 @@ const LandingPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-white overflow-x-hidden">
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-[#09090b] text-white' : 'bg-gray-50 text-gray-900'} overflow-x-hidden`}>
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-white/5">
+      <nav className={`fixed top-0 left-0 right-0 z-50 ${theme === 'dark' ? 'bg-black/80 border-white/5' : 'bg-white/90 border-gray-200'} backdrop-blur-md border-b`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link to="/" className="flex items-center gap-2">
-              <img src={LOGO_URL} alt="F3 Fitness" className="h-10 invert" />
+              <img src={theme === 'dark' ? LOGO_DARK : LOGO_LIGHT} alt="F3 Fitness" className="h-10" />
             </Link>
             
             <div className="hidden md:flex items-center gap-8">
-              <a href="#about" className="text-zinc-400 hover:text-white transition-colors">About</a>
-              <a href="#services" className="text-zinc-400 hover:text-white transition-colors">Services</a>
-              <a href="#trainers" className="text-zinc-400 hover:text-white transition-colors">Trainers</a>
-              <a href="#calculators" className="text-zinc-400 hover:text-white transition-colors">Calculators</a>
-              <a href="#contact" className="text-zinc-400 hover:text-white transition-colors">Contact</a>
+              <a href="#about" className={`${theme === 'dark' ? 'text-zinc-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'} transition-colors`}>About</a>
+              <a href="#services" className={`${theme === 'dark' ? 'text-zinc-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'} transition-colors`}>Services</a>
+              <a href="#trainers" className={`${theme === 'dark' ? 'text-zinc-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'} transition-colors`}>Trainers</a>
+              <a href="#calculators" className={`${theme === 'dark' ? 'text-zinc-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'} transition-colors`}>Calculators</a>
+              <a href="#contact" className={`${theme === 'dark' ? 'text-zinc-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'} transition-colors`}>Contact</a>
             </div>
 
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleTheme}
-                className="p-2 rounded-full bg-zinc-800/50 hover:bg-zinc-700/50 transition-colors"
+                className={`p-2 rounded-full ${theme === 'dark' ? 'bg-zinc-800/50 hover:bg-zinc-700/50' : 'bg-gray-200 hover:bg-gray-300'} transition-colors`}
                 title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
               >
-                {theme === 'dark' ? <Sun size={20} className="text-yellow-400" /> : <Moon size={20} className="text-zinc-400" />}
+                {theme === 'dark' ? <Sun size={20} className="text-yellow-400" /> : <Moon size={20} className="text-gray-600" />}
               </button>
               <Link to="/login">
-                <Button variant="ghost" className="text-white hover:bg-white/10" data-testid="nav-login">
+                <Button variant="ghost" className={`${theme === 'dark' ? 'text-white hover:bg-white/10' : 'text-gray-900 hover:bg-gray-100'}`} data-testid="nav-login">
                   Login
                 </Button>
               </Link>
