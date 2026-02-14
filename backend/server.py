@@ -501,9 +501,11 @@ def hash_password(password: str) -> str:
 def verify_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(password.encode(), hashed.encode())
 
-def create_access_token(data: dict) -> str:
+def create_access_token(data: dict, remember_me: bool = False) -> str:
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
+    # Extended expiry for remember me (30 days) vs normal (24 hours)
+    expire_hours = 30 * 24 if remember_me else ACCESS_TOKEN_EXPIRE_HOURS
+    expire = datetime.now(timezone.utc) + timedelta(hours=expire_hours)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
