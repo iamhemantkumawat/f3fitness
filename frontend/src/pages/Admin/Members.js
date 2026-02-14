@@ -788,8 +788,11 @@ export const TrainersList = () => {
   };
 
   const handleResetPassword = async () => {
-    const newPassword = prompt('Enter new password for trainer:');
-    if (!newPassword || newPassword.length < 6) {
+    const newPassword = window.prompt('Enter new password for trainer (min 6 characters):');
+    if (newPassword === null) {
+      return; // User cancelled
+    }
+    if (newPassword.length < 6) {
       toast.error('Password must be at least 6 characters');
       return;
     }
