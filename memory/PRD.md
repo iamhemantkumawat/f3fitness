@@ -223,9 +223,11 @@ To test WhatsApp:
 ## Next Tasks
 1. Integrate Razorpay for online payments
 2. Create Diet/Workout plan editor UI for trainers/admins
-3. Build Template Management UI with rich text editor
+3. ✅ ~~Build Template Management UI with rich text editor~~ - COMPLETED Session 8
 4. Invoice generation and sending with payment notifications
 5. ✅ ~~Create deployment guide for Ubuntu VPS~~ - COMPLETED
+6. Logo/Favicon updates with light/dark theme variants
+7. Opening hours update on landing page
 
 ## Technical Debt
 - **server.py Refactoring** - The monolithic backend file (3000+ lines) needs to be split into:
