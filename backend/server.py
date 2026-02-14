@@ -2127,12 +2127,29 @@ async def get_today_attendance(current_user: dict = Depends(get_admin_user)):
 
 @api_router.post("/attendance", response_model=AttendanceResponse)
 async def mark_attendance(attendance: AttendanceCreate, background_tasks: BackgroundTasks, current_user: dict = Depends(get_admin_user)):
+    search_term = attendance.member_id.strip()
+    
+    # Search by member_id, id, email, phone, or name
     user = await db.users.find_one({
-        "$or": [{"id": attendance.member_id}, {"member_id": attendance.member_id}]
+        "$or": [
+            {"id": search_term},
+            {"member_id": search_term},
+            {"member_id": search_term.upper()},
+            {"email": search_term.lower()},
+            {"phone": search_term},
+            {"phone": f"+91{search_term}" if not search_term.startswith('+') else search_term},
+            {"name": {"$regex": f"^{search_term}$", "$options": "i"}}
+        ]
     }, {"_id": 0})
     
+    # If no exact match, try partial name match
     if not user:
-        raise HTTPException(status_code=404, detail="Member not found")
+        user = await db.users.find_one({
+            "name": {"$regex": search_term, "$options": "i"}
+        }, {"_id": 0})
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="Member not found. Try searching by name, phone, email or member ID")
     
     today = get_ist_now().strftime("%Y-%m-%d")
     existing = await db.attendance.find_one({
@@ -2141,7 +2158,7 @@ async def mark_attendance(attendance: AttendanceCreate, background_tasks: Backgr
     })
     
     if existing:
-        raise HTTPException(status_code=400, detail="Attendance already marked today")
+        raise HTTPException(status_code=400, detail=f"Attendance already marked today for {user['name']}")
     
     attendance_id = str(uuid.uuid4())
     now = get_ist_now().isoformat()
