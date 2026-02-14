@@ -166,6 +166,8 @@ To test WhatsApp:
 - ✅ Signup flow bug fix (body stream already read)
 - ✅ Duplicate account prevention
 - ✅ Forgot Password UI flow
+- ✅ Trainer password reset bug fix (Session 8)
+- ✅ Theme toggle bug fix (Session 8)
 
 ### P1 (High Priority) - COMPLETED ✅
 - ✅ OTP signup flow UI with +91 default
@@ -174,6 +176,10 @@ To test WhatsApp:
 - ✅ Calorie tracker
 - ✅ Change password feature
 - ✅ Member profile page
+- ✅ Dark/Light theme toggle (Session 8)
+- ✅ Broadcast feature - WhatsApp & Email (Session 8)
+- ✅ Email Templates management (Session 8)
+- ✅ WhatsApp Templates management (Session 8)
 
 ### P2 (Medium Priority) - IN PROGRESS
 - ⏳ Razorpay payment integration
