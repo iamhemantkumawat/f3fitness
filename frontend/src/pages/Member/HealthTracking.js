@@ -79,7 +79,7 @@ export const HealthTracking = () => {
     : null;
 
   const bmiCategory = (bmi) => {
-    if (!bmi) return { label: 'N/A', color: 'text-zinc-500' };
+    if (!bmi) return { label: 'N/A', color: 'text-muted-foreground' };
     if (bmi < 18.5) return { label: 'Underweight', color: 'text-yellow-400' };
     if (bmi < 25) return { label: 'Normal', color: 'text-green-400' };
     if (bmi < 30) return { label: 'Overweight', color: 'text-orange-400' };
@@ -90,10 +90,10 @@ export const HealthTracking = () => {
     return (
       <DashboardLayout role="member">
         <div className="animate-pulse space-y-6">
-          <div className="h-8 w-48 bg-zinc-800 rounded" />
+          <div className="h-8 w-48 bg-muted rounded" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-32 bg-zinc-800 rounded-xl" />
+              <div key={i} className="h-32 bg-muted rounded-xl" />
             ))}
           </div>
         </div>
@@ -109,7 +109,7 @@ export const HealthTracking = () => {
             <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
               Health Tracking
             </h1>
-            <p className="text-zinc-500">Monitor your fitness progress</p>
+            <p className="text-muted-foreground">Monitor your fitness progress</p>
           </div>
           <Button 
             onClick={() => setShowForm(!showForm)} 
@@ -124,7 +124,7 @@ export const HealthTracking = () => {
         {/* Add Log Form */}
         {showForm && (
           <Card className="glass-card border-cyan-500/30">
-            <CardHeader className="border-b border-zinc-800">
+            <CardHeader className="border-b border-border">
               <CardTitle className="flex items-center gap-2 text-lg uppercase tracking-wide" style={{ fontFamily: 'Barlow Condensed' }}>
                 <Plus size={20} className="text-cyan-400" />
                 New Health Log
@@ -133,7 +133,7 @@ export const HealthTracking = () => {
             <CardContent className="p-6">
               <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Weight (kg)</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Weight (kg)</Label>
                   <Input
                     data-testid="weight-input"
                     type="number"
@@ -145,7 +145,7 @@ export const HealthTracking = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Body Fat (%)</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Body Fat (%)</Label>
                   <Input
                     data-testid="body-fat-input"
                     type="number"
@@ -157,7 +157,7 @@ export const HealthTracking = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Height (cm)</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Height (cm)</Label>
                   <Input
                     data-testid="height-input"
                     type="number"
@@ -169,7 +169,7 @@ export const HealthTracking = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Notes</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Notes</Label>
                   <Input
                     data-testid="notes-input"
                     type="text"
@@ -208,8 +208,8 @@ export const HealthTracking = () => {
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-wider text-zinc-500 mb-2">Current Weight</p>
-                  <p className="text-3xl font-bold text-white" style={{ fontFamily: 'Manrope' }}>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Current Weight</p>
+                  <p className="text-3xl font-bold text-foreground" style={{ fontFamily: 'Manrope' }}>
                     {latestLog?.weight ? `${latestLog.weight} kg` : '--'}
                   </p>
                   {weightChange && (
@@ -230,8 +230,8 @@ export const HealthTracking = () => {
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-wider text-zinc-500 mb-2">BMI</p>
-                  <p className="text-3xl font-bold text-white" style={{ fontFamily: 'Manrope' }}>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">BMI</p>
+                  <p className="text-3xl font-bold text-foreground" style={{ fontFamily: 'Manrope' }}>
                     {latestLog?.bmi ? latestLog.bmi.toFixed(1) : '--'}
                   </p>
                   {latestLog?.bmi && (
@@ -251,11 +251,11 @@ export const HealthTracking = () => {
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-wider text-zinc-500 mb-2">Body Fat</p>
-                  <p className="text-3xl font-bold text-white" style={{ fontFamily: 'Manrope' }}>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Body Fat</p>
+                  <p className="text-3xl font-bold text-foreground" style={{ fontFamily: 'Manrope' }}>
                     {latestLog?.body_fat ? `${latestLog.body_fat}%` : '--'}
                   </p>
-                  <p className="text-sm text-zinc-500 mt-1">
+                  <p className="text-sm text-muted-foreground mt-1">
                     {latestLog?.height ? `Height: ${latestLog.height} cm` : ''}
                   </p>
                 </div>
@@ -269,7 +269,7 @@ export const HealthTracking = () => {
 
         {/* History */}
         <Card className="glass-card">
-          <CardHeader className="border-b border-zinc-800">
+          <CardHeader className="border-b border-border">
             <CardTitle className="flex items-center gap-2 text-lg uppercase tracking-wide" style={{ fontFamily: 'Barlow Condensed' }}>
               <History size={20} className="text-cyan-400" />
               Progress History
@@ -277,23 +277,23 @@ export const HealthTracking = () => {
           </CardHeader>
           <CardContent className="p-6">
             {logs.length === 0 ? (
-              <p className="text-zinc-500 text-center py-8">No logs yet. Start tracking your progress!</p>
+              <p className="text-muted-foreground text-center py-8">No logs yet. Start tracking your progress!</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-zinc-800">
-                      <th className="text-left py-3 px-4 text-xs uppercase tracking-wider text-zinc-500">Date</th>
-                      <th className="text-left py-3 px-4 text-xs uppercase tracking-wider text-zinc-500">Weight</th>
-                      <th className="text-left py-3 px-4 text-xs uppercase tracking-wider text-zinc-500">BMI</th>
-                      <th className="text-left py-3 px-4 text-xs uppercase tracking-wider text-zinc-500">Body Fat</th>
-                      <th className="text-left py-3 px-4 text-xs uppercase tracking-wider text-zinc-500">Height</th>
-                      <th className="text-left py-3 px-4 text-xs uppercase tracking-wider text-zinc-500">Notes</th>
+                    <tr className="border-b border-border">
+                      <th className="text-left py-3 px-4 text-xs uppercase tracking-wider text-muted-foreground">Date</th>
+                      <th className="text-left py-3 px-4 text-xs uppercase tracking-wider text-muted-foreground">Weight</th>
+                      <th className="text-left py-3 px-4 text-xs uppercase tracking-wider text-muted-foreground">BMI</th>
+                      <th className="text-left py-3 px-4 text-xs uppercase tracking-wider text-muted-foreground">Body Fat</th>
+                      <th className="text-left py-3 px-4 text-xs uppercase tracking-wider text-muted-foreground">Height</th>
+                      <th className="text-left py-3 px-4 text-xs uppercase tracking-wider text-muted-foreground">Notes</th>
                     </tr>
                   </thead>
                   <tbody>
                     {logs.map((log, idx) => (
-                      <tr key={log.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30">
+                      <tr key={log.id} className="border-b border-border/50 hover:bg-muted/30">
                         <td className="py-3 px-4 text-sm text-zinc-300">
                           {new Date(log.logged_at).toLocaleDateString('en-IN', {
                             day: '2-digit',
@@ -303,9 +303,9 @@ export const HealthTracking = () => {
                         </td>
                         <td className="py-3 px-4 text-sm">
                           {log.weight ? (
-                            <span className="text-white font-medium">{log.weight} kg</span>
+                            <span className="text-foreground font-medium">{log.weight} kg</span>
                           ) : (
-                            <span className="text-zinc-600">--</span>
+                            <span className="text-muted-foreground">--</span>
                           )}
                         </td>
                         <td className="py-3 px-4 text-sm">
@@ -314,24 +314,24 @@ export const HealthTracking = () => {
                               {log.bmi.toFixed(1)}
                             </span>
                           ) : (
-                            <span className="text-zinc-600">--</span>
+                            <span className="text-muted-foreground">--</span>
                           )}
                         </td>
                         <td className="py-3 px-4 text-sm">
                           {log.body_fat ? (
-                            <span className="text-white">{log.body_fat}%</span>
+                            <span className="text-foreground">{log.body_fat}%</span>
                           ) : (
-                            <span className="text-zinc-600">--</span>
+                            <span className="text-muted-foreground">--</span>
                           )}
                         </td>
                         <td className="py-3 px-4 text-sm">
                           {log.height ? (
-                            <span className="text-white">{log.height} cm</span>
+                            <span className="text-foreground">{log.height} cm</span>
                           ) : (
-                            <span className="text-zinc-600">--</span>
+                            <span className="text-muted-foreground">--</span>
                           )}
                         </td>
-                        <td className="py-3 px-4 text-sm text-zinc-400">
+                        <td className="py-3 px-4 text-sm text-muted-foreground">
                           {log.notes || '--'}
                         </td>
                       </tr>

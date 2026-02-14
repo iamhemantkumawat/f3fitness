@@ -157,10 +157,10 @@ export const CalorieTracker = () => {
     return (
       <DashboardLayout role="member">
         <div className="animate-pulse space-y-6">
-          <div className="h-8 w-48 bg-zinc-800 rounded" />
+          <div className="h-8 w-48 bg-muted rounded" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-32 bg-zinc-800 rounded-xl" />
+              <div key={i} className="h-32 bg-muted rounded-xl" />
             ))}
           </div>
         </div>
@@ -176,7 +176,7 @@ export const CalorieTracker = () => {
             <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
               Calorie Tracker
             </h1>
-            <p className="text-zinc-500">Track your daily nutrition</p>
+            <p className="text-muted-foreground">Track your daily nutrition</p>
           </div>
           <div className="flex gap-2">
             <Button
@@ -202,7 +202,7 @@ export const CalorieTracker = () => {
         {/* Goal Form */}
         {showGoalForm && (
           <Card className="glass-card border-purple-500/30">
-            <CardHeader className="border-b border-zinc-800">
+            <CardHeader className="border-b border-border">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Target size={20} className="text-purple-400" />
                 Set Calorie Goal
@@ -211,7 +211,7 @@ export const CalorieTracker = () => {
             <CardContent className="p-6">
               <form onSubmit={handleUpdateGoal} className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Daily Target (kcal)</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Daily Target (kcal)</Label>
                   <Input
                     type="number"
                     className="input-dark mt-2"
@@ -221,9 +221,9 @@ export const CalorieTracker = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Goal Type</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Goal Type</Label>
                   <select
-                    className="input-dark mt-2 w-full h-10 px-3 rounded-md bg-zinc-900/50 border border-zinc-800"
+                    className="input-dark mt-2 w-full h-10 px-3 rounded-md bg-muted/50 border border-border"
                     value={goalData.goal_type}
                     onChange={(e) => setGoalData({ ...goalData, goal_type: e.target.value })}
                   >
@@ -244,7 +244,7 @@ export const CalorieTracker = () => {
         {/* Add Meal Form */}
         {showForm && (
           <Card className="glass-card border-cyan-500/30">
-            <CardHeader className="border-b border-zinc-800">
+            <CardHeader className="border-b border-border">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Utensils size={20} className="text-cyan-400" />
                 Log Meal
@@ -253,9 +253,9 @@ export const CalorieTracker = () => {
             <CardContent className="p-6">
               <form onSubmit={handleAddLog} className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Meal Type</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Meal Type</Label>
                   <select
-                    className="input-dark mt-2 w-full h-10 px-3 rounded-md bg-zinc-900/50 border border-zinc-800"
+                    className="input-dark mt-2 w-full h-10 px-3 rounded-md bg-muted/50 border border-border"
                     value={formData.meal_type}
                     onChange={(e) => setFormData({ ...formData, meal_type: e.target.value })}
                   >
@@ -265,7 +265,7 @@ export const CalorieTracker = () => {
                   </select>
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Calories *</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Calories *</Label>
                   <Input
                     type="number"
                     className="input-dark mt-2"
@@ -276,7 +276,7 @@ export const CalorieTracker = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Protein (g)</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Protein (g)</Label>
                   <Input
                     type="number"
                     className="input-dark mt-2"
@@ -286,7 +286,7 @@ export const CalorieTracker = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Carbs (g)</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Carbs (g)</Label>
                   <Input
                     type="number"
                     className="input-dark mt-2"
@@ -296,7 +296,7 @@ export const CalorieTracker = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Fats (g)</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Fats (g)</Label>
                   <Input
                     type="number"
                     className="input-dark mt-2"
@@ -306,7 +306,7 @@ export const CalorieTracker = () => {
                   />
                 </div>
                 <div className="col-span-2">
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Food Items</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Food Items</Label>
                   <Input
                     type="text"
                     className="input-dark mt-2"
@@ -331,10 +331,10 @@ export const CalorieTracker = () => {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <p className="text-xs uppercase tracking-wider text-zinc-500">Today's Calories</p>
-                    <p className="text-4xl font-bold text-white" style={{ fontFamily: 'Manrope' }}>
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground">Today's Calories</p>
+                    <p className="text-4xl font-bold text-foreground" style={{ fontFamily: 'Manrope' }}>
                       {summary.total_calories}
-                      <span className="text-lg text-zinc-500"> / {summary.target_calories}</span>
+                      <span className="text-lg text-muted-foreground"> / {summary.target_calories}</span>
                     </p>
                   </div>
                   <div className={`p-3 rounded-lg ${
@@ -343,13 +343,13 @@ export const CalorieTracker = () => {
                     {summary.difference > 0 ? <TrendingUp size={24} /> : <TrendingDown size={24} />}
                   </div>
                 </div>
-                <div className="w-full bg-zinc-800 rounded-full h-3">
+                <div className="w-full bg-muted rounded-full h-3">
                   <div
                     className={`h-3 rounded-full transition-all ${getProgressColor()}`}
                     style={{ width: `${Math.min((summary.total_calories / summary.target_calories) * 100, 100)}%` }}
                   />
                 </div>
-                <p className="text-sm text-zinc-500 mt-2">
+                <p className="text-sm text-muted-foreground mt-2">
                   {summary.difference > 0 
                     ? `${summary.difference} kcal over target`
                     : `${Math.abs(summary.difference)} kcal remaining`
@@ -360,17 +360,17 @@ export const CalorieTracker = () => {
 
             <Card className="glass-card">
               <CardContent className="p-6">
-                <p className="text-xs uppercase tracking-wider text-zinc-500">Protein</p>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">Protein</p>
                 <p className="text-3xl font-bold text-cyan-400">{summary.total_protein || 0}g</p>
               </CardContent>
             </Card>
 
             <Card className="glass-card">
               <CardContent className="p-6">
-                <p className="text-xs uppercase tracking-wider text-zinc-500">Carbs / Fats</p>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">Carbs / Fats</p>
                 <p className="text-3xl font-bold">
                   <span className="text-yellow-400">{summary.total_carbs || 0}g</span>
-                  <span className="text-zinc-500"> / </span>
+                  <span className="text-muted-foreground"> / </span>
                   <span className="text-orange-400">{summary.total_fats || 0}g</span>
                 </p>
               </CardContent>
@@ -380,7 +380,7 @@ export const CalorieTracker = () => {
 
         {/* Today's Meals */}
         <Card className="glass-card">
-          <CardHeader className="border-b border-zinc-800">
+          <CardHeader className="border-b border-border">
             <CardTitle className="flex items-center gap-2 text-lg uppercase tracking-wide" style={{ fontFamily: 'Barlow Condensed' }}>
               <Flame size={20} className="text-orange-400" />
               Today's Meals
@@ -388,11 +388,11 @@ export const CalorieTracker = () => {
           </CardHeader>
           <CardContent className="p-6">
             {logs.length === 0 ? (
-              <p className="text-zinc-500 text-center py-8">No meals logged today. Start tracking!</p>
+              <p className="text-muted-foreground text-center py-8">No meals logged today. Start tracking!</p>
             ) : (
               <div className="space-y-3">
                 {logs.map((log) => (
-                  <div key={log.id} className="flex items-center justify-between p-4 bg-zinc-900/50 rounded-lg border border-zinc-800">
+                  <div key={log.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-border">
                     <div className="flex items-center gap-4">
                       <div className="text-2xl">
                         {log.meal_type === 'breakfast' ? '🌅' : 
@@ -400,20 +400,20 @@ export const CalorieTracker = () => {
                          log.meal_type === 'dinner' ? '🌙' : '🍎'}
                       </div>
                       <div>
-                        <p className="font-medium text-white capitalize">{log.meal_type}</p>
-                        {log.food_items && <p className="text-xs text-zinc-500">{log.food_items}</p>}
+                        <p className="font-medium text-foreground capitalize">{log.meal_type}</p>
+                        {log.food_items && <p className="text-xs text-muted-foreground">{log.food_items}</p>}
                       </div>
                     </div>
                     <div className="flex items-center gap-6">
                       <div className="text-right">
                         <p className="text-lg font-bold text-orange-400">{log.calories} kcal</p>
-                        <p className="text-xs text-zinc-500">
+                        <p className="text-xs text-muted-foreground">
                           P: {log.protein || 0}g | C: {log.carbs || 0}g | F: {log.fats || 0}g
                         </p>
                       </div>
                       <button
                         onClick={() => handleDeleteLog(log.id)}
-                        className="text-zinc-500 hover:text-red-400 transition-colors"
+                        className="text-muted-foreground hover:text-red-400 transition-colors"
                       >
                         <Trash2 size={18} />
                       </button>
