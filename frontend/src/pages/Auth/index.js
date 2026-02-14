@@ -10,7 +10,7 @@ import { Eye, EyeOff, Dumbbell, ArrowRight } from 'lucide-react';
 const LOGO_URL = "https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png";
 
 export const Login = () => {
-  const [formData, setFormData] = useState({ email_or_phone: '', password: '' });
+  const [formData, setFormData] = useState({ email_or_phone: '', password: '', rememberMe: false });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { login, user } = useAuth();
