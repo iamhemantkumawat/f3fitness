@@ -141,7 +141,7 @@ export const AdminDashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Today's Birthdays */}
           <Card className="glass-card">
-            <CardHeader className="border-b border-zinc-800 py-4">
+            <CardHeader className="border-b border-border py-4">
               <CardTitle className="flex items-center gap-2 text-lg uppercase tracking-wide" style={{ fontFamily: 'Barlow Condensed' }}>
                 <Cake size={20} className="text-pink-400" />
                 Today's Birthdays
@@ -154,14 +154,14 @@ export const AdminDashboard = () => {
             </CardHeader>
             <CardContent className="p-4">
               {!stats?.today_birthdays?.length ? (
-                <p className="text-zinc-500 text-center py-6 text-sm">No birthdays today</p>
+                <p className="text-muted-foreground text-center py-6 text-sm">No birthdays today</p>
               ) : (
                 <div className="space-y-2">
                   {stats.today_birthdays.map((member, idx) => (
                     <div key={idx} className="flex items-center justify-between p-3 bg-pink-500/5 rounded-lg border border-pink-500/10">
                       <div>
-                        <p className="font-medium text-white">{member.name}</p>
-                        <p className="text-xs text-zinc-500">{member.member_id}</p>
+                        <p className="font-medium text-foreground">{member.name}</p>
+                        <p className="text-xs text-muted-foreground">{member.member_id}</p>
                       </div>
                       {member.phone_number && (
                         <a href={`tel:${member.phone_number}`} className="text-pink-400 hover:text-pink-300">
@@ -177,7 +177,7 @@ export const AdminDashboard = () => {
 
           {/* Upcoming Birthdays */}
           <Card className="glass-card">
-            <CardHeader className="border-b border-zinc-800 py-4">
+            <CardHeader className="border-b border-border py-4">
               <CardTitle className="flex items-center gap-2 text-lg uppercase tracking-wide" style={{ fontFamily: 'Barlow Condensed' }}>
                 <Cake size={20} className="text-purple-400" />
                 Upcoming Birthdays (7 days)
@@ -185,14 +185,14 @@ export const AdminDashboard = () => {
             </CardHeader>
             <CardContent className="p-4">
               {!stats?.upcoming_birthdays?.length ? (
-                <p className="text-zinc-500 text-center py-6 text-sm">No upcoming birthdays</p>
+                <p className="text-muted-foreground text-center py-6 text-sm">No upcoming birthdays</p>
               ) : (
                 <div className="space-y-2">
                   {stats.upcoming_birthdays.map((member, idx) => (
                     <div key={idx} className="flex items-center justify-between p-3 bg-purple-500/5 rounded-lg border border-purple-500/10">
                       <div>
-                        <p className="font-medium text-white">{member.name}</p>
-                        <p className="text-xs text-zinc-500">{member.member_id}</p>
+                        <p className="font-medium text-foreground">{member.name}</p>
+                        <p className="text-xs text-muted-foreground">{member.member_id}</p>
                       </div>
                       <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded">
                         {member.days_until === 1 ? 'Tomorrow' : `In ${member.days_until} days`}
