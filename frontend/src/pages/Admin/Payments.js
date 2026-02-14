@@ -47,7 +47,7 @@ export const PaymentsList = () => {
             <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
               All Payments
             </h1>
-            <p className="text-zinc-500">View payment history</p>
+            <p className="text-muted-foreground">View payment history</p>
           </div>
           <div className="flex gap-3">
             <Input
@@ -78,25 +78,25 @@ export const PaymentsList = () => {
                   [...Array(5)].map((_, i) => (
                     <tr key={i}>
                       <td colSpan={6} className="pl-6">
-                        <div className="h-4 bg-zinc-800 rounded animate-pulse" />
+                        <div className="h-4 bg-muted rounded animate-pulse" />
                       </td>
                     </tr>
                   ))
                 ) : payments.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-center text-zinc-500 py-8 pl-6">
+                    <td colSpan={6} className="text-center text-muted-foreground py-8 pl-6">
                       No payments found
                     </td>
                   </tr>
                 ) : (
                   payments.map((payment) => (
                     <tr key={payment.id} data-testid={`payment-row-${payment.id}`}>
-                      <td className="pl-6 text-zinc-400">{formatDateTime(payment.payment_date)}</td>
-                      <td className="font-medium text-white">{payment.user_name}</td>
+                      <td className="pl-6 text-muted-foreground">{formatDateTime(payment.payment_date)}</td>
+                      <td className="font-medium text-foreground">{payment.user_name}</td>
                       <td className="font-mono text-cyan-400">{payment.member_id}</td>
                       <td className="font-semibold text-emerald-400">{formatCurrency(payment.amount_paid)}</td>
-                      <td className="text-zinc-400 capitalize">{payment.payment_method}</td>
-                      <td className="pr-6 text-zinc-500 truncate max-w-xs">{payment.notes || '-'}</td>
+                      <td className="text-muted-foreground capitalize">{payment.payment_method}</td>
+                      <td className="pr-6 text-muted-foreground truncate max-w-xs">{payment.notes || '-'}</td>
                     </tr>
                   ))
                 )}
@@ -165,7 +165,7 @@ export const AddPayment = () => {
           <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
             Add Payment
           </h1>
-          <p className="text-zinc-500">Record a new payment</p>
+          <p className="text-muted-foreground">Record a new payment</p>
         </div>
 
         <Card className="glass-card">
@@ -173,9 +173,9 @@ export const AddPayment = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Member Search */}
               <div>
-                <Label className="text-xs uppercase tracking-wider text-zinc-500">Search Member *</Label>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Search Member *</Label>
                 <div className="relative mt-2">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                   <Input
                     data-testid="member-search"
                     className="input-dark pl-10"
@@ -186,12 +186,12 @@ export const AddPayment = () => {
                 </div>
                 
                 {searchResults.length > 0 && (
-                  <div className="mt-2 bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
+                  <div className="mt-2 bg-zinc-900 border border-border rounded-lg overflow-hidden">
                     {searchResults.map((user) => (
                       <button
                         key={user.id}
                         type="button"
-                        className="w-full p-3 text-left hover:bg-zinc-800 flex items-center justify-between"
+                        className="w-full p-3 text-left hover:bg-muted flex items-center justify-between"
                         onClick={() => {
                           setSelectedUser(user);
                           setSearchQuery(user.name);
@@ -200,8 +200,8 @@ export const AddPayment = () => {
                         data-testid={`search-result-${user.member_id}`}
                       >
                         <div>
-                          <p className="font-medium text-white">{user.name}</p>
-                          <p className="text-sm text-zinc-500">{user.phone_number}</p>
+                          <p className="font-medium text-foreground">{user.name}</p>
+                          <p className="text-sm text-muted-foreground">{user.phone_number}</p>
                         </div>
                         <span className="font-mono text-cyan-400">{user.member_id}</span>
                       </button>
@@ -212,12 +212,12 @@ export const AddPayment = () => {
                 {selectedUser && (
                   <div className="mt-3 p-3 bg-cyan-500/10 border border-cyan-500/30 rounded-lg flex items-center justify-between">
                     <div>
-                      <p className="font-medium text-white">{selectedUser.name}</p>
+                      <p className="font-medium text-foreground">{selectedUser.name}</p>
                       <p className="text-sm text-cyan-400 font-mono">{selectedUser.member_id}</p>
                     </div>
                     <button
                       type="button"
-                      className="text-zinc-500 hover:text-white"
+                      className="text-muted-foreground hover:text-foreground"
                       onClick={() => {
                         setSelectedUser(null);
                         setSearchQuery('');
@@ -231,7 +231,7 @@ export const AddPayment = () => {
 
               {/* Amount */}
               <div>
-                <Label className="text-xs uppercase tracking-wider text-zinc-500">Amount (₹) *</Label>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Amount (₹) *</Label>
                 <Input
                   data-testid="amount-input"
                   type="number"
@@ -245,10 +245,10 @@ export const AddPayment = () => {
 
               {/* Payment Method */}
               <div>
-                <Label className="text-xs uppercase tracking-wider text-zinc-500">Payment Method</Label>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Payment Method</Label>
                 <select
                   data-testid="method-select"
-                  className="input-dark mt-2 w-full h-10 px-3 rounded-md bg-zinc-900/50 border border-zinc-800"
+                  className="input-dark mt-2 w-full h-10 px-3 rounded-md bg-muted/50 border border-border"
                   value={formData.payment_method}
                   onChange={(e) => setFormData({ ...formData, payment_method: e.target.value })}
                 >
@@ -261,7 +261,7 @@ export const AddPayment = () => {
 
               {/* Notes */}
               <div>
-                <Label className="text-xs uppercase tracking-wider text-zinc-500">Notes</Label>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Notes</Label>
                 <Input
                   data-testid="notes-input"
                   className="input-dark mt-2"
@@ -316,13 +316,13 @@ export const PaymentReports = () => {
           <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
             Payment Reports
           </h1>
-          <p className="text-zinc-500">View payment summaries</p>
+          <p className="text-muted-foreground">View payment summaries</p>
         </div>
 
         {/* Filters */}
         <div className="flex flex-wrap gap-4">
           <select
-            className="input-dark h-10 px-3 rounded-md bg-zinc-900/50 border border-zinc-800"
+            className="input-dark h-10 px-3 rounded-md bg-muted/50 border border-border"
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
             data-testid="period-select"
@@ -346,7 +346,7 @@ export const PaymentReports = () => {
             {[...Array(3)].map((_, i) => (
               <Card key={i} className="glass-card animate-pulse">
                 <CardContent className="p-6">
-                  <div className="h-20 bg-zinc-800 rounded" />
+                  <div className="h-20 bg-muted rounded" />
                 </CardContent>
               </Card>
             ))}
@@ -356,15 +356,15 @@ export const PaymentReports = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Card className="highlight-card">
                 <CardContent className="p-6">
-                  <p className="text-xs uppercase tracking-wider text-zinc-500 mb-2">Total Collection</p>
-                  <p className="text-4xl font-bold text-white" style={{ fontFamily: 'Manrope' }}>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Total Collection</p>
+                  <p className="text-4xl font-bold text-foreground" style={{ fontFamily: 'Manrope' }}>
                     {formatCurrency(summary.total)}
                   </p>
                 </CardContent>
               </Card>
               <Card className="glass-card">
                 <CardContent className="p-6">
-                  <p className="text-xs uppercase tracking-wider text-zinc-500 mb-2">Total Transactions</p>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Total Transactions</p>
                   <p className="text-4xl font-bold text-cyan-400" style={{ fontFamily: 'Manrope' }}>
                     {summary.count}
                   </p>
@@ -372,8 +372,8 @@ export const PaymentReports = () => {
               </Card>
               <Card className="glass-card">
                 <CardContent className="p-6">
-                  <p className="text-xs uppercase tracking-wider text-zinc-500 mb-2">Period</p>
-                  <p className="text-2xl font-bold text-white capitalize" style={{ fontFamily: 'Manrope' }}>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Period</p>
+                  <p className="text-2xl font-bold text-foreground capitalize" style={{ fontFamily: 'Manrope' }}>
                     {period}
                   </p>
                 </CardContent>
@@ -390,9 +390,9 @@ export const PaymentReports = () => {
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {Object.entries(summary.by_method || {}).map(([method, amount]) => (
-                    <div key={method} className="p-4 bg-zinc-900/50 rounded-lg">
-                      <p className="text-xs uppercase text-zinc-500 mb-1">{method}</p>
-                      <p className="text-xl font-bold text-white">{formatCurrency(amount)}</p>
+                    <div key={method} className="p-4 bg-muted/50 rounded-lg">
+                      <p className="text-xs uppercase text-muted-foreground mb-1">{method}</p>
+                      <p className="text-xl font-bold text-foreground">{formatCurrency(amount)}</p>
                     </div>
                   ))}
                 </div>
@@ -486,7 +486,7 @@ export const PendingPayments = () => {
           <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
             Pending Requests
           </h1>
-          <p className="text-zinc-500">Members who requested to pay at counter</p>
+          <p className="text-muted-foreground">Members who requested to pay at counter</p>
         </div>
 
         <Card className="glass-card">
@@ -494,12 +494,12 @@ export const PendingPayments = () => {
             <CardContent className="p-6">
               <div className="animate-pulse space-y-4">
                 {[...Array(3)].map((_, i) => (
-                  <div key={i} className="h-16 bg-zinc-800 rounded" />
+                  <div key={i} className="h-16 bg-muted rounded" />
                 ))}
               </div>
             </CardContent>
           ) : requests.length === 0 ? (
-            <CardContent className="p-8 text-center text-zinc-500">
+            <CardContent className="p-8 text-center text-muted-foreground">
               No pending payment requests
             </CardContent>
           ) : (
@@ -507,11 +507,11 @@ export const PendingPayments = () => {
               {requests.map((request) => (
                 <div key={request.id} className="p-4 flex items-center justify-between" data-testid={`request-${request.id}`}>
                   <div>
-                    <p className="font-medium text-white">{request.user_name}</p>
-                    <p className="text-sm text-zinc-500">
+                    <p className="font-medium text-foreground">{request.user_name}</p>
+                    <p className="text-sm text-muted-foreground">
                       {request.plan_name} - {formatCurrency(request.plan_price)}
                     </p>
-                    <p className="text-xs text-zinc-600">{formatDate(request.created_at)}</p>
+                    <p className="text-xs text-muted-foreground">{formatDate(request.created_at)}</p>
                   </div>
                   <div className="flex gap-2">
                     <Button
@@ -540,24 +540,24 @@ export const PendingPayments = () => {
       {/* Approve Payment Dialog */}
       {selectedRequest && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-          <Card className="bg-zinc-900 border-zinc-800 w-full max-w-md mx-4">
+          <Card className="bg-zinc-900 border-border w-full max-w-md mx-4">
             <CardHeader>
               <CardTitle className="text-xl">Approve Payment</CardTitle>
-              <p className="text-zinc-500 text-sm">
+              <p className="text-muted-foreground text-sm">
                 {selectedRequest.user_name} - {selectedRequest.plan_name}
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="p-3 bg-zinc-800/50 rounded-lg">
+              <div className="p-3 bg-muted/50 rounded-lg">
                 <div className="flex justify-between">
-                  <span className="text-zinc-500">Plan Price</span>
-                  <span className="text-white">{formatCurrency(selectedRequest.plan_price)}</span>
+                  <span className="text-muted-foreground">Plan Price</span>
+                  <span className="text-foreground">{formatCurrency(selectedRequest.plan_price)}</span>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-xs text-zinc-500">Discount (₹)</Label>
+                  <Label className="text-xs text-muted-foreground">Discount (₹)</Label>
                   <Input
                     className="input-dark mt-1"
                     type="text"
@@ -571,7 +571,7 @@ export const PendingPayments = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs text-zinc-500">Amount Received (₹)</Label>
+                  <Label className="text-xs text-muted-foreground">Amount Received (₹)</Label>
                   <Input
                     className="input-dark mt-1"
                     type="text"
@@ -587,9 +587,9 @@ export const PendingPayments = () => {
               </div>
 
               <div>
-                <Label className="text-xs text-zinc-500">Payment Method</Label>
+                <Label className="text-xs text-muted-foreground">Payment Method</Label>
                 <select
-                  className="input-dark mt-1 w-full h-10 px-3 rounded-md bg-zinc-900/50 border border-zinc-800"
+                  className="input-dark mt-1 w-full h-10 px-3 rounded-md bg-muted/50 border border-border"
                   value={paymentData.payment_method}
                   onChange={(e) => setPaymentData({...paymentData, payment_method: e.target.value})}
                 >
@@ -600,14 +600,14 @@ export const PendingPayments = () => {
                 </select>
               </div>
 
-              <div className="p-3 bg-zinc-800/50 rounded-lg space-y-2">
+              <div className="p-3 bg-muted/50 rounded-lg space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-zinc-500">Final Amount</span>
+                  <span className="text-muted-foreground">Final Amount</span>
                   <span className="text-cyan-400 font-bold">{formatCurrency(finalAmount)}</span>
                 </div>
                 {remainingDue > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-zinc-500">Remaining Due</span>
+                    <span className="text-muted-foreground">Remaining Due</span>
                     <span className="text-orange-400 font-bold">{formatCurrency(remainingDue)}</span>
                   </div>
                 )}
