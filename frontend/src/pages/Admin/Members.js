@@ -395,6 +395,17 @@ export const MembersList = () => {
                               : '-'}
                           </span>
                         </td>
+                        <td className="cursor-pointer" onClick={() => openMemberDetail(member)}>
+                          {member.active_membership?.amount_due > 0 ? (
+                            <span className="text-orange-400 font-medium">
+                              ₹{member.active_membership.amount_due}
+                            </span>
+                          ) : member.active_membership ? (
+                            <span className="text-emerald-400">Paid</span>
+                          ) : (
+                            <span className="text-zinc-500">-</span>
+                          )}
+                        </td>
                         <td>
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${status.class}`}>
                             {status.label}
