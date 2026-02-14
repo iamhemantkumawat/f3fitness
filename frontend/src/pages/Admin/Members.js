@@ -335,14 +335,14 @@ export const MembersList = () => {
                 {loading ? (
                   [...Array(5)].map((_, i) => (
                     <tr key={i}>
-                      <td colSpan={9} className="pl-4">
+                      <td colSpan={10} className="pl-4">
                         <div className="h-12 bg-zinc-800/50 rounded animate-pulse" />
                       </td>
                     </tr>
                   ))
                 ) : sortedMembers.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="text-center text-zinc-500 py-8 pl-4">
+                    <td colSpan={10} className="text-center text-zinc-500 py-8 pl-4">
                       No members found
                     </td>
                   </tr>
