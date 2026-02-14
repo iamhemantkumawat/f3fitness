@@ -3117,6 +3117,154 @@ async def upload_plan_pdf(file: UploadFile = File(...), current_user: dict = Dep
     
     return {"pdf_url": data_url}
 
+
+# ==================== BROADCAST ROUTES ====================
+
+class BroadcastRequest(BaseModel):
+    message: str
+    target_audience: str = "all"  # all, active, inactive
+
+@api_router.post("/broadcast/whatsapp")
+async def broadcast_whatsapp(
+    request: BroadcastRequest,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(get_admin_user)
+):
+    """Send WhatsApp broadcast to all members"""
+    query = {"role": "member"}
+    if request.target_audience == "active":
+        # Get users with active membership
+        active_memberships = await db.memberships.find({"status": "active"}, {"_id": 0, "user_id": 1}).to_list(10000)
+        active_user_ids = [m["user_id"] for m in active_memberships]
+        query["id"] = {"$in": active_user_ids}
+    elif request.target_audience == "inactive":
+        active_memberships = await db.memberships.find({"status": "active"}, {"_id": 0, "user_id": 1}).to_list(10000)
+        active_user_ids = [m["user_id"] for m in active_memberships]
+        query["id"] = {"$nin": active_user_ids}
+    
+    users = await db.users.find(query, {"_id": 0, "name": 1, "phone_number": 1, "country_code": 1, "member_id": 1}).to_list(10000)
+    
+    sent_count = 0
+    failed_count = 0
+    
+    for user in users:
+        if user.get("phone_number"):
+            # Personalize message
+            personalized_message = request.message.replace("{{name}}", user.get("name", "Member"))
+            personalized_message = personalized_message.replace("{{member_id}}", user.get("member_id", ""))
+            
+            phone = f"{user.get('country_code', '+91')}{user['phone_number'].lstrip('0')}"
+            background_tasks.add_task(send_whatsapp, phone, personalized_message)
+            sent_count += 1
+        else:
+            failed_count += 1
+    
+    # Log activity
+    await log_activity(current_user["id"], "broadcast_whatsapp", f"Sent WhatsApp broadcast to {sent_count} members")
+    
+    return {
+        "message": f"WhatsApp broadcast queued for {sent_count} members",
+        "sent_count": sent_count,
+        "failed_count": failed_count
+    }
+
+@api_router.post("/broadcast/email")
+async def broadcast_email(
+    request: BroadcastRequest,
+    subject: str = Body(...),
+    background_tasks: BackgroundTasks = None,
+    current_user: dict = Depends(get_admin_user)
+):
+    """Send Email broadcast to all members"""
+    query = {"role": "member"}
+    if request.target_audience == "active":
+        active_memberships = await db.memberships.find({"status": "active"}, {"_id": 0, "user_id": 1}).to_list(10000)
+        active_user_ids = [m["user_id"] for m in active_memberships]
+        query["id"] = {"$in": active_user_ids}
+    elif request.target_audience == "inactive":
+        active_memberships = await db.memberships.find({"status": "active"}, {"_id": 0, "user_id": 1}).to_list(10000)
+        active_user_ids = [m["user_id"] for m in active_memberships]
+        query["id"] = {"$nin": active_user_ids}
+    
+    users = await db.users.find(query, {"_id": 0, "name": 1, "email": 1, "member_id": 1}).to_list(10000)
+    
+    sent_count = 0
+    failed_count = 0
+    
+    # Professional email template - white/light theme
+    email_template = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
+        <table role="presentation" style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td align="center" style="padding: 40px 0;">
+                    <table role="presentation" style="width: 600px; max-width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                        <!-- Header -->
+                        <tr>
+                            <td style="padding: 30px 40px; background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); border-radius: 8px 8px 0 0;">
+                                <img src="https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png" alt="F3 Fitness" style="height: 50px; filter: brightness(0) invert(1);">
+                            </td>
+                        </tr>
+                        <!-- Content -->
+                        <tr>
+                            <td style="padding: 40px;">
+                                <h1 style="margin: 0 0 20px; color: #1f2937; font-size: 24px; font-weight: 600;">Hello, {{name}}!</h1>
+                                <div style="color: #4b5563; font-size: 16px; line-height: 1.6;">
+                                    {{content}}
+                                </div>
+                            </td>
+                        </tr>
+                        <!-- Footer -->
+                        <tr>
+                            <td style="padding: 30px 40px; background-color: #f9fafb; border-radius: 0 0 8px 8px; border-top: 1px solid #e5e7eb;">
+                                <p style="margin: 0; color: #6b7280; font-size: 14px;">
+                                    <strong>F3 Fitness Health Club</strong><br>
+                                    Vidyadhar Nagar, Jaipur, Rajasthan<br>
+                                    <a href="tel:+919876543210" style="color: #06b6d4; text-decoration: none;">+91 98765 43210</a>
+                                </p>
+                                <p style="margin: 15px 0 0; color: #9ca3af; font-size: 12px;">
+                                    Transform Your Body, Transform Your Life!
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>
+    """
+    
+    for user in users:
+        if user.get("email"):
+            # Personalize content
+            personalized_content = request.message.replace("{{name}}", user.get("name", "Member"))
+            personalized_content = personalized_content.replace("{{member_id}}", user.get("member_id", ""))
+            
+            # Create full email body
+            email_body = email_template.replace("{{name}}", user.get("name", "Member"))
+            email_body = email_body.replace("{{content}}", personalized_content.replace("\n", "<br>"))
+            
+            background_tasks.add_task(send_email, user["email"], subject, email_body)
+            sent_count += 1
+        else:
+            failed_count += 1
+    
+    # Log activity
+    await log_activity(current_user["id"], "broadcast_email", f"Sent Email broadcast to {sent_count} members")
+    
+    return {
+        "message": f"Email broadcast queued for {sent_count} members",
+        "sent_count": sent_count,
+        "failed_count": failed_count
+    }
+
+
 # ==================== SEED DATA ROUTE ====================
 
 @api_router.post("/seed")
