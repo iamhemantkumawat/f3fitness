@@ -226,6 +226,24 @@ To test WhatsApp:
 - ✅ **Backend Server Crash Fixed** - Removed orphaned HTML code (lines 774-781) in server.py that was causing Python SyntaxError
 - ✅ **Footer Logo Fix** - Fixed undefined `LOGO_URL` in LandingPage.js footer - now uses theme-aware logos (`LOGO_DARK`/`LOGO_LIGHT`)
 
+### Session 9.1 - Theme & Email Improvements
+- ✅ **Light Theme Visibility Fixes** - Fixed landing page colors for light theme:
+  - Hero section: Always white text (dark overlay ensures visibility)
+  - Services section: Cards now have bg-gray-50 with shadow, dark text
+  - About section: bg-gray-100, dark heading, gray-600 body text
+  - Trainers section: bg-gray-100 with proper card styling
+  - Contact section: bg-gray-100, dark headings, proper icon backgrounds
+  - Instagram/Testimonials: Theme-aware backgrounds and text colors
+  - CTA section: Theme-aware text colors
+- ✅ **Email From Name Updated** - Emails now show "F3 FITNESS HEALTH CLUB" as sender name
+- ✅ **Email Template Footer Enhanced** - All email templates now include detailed footer:
+  - Full address: 4th Avenue Plot No 4R-B, Mode, near Mandir Marg, Sector 4, Vidyadhar Nagar, Jaipur, Rajasthan 302039
+  - Phone: 072300 52193
+  - Email: info@f3fitness.in
+  - Hours: Mon–Sat: 5:00 AM – 10:00 PM | Sun: 6:00 AM – 12:00 PM
+  - Instagram: @f3fitnessclub
+- ✅ **Broadcast Email Template Updated** - Same detailed footer as notification emails
+
 ### Verified Working Features
 - ✅ Landing page loads correctly in dark mode
 - ✅ Landing page loads correctly in light mode (theme toggle works)
