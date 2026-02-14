@@ -796,8 +796,8 @@ export const TrainersList = () => {
       return;
     }
     try {
-      await usersAPI.adminResetPassword(selectedTrainer.id, newPassword);
-      toast.success('Password updated successfully');
+      await usersAPI.resetPassword(selectedTrainer.id, newPassword);
+      toast.success('Password updated and sent to trainer via Email & WhatsApp');
       setNewPassword('');
     } catch (error) {
       toast.error('Failed to update password');
