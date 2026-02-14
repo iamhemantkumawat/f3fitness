@@ -158,4 +158,18 @@ export const seedAPI = {
   seed: () => api.post('/seed')
 };
 
+// Broadcast APIs
+export const broadcastAPI = {
+  sendWhatsApp: (data) => api.post('/broadcast/whatsapp', data),
+  sendEmail: (data) => api.post('/broadcast/email', data)
+};
+
+// Templates APIs
+export const templatesAPI = {
+  getAll: () => api.get('/templates'),
+  getByType: (templateType, channel) => api.get(`/templates/${templateType}/${channel}`),
+  update: (data) => api.put('/templates', data),
+  reset: (templateType, channel) => api.delete(`/templates/${templateType}/${channel}`)
+};
+
 export default api;
