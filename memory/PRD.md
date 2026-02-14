@@ -244,6 +244,15 @@ To test WhatsApp:
   - Instagram: @f3fitnessclub
 - ✅ **Broadcast Email Template Updated** - Same detailed footer as notification emails
 
+### Session 9.2 - Login Page Fix & Template System Improvements
+- ✅ **Login Page Light Mode Fix** - Changed hero text colors from `text-foreground` to explicit `text-white` for visibility on dark gradient background
+- ✅ **Password Reset Uses Template System** - Forgot password OTP now uses `send_notification()` with the template from database instead of hardcoded HTML
+- ✅ **All Email Templates Populated** - Added 12 template types (24 total with email/WhatsApp):
+  - welcome, otp, password_reset, attendance, absent_warning
+  - birthday, holiday, plan_shared, renewal_reminder
+  - membership_activated, payment_received, announcement
+- ✅ **Templates Editable in Settings** - All templates visible and editable in Settings > Email Templates page
+
 ### Verified Working Features
 - ✅ Landing page loads correctly in dark mode
 - ✅ Landing page loads correctly in light mode (theme toggle works)
