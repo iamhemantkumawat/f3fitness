@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { ThemeToggle } from '../ThemeToggle';
 import {
   LayoutDashboard,
   Users,
@@ -22,7 +23,8 @@ import {
   CalendarDays,
   Mail,
   MessageSquare,
-  Activity
+  Activity,
+  Send
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import {
