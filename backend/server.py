@@ -90,6 +90,7 @@ class UserCreate(UserBase):
 class UserLogin(BaseModel):
     email_or_phone: str
     password: str
+    rememberMe: bool = False
 
 class UserResponse(UserBase):
     model_config = ConfigDict(extra="ignore")
