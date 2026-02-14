@@ -18,6 +18,9 @@ import { PaymentsList, AddPayment, PaymentReports, PendingPayments } from './pag
 import { MarkAttendance, TodayAttendance, AttendanceHistory } from './pages/Admin/Attendance';
 import { PlansSettings, AnnouncementsSettings, HolidaysSettings, SMTPSettings, WhatsAppSettings, ActivityLogsSettings, PaymentGatewaySettings } from './pages/Admin/Settings';
 import { AdminProfile, MemberProfile, TrainerProfile } from './pages/Admin/Profile';
+import { WhatsAppBroadcast, EmailBroadcast } from './pages/Admin/Broadcast';
+import { EmailTemplatesSettings } from './pages/Admin/EmailTemplates';
+import { WhatsAppTemplatesSettings } from './pages/Admin/WhatsAppTemplates';
 
 // Member Pages
 import { MemberDashboard, MemberPlans } from './pages/Member/Dashboard';
