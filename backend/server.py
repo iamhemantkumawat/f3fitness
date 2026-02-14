@@ -771,15 +771,6 @@ async def get_template(template_type: str, channel: str) -> dict:
 <p>Thank you for being a valued member of F3 Fitness!</p>
 <center><a href="https://f3fitness.in/login" class="button">View Receipt</a></center>"""
         },
-                    <p style="margin: 5px 0;"><strong>Amount:</strong> Rs.{{amount}}</p>
-                    <p style="margin: 5px 0;"><strong>Payment Mode:</strong> {{payment_mode}}</p>
-                    <p style="margin: 5px 0;"><strong>Date:</strong> {{payment_date}}</p>
-                    <p style="margin: 5px 0;"><strong>For:</strong> {{description}}</p>
-                </div>
-                <p>Keep this as your payment confirmation.</p>
-            </div>
-            """
-        },
         ("payment_received", "whatsapp"): {
             "content": "💰 Hi {{name}}, payment received!\n\nReceipt: {{receipt_no}}\nAmount: Rs.{{amount}}\nMode: {{payment_mode}}\n\nThank you! - F3 Fitness Gym"
         },
