@@ -352,7 +352,7 @@ export const MembersList = () => {
                     return (
                       <tr 
                         key={member.id} 
-                        className={`hover:bg-white/5 ${member.is_disabled ? 'opacity-60' : ''}`}
+                        className={`hover:bg-accent ${member.is_disabled ? 'opacity-60' : ''}`}
                         data-testid={`member-row-${member.member_id}`}
                       >
                         <td className="pl-4" onClick={(e) => e.stopPropagation()}>
