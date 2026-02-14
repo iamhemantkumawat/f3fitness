@@ -149,7 +149,75 @@ async def seed_database():
     else:
         print("ℹ️  Plans already exist")
     
-    # 4. Create indexes for better performance
+    # 4. Create Default Trainers
+    existing_trainers = await db.users.count_documents({"role": "trainer"})
+    
+    if existing_trainers == 0:
+        trainers = [
+            {
+                "id": "trainer_001",
+                "member_id": "F3-T001",
+                "email": "faizan@f3fitness.in",
+                "phone": "+919999999001",
+                "phone_number": "9999999001",
+                "password_hash": hash_password("trainer123"),
+                "name": "Faizan Khan",
+                "role": "trainer",
+                "gender": "male",
+                "speciality": "Head Trainer",
+                "bio": "Strength & Conditioning",
+                "instagram_url": "https://instagram.com/f3fitnessclub",
+                "profile_photo_url": "https://images.unsplash.com/photo-1567013127542-490d757e51fc?w=400",
+                "is_active": True,
+                "is_visible_on_website": True,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "joining_date": datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            },
+            {
+                "id": "trainer_002",
+                "member_id": "F3-T002",
+                "email": "rizwan@f3fitness.in",
+                "phone": "+919999999002",
+                "phone_number": "9999999002",
+                "password_hash": hash_password("trainer123"),
+                "name": "Rizwan Khan",
+                "role": "trainer",
+                "gender": "male",
+                "speciality": "Fitness Coach",
+                "bio": "Weight Loss & Nutrition",
+                "instagram_url": "https://instagram.com/f3fitnessclub",
+                "profile_photo_url": "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400",
+                "is_active": True,
+                "is_visible_on_website": True,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "joining_date": datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            },
+            {
+                "id": "trainer_003",
+                "member_id": "F3-T003",
+                "email": "faizal@f3fitness.in",
+                "phone": "+919999999003",
+                "phone_number": "9999999003",
+                "password_hash": hash_password("trainer123"),
+                "name": "Faizal Khan",
+                "role": "trainer",
+                "gender": "male",
+                "speciality": "PT Specialist",
+                "bio": "Muscle Building",
+                "instagram_url": "https://instagram.com/f3fitnessclub",
+                "profile_photo_url": "https://images.unsplash.com/photo-1534367610401-9f5ed68180aa?w=400",
+                "is_active": True,
+                "is_visible_on_website": True,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "joining_date": datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            }
+        ]
+        await db.users.insert_many(trainers)
+        print("✅ Default trainers created (3 trainers)")
+    else:
+        print(f"ℹ️  Trainers already exist ({existing_trainers} found)")
+    
+    # 5. Create indexes for better performance
     await db.users.create_index("email", unique=True)
     await db.users.create_index("phone")
     await db.users.create_index("role")
@@ -164,7 +232,11 @@ async def seed_database():
     print("\nAdmin Login:")
     print("  Email: admin@f3fitness.in")
     print("  Password: admin123")
-    print("\n⚠️  IMPORTANT: Change the admin password after first login!")
+    print("\nTrainer Logins:")
+    print("  Email: faizan@f3fitness.in / trainer123")
+    print("  Email: rizwan@f3fitness.in / trainer123")
+    print("  Email: faizal@f3fitness.in / trainer123")
+    print("\n⚠️  IMPORTANT: Change passwords after first login!")
     print("\n📧 Configure SMTP & WhatsApp in Admin Panel > Settings")
     
     client.close()
