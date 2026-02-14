@@ -2872,6 +2872,27 @@ async def get_trainers(current_user: dict = Depends(get_current_user)):
     trainers = await db.users.find({"role": "trainer"}, {"_id": 0, "password_hash": 0}).to_list(100)
     return trainers
 
+@api_router.get("/trainers/public")
+async def get_public_trainers():
+    """Get trainers for public landing page - no auth required"""
+    trainers = await db.users.find(
+        {"role": "trainer", "is_visible_on_website": {"$ne": False}},
+        {"_id": 0, "password_hash": 0, "email": 0, "phone": 0, "phone_number": 0}
+    ).to_list(100)
+    
+    # Return only necessary fields for landing page
+    result = []
+    for t in trainers:
+        result.append({
+            "id": t.get("id"),
+            "name": t.get("name", "Trainer"),
+            "role": t.get("speciality", "Fitness Coach"),
+            "speciality": t.get("bio", "Expert Trainer"),
+            "image": t.get("profile_photo_url"),
+            "instagram_url": t.get("instagram_url")
+        })
+    return result
+
 # ==================== CALCULATORS (PUBLIC) ====================
 
 @api_router.post("/calculators/bmi")
