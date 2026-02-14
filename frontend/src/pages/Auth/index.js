@@ -119,7 +119,16 @@ export const Login = () => {
                 </div>
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.rememberMe}
+                    onChange={(e) => setFormData({ ...formData, rememberMe: e.target.checked })}
+                    className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-cyan-500 focus:ring-cyan-500"
+                  />
+                  <span className="text-sm text-zinc-400">Remember me</span>
+                </label>
                 <Link to="/forgot-password" className="text-sm text-cyan-400 hover:text-cyan-300">
                   Forgot password?
                 </Link>
