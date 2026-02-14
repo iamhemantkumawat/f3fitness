@@ -433,12 +433,12 @@ export const Signup = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="col-span-1">
                       <Label className="text-xs uppercase tracking-wider text-zinc-500">Gender</Label>
                       <select
                         data-testid="signup-gender-select"
-                        className="input-dark mt-2 w-full h-10 px-3 rounded-md bg-zinc-900/50 border border-zinc-800"
+                        className="input-dark mt-2 w-full h-10 px-2 rounded-md bg-zinc-900/50 border border-zinc-800 text-sm"
                         value={formData.gender}
                         onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
                       >
@@ -448,12 +448,12 @@ export const Signup = () => {
                         <option value="other">Other</option>
                       </select>
                     </div>
-                    <div>
+                    <div className="col-span-2">
                       <Label className="text-xs uppercase tracking-wider text-zinc-500">Date of Birth</Label>
-                      <div className="flex gap-1 mt-2">
+                      <div className="flex gap-2 mt-2">
                         <select
                           data-testid="signup-dob-day"
-                          className="input-dark flex-1 h-10 px-2 rounded-md bg-zinc-900/50 border border-zinc-800 text-sm"
+                          className="input-dark w-16 h-10 px-2 rounded-md bg-zinc-900/50 border border-zinc-800 text-sm"
                           value={formData.date_of_birth ? new Date(formData.date_of_birth).getDate() : ''}
                           onChange={(e) => {
                             const day = e.target.value;
@@ -489,7 +489,7 @@ export const Signup = () => {
                         </select>
                         <select
                           data-testid="signup-dob-year"
-                          className="input-dark flex-1 h-10 px-2 rounded-md bg-zinc-900/50 border border-zinc-800 text-sm appearance-none min-w-0"
+                          className="input-dark w-20 h-10 px-2 rounded-md bg-zinc-900/50 border border-zinc-800 text-sm"
                           value={formData.date_of_birth ? new Date(formData.date_of_birth).getFullYear() : ''}
                           onChange={(e) => {
                             const year = e.target.value;
