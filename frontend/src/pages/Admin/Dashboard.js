@@ -209,7 +209,7 @@ export const AdminDashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Upcoming Renewals */}
           <Card className="glass-card">
-            <CardHeader className="border-b border-zinc-800 py-4">
+            <CardHeader className="border-b border-border py-4">
               <CardTitle className="flex items-center gap-2 text-lg uppercase tracking-wide" style={{ fontFamily: 'Barlow Condensed' }}>
                 <CalendarClock size={20} className="text-amber-400" />
                 Upcoming Renewals
@@ -222,21 +222,21 @@ export const AdminDashboard = () => {
             </CardHeader>
             <CardContent className="p-4">
               {!stats?.upcoming_renewals?.length ? (
-                <p className="text-zinc-500 text-center py-6 text-sm">No renewals due soon</p>
+                <p className="text-muted-foreground text-center py-6 text-sm">No renewals due soon</p>
               ) : (
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {stats.upcoming_renewals.map((member, idx) => (
                     <div key={idx} className="flex items-center justify-between p-3 bg-amber-500/5 rounded-lg border border-amber-500/10">
                       <div>
-                        <p className="font-medium text-white">{member.name}</p>
-                        <p className="text-xs text-zinc-500">{member.member_id} • {member.plan_name}</p>
+                        <p className="font-medium text-foreground">{member.name}</p>
+                        <p className="text-xs text-muted-foreground">{member.member_id} • {member.plan_name}</p>
                       </div>
                       <span className={`text-xs px-2 py-1 rounded ${
                         member.days_left <= 3 
                           ? 'bg-red-500/20 text-red-400' 
                           : member.days_left <= 7 
                             ? 'bg-amber-500/20 text-amber-400' 
-                            : 'bg-zinc-700 text-zinc-400'
+                            : 'bg-muted text-muted-foreground'
                       }`}>
                         {member.days_left <= 0 ? 'Expired' : member.days_left === 1 ? '1 day left' : `${member.days_left} days left`}
                       </span>
@@ -249,7 +249,7 @@ export const AdminDashboard = () => {
 
           {/* Regular Absentees */}
           <Card className="glass-card">
-            <CardHeader className="border-b border-zinc-800 py-4">
+            <CardHeader className="border-b border-border py-4">
               <CardTitle className="flex items-center gap-2 text-lg uppercase tracking-wide" style={{ fontFamily: 'Barlow Condensed' }}>
                 <AlertTriangle size={20} className="text-red-400" />
                 Regular Absentees (7+ days)
@@ -262,14 +262,14 @@ export const AdminDashboard = () => {
             </CardHeader>
             <CardContent className="p-4">
               {!stats?.regular_absentees?.length ? (
-                <p className="text-zinc-500 text-center py-6 text-sm">No regular absentees</p>
+                <p className="text-muted-foreground text-center py-6 text-sm">No regular absentees</p>
               ) : (
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {stats.regular_absentees.map((member, idx) => (
                     <div key={idx} className="flex items-center justify-between p-3 bg-red-500/5 rounded-lg border border-red-500/10">
                       <div>
-                        <p className="font-medium text-white">{member.name}</p>
-                        <p className="text-xs text-zinc-500">{member.member_id}</p>
+                        <p className="font-medium text-foreground">{member.name}</p>
+                        <p className="text-xs text-muted-foreground">{member.member_id}</p>
                       </div>
                       <div className="text-right">
                         <span className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded block">
