@@ -62,6 +62,7 @@ const instagramReels = [
 ];
 
 const LandingPage = () => {
+  const { theme, toggleTheme } = useTheme();
   const [currentHeroImage, setCurrentHeroImage] = useState(0);
   const [testimonials, setTestimonials] = useState([]);
   const [plans, setPlans] = useState([]);
