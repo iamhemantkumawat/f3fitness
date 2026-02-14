@@ -634,120 +634,142 @@ async def get_template(template_type: str, channel: str) -> dict:
     template = await db.templates.find_one({"template_type": template_type, "channel": channel}, {"_id": 0})
     if template:
         return template
-    # Return default templates
+    # Return default templates - now using the wrap_email_in_template for emails
     defaults = {
         ("welcome", "email"): {
             "subject": "Welcome to F3 Fitness Gym! 💪",
-            "content": """
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #09090b; color: #fff; padding: 40px;">
-                <img src="https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png" style="width: 150px; margin-bottom: 20px;" />
-                <h1 style="color: #06b6d4;">Welcome, {{name}}!</h1>
-                <p>Thank you for joining F3 Fitness Gym - Jaipur's premier fitness destination.</p>
-                <p>Your Member ID: <strong style="color: #06b6d4;">{{member_id}}</strong></p>
-                <p>We're excited to be part of your fitness journey!</p>
-                <hr style="border-color: #27272a; margin: 20px 0;" />
-                <p style="color: #71717a; font-size: 12px;">F3 Fitness Health Club, Vidyadhar Nagar, Jaipur</p>
-            </div>
-            """
+            "content": """<h2>Welcome to F3 Fitness 💪</h2>
+<p>Hi <strong>{{name}}</strong>,</p>
+<p>Thank you for joining F3 Fitness Gym - Jaipur's premier fitness destination.</p>
+<div class="highlight-box">
+  <strong>Your Member ID:</strong> {{member_id}}<br>
+  We're excited to be part of your fitness journey!
+</div>
+<p>Stay consistent. Stay disciplined. Your transformation starts now.</p>
+<center><a href="https://f3fitness.in" class="button">Visit Our Website</a></center>
+<div class="divider"></div>
+<p style="font-size:13px; color:#777777;">If you have any questions, feel free to reach out to us anytime.</p>"""
+        },
+        ("otp", "email"): {
+            "subject": "Your F3 Fitness OTP Code 🔐",
+            "content": """<h2>Verify Your Account 🔐</h2>
+<p>Hi <strong>{{name}}</strong>,</p>
+<p>Please use the following OTP to verify your account:</p>
+<div class="otp-code">{{otp}}</div>
+<div class="highlight-box">
+  This code will expire in 10 minutes. Do not share this code with anyone.
+</div>
+<p style="font-size:13px; color:#777777;">If you didn't request this code, please ignore this email.</p>"""
+        },
+        ("otp", "whatsapp"): {
+            "content": "🔐 Your F3 Fitness OTP is: *{{otp}}*\n\nThis code expires in 10 minutes. Do not share with anyone."
+        },
+        ("password_reset", "email"): {
+            "subject": "Reset Your F3 Fitness Password 🔑",
+            "content": """<h2>Password Reset Request 🔑</h2>
+<p>Hi <strong>{{name}}</strong>,</p>
+<p>We received a request to reset your password. Your new temporary password is:</p>
+<div class="otp-code">{{otp}}</div>
+<div class="highlight-box">
+  Please log in with this password and change it immediately from your profile settings.
+</div>
+<p style="font-size:13px; color:#777777;">If you didn't request this, please contact us immediately.</p>"""
+        },
+        ("password_reset", "whatsapp"): {
+            "content": "🔑 Hi {{name}}, your F3 Fitness password has been reset.\n\nYour new temporary password: *{{otp}}*\n\nPlease login and change it immediately from your profile."
         },
         ("welcome", "whatsapp"): {
-            "content": "🏋️ Welcome to F3 Fitness Gym, {{name}}! Your Member ID is {{member_id}}. Let's crush your fitness goals together! 💪"
+            "content": "🏋️ Welcome to F3 Fitness Gym, {{name}}!\n\nYour Member ID: *{{member_id}}*\n\nLet's crush your fitness goals together! 💪\n\n- F3 Fitness Team"
         },
         ("attendance", "whatsapp"): {
-            "content": "✅ Attendance marked! Great job showing up today, {{name}}. Keep the momentum going! 🔥"
+            "content": "✅ Attendance marked!\n\nGreat job showing up today, {{name}}. Keep the momentum going! 🔥\n\n- F3 Fitness"
         },
         ("absent_warning", "email"): {
             "subject": "We Miss You at F3 Fitness! 😢",
-            "content": """
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #09090b; color: #fff; padding: 40px;">
-                <img src="https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png" style="width: 150px; margin-bottom: 20px;" />
-                <h1 style="color: #f97316;">We Miss You, {{name}}!</h1>
-                <p>It's been {{days}} days since your last visit. Your fitness goals are waiting!</p>
-                <p>Remember: Consistency is key to achieving your dream physique. 💪</p>
-                <p>See you soon at the gym!</p>
-            </div>
-            """
+            "content": """<h2>We Miss You, {{name}}! 😢</h2>
+<p>It's been <strong>{{days}} days</strong> since your last visit.</p>
+<div class="highlight-box">
+  Your fitness goals are waiting! Remember: Consistency is key to achieving your dream physique. 💪
+</div>
+<p>See you soon at the gym!</p>
+<center><a href="https://f3fitness.in" class="button">Plan Your Visit</a></center>"""
         },
         ("absent_warning", "whatsapp"): {
-            "content": "😢 Hey {{name}}, it's been {{days}} days since your last gym visit. Your fitness goals miss you! Come back stronger 💪"
+            "content": "😢 Hey {{name}},\n\nIt's been {{days}} days since your last gym visit. Your fitness goals miss you!\n\nCome back stronger 💪\n\n- F3 Fitness Team"
         },
         ("birthday", "email"): {
             "subject": "Happy Birthday from F3 Fitness! 🎂",
-            "content": """
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #09090b; color: #fff; padding: 40px;">
-                <img src="https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png" style="width: 150px; margin-bottom: 20px;" />
-                <h1 style="color: #06b6d4;">🎉 Happy Birthday, {{name}}!</h1>
-                <p>Wishing you a fantastic birthday filled with health, happiness, and gains!</p>
-                <p>Here's to another year of crushing your fitness goals! 🎂💪</p>
-                <p>Your F3 Fitness Family</p>
-            </div>
-            """
+            "content": """<h2>🎉 Happy Birthday, {{name}}! 🎂</h2>
+<p>Wishing you a fantastic birthday filled with health, happiness, and gains!</p>
+<div class="highlight-box">
+  Here's to another year of crushing your fitness goals! May this year bring you closer to your dream physique.
+</div>
+<p>Celebrate well and see you at the gym!</p>
+<p><strong>Your F3 Fitness Family</strong></p>"""
         },
         ("birthday", "whatsapp"): {
-            "content": "🎂 Happy Birthday, {{name}}! 🎉 Wishing you a year full of health, happiness and fitness gains! Enjoy your special day! - F3 Fitness Gym 💪"
+            "content": "🎂 Happy Birthday, {{name}}! 🎉\n\nWishing you a year full of health, happiness and fitness gains!\n\nEnjoy your special day!\n\n- F3 Fitness Gym 💪"
         },
         ("plan_shared", "email"): {
             "subject": "Your New {{plan_type}} Plan is Ready! 📋",
-            "content": """
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #09090b; color: #fff; padding: 40px;">
-                <img src="https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png" style="width: 150px; margin-bottom: 20px;" />
-                <h1 style="color: #06b6d4;">New {{plan_type}} Plan! 📋</h1>
-                <p>Hi {{name}},</p>
-                <p>Your trainer has created a new {{plan_type}} plan for you: <strong>{{plan_title}}</strong></p>
-                <p>Log in to your dashboard to view the full details.</p>
-                <p>Let's achieve your goals together!</p>
-            </div>
-            """
+            "content": """<h2>New {{plan_type}} Plan Ready! 📋</h2>
+<p>Hi <strong>{{name}}</strong>,</p>
+<p>Your trainer has created a new plan for you:</p>
+<div class="highlight-box">
+  <strong>Plan Type:</strong> {{plan_type}}<br>
+  <strong>Title:</strong> {{plan_title}}
+</div>
+<p>Log in to your dashboard to view the full details.</p>
+<center><a href="https://f3fitness.in/login" class="button">View Your Plan</a></center>
+<p>Let's achieve your goals together!</p>"""
         },
         ("plan_shared", "whatsapp"): {
-            "content": "📋 Hi {{name}}! Your trainer has created a new {{plan_type}} plan: {{plan_title}}. Check your F3 Fitness dashboard to view it! 💪"
+            "content": "📋 Hi {{name}}!\n\nYour trainer has created a new {{plan_type}} plan: *{{plan_title}}*\n\nCheck your F3 Fitness dashboard to view it! 💪"
         },
         ("renewal_reminder", "email"): {
             "subject": "Your Membership Expires Soon! ⏰",
-            "content": """
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #09090b; color: #fff; padding: 40px;">
-                <img src="https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png" style="width: 150px; margin-bottom: 20px;" />
-                <h1 style="color: #f97316;">Renewal Reminder ⏰</h1>
-                <p>Hi {{name}},</p>
-                <p>Your membership expires on <strong>{{expiry_date}}</strong> ({{days_left}} days left).</p>
-                <p>Renew now to continue your fitness journey without interruption!</p>
-                <p>Visit the gym or renew online.</p>
-            </div>
-            """
+            "content": """<h2>Renewal Reminder ⏰</h2>
+<p>Hi <strong>{{name}}</strong>,</p>
+<div class="highlight-box">
+  Your membership expires on <strong>{{expiry_date}}</strong><br>
+  <strong>Days Remaining:</strong> {{days_left}} days
+</div>
+<p>Renew now to continue your fitness journey without interruption!</p>
+<center><a href="https://f3fitness.in/login" class="button">Renew Now</a></center>
+<p style="font-size:13px; color:#777777;">Visit the gym or renew online to keep your momentum going.</p>"""
         },
         ("renewal_reminder", "whatsapp"): {
-            "content": "⏰ Hi {{name}}, your F3 Fitness membership expires on {{expiry_date}} ({{days_left}} days left). Renew now to keep your fitness journey going! 💪"
+            "content": "⏰ Hi {{name}},\n\nYour F3 Fitness membership expires on *{{expiry_date}}* ({{days_left}} days left).\n\nRenew now to keep your fitness journey going! 💪\n\n- F3 Fitness"
         },
         ("membership_activated", "email"): {
             "subject": "Membership Activated! 🎉",
-            "content": """
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #09090b; color: #fff; padding: 40px;">
-                <img src="https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png" style="width: 150px; margin-bottom: 20px;" />
-                <h1 style="color: #06b6d4;">Membership Activated! 🎉</h1>
-                <p>Hi {{name}},</p>
-                <p>Your <strong>{{plan_name}}</strong> membership is now active!</p>
-                <div style="background: #18181b; padding: 20px; margin: 20px 0; border-radius: 8px;">
-                    <p style="margin: 5px 0;"><strong>Plan:</strong> {{plan_name}}</p>
-                    <p style="margin: 5px 0;"><strong>Start Date:</strong> {{start_date}}</p>
-                    <p style="margin: 5px 0;"><strong>End Date:</strong> {{end_date}}</p>
-                </div>
-                <p>See you at the gym! 💪</p>
-            </div>
-            """
+            "content": """<h2>Membership Activated! 🎉</h2>
+<p>Hi <strong>{{name}}</strong>,</p>
+<p>Your membership is now active!</p>
+<div class="highlight-box">
+  <strong>Plan:</strong> {{plan_name}}<br>
+  <strong>Start Date:</strong> {{start_date}}<br>
+  <strong>End Date:</strong> {{end_date}}
+</div>
+<p>See you at the gym! 💪</p>
+<center><a href="https://f3fitness.in/login" class="button">View Dashboard</a></center>"""
         },
         ("membership_activated", "whatsapp"): {
-            "content": "🎉 Hi {{name}}! Your {{plan_name}} membership is now active from {{start_date}} to {{end_date}}. Let's crush those fitness goals! 💪 - F3 Fitness Gym"
+            "content": "🎉 Hi {{name}}!\n\nYour *{{plan_name}}* membership is now active!\n\n📅 Start: {{start_date}}\n📅 End: {{end_date}}\n\nLet's crush those fitness goals! 💪\n\n- F3 Fitness Gym"
         },
         ("payment_received", "email"): {
             "subject": "Payment Received - F3 Fitness Gym 💰",
-            "content": """
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #09090b; color: #fff; padding: 40px;">
-                <img src="https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png" style="width: 150px; margin-bottom: 20px;" />
-                <h1 style="color: #06b6d4;">Payment Received! 💰</h1>
-                <p>Hi {{name}},</p>
-                <p>Thank you for your payment. Here are the details:</p>
-                <div style="background: #18181b; padding: 20px; margin: 20px 0; border-radius: 8px;">
-                    <p style="margin: 5px 0;"><strong>Receipt No:</strong> {{receipt_no}}</p>
+            "content": """<h2>Payment Received! 💰</h2>
+<p>Hi <strong>{{name}}</strong>,</p>
+<p>Thank you for your payment. Here are the details:</p>
+<div class="highlight-box">
+  <strong>Receipt No:</strong> {{receipt_no}}<br>
+  <strong>Amount:</strong> ₹{{amount}}<br>
+  <strong>Payment Mode:</strong> {{payment_mode}}
+</div>
+<p>Thank you for being a valued member of F3 Fitness!</p>
+<center><a href="https://f3fitness.in/login" class="button">View Receipt</a></center>"""
+        },
                     <p style="margin: 5px 0;"><strong>Amount:</strong> ₹{{amount}}</p>
                     <p style="margin: 5px 0;"><strong>Payment Mode:</strong> {{payment_mode}}</p>
                     <p style="margin: 5px 0;"><strong>Date:</strong> {{payment_date}}</p>
