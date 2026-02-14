@@ -408,6 +408,13 @@ export const PaymentReports = () => {
 export const PendingPayments = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [paymentData, setPaymentData] = useState({
+    amount_paid: '',
+    payment_method: 'cash',
+    discount: ''
+  });
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchRequests();
@@ -424,15 +431,53 @@ export const PendingPayments = () => {
     }
   };
 
-  const handleApprove = async (id) => {
+  const openApproveDialog = (request) => {
+    setSelectedRequest(request);
+    setPaymentData({
+      amount_paid: request.plan_price?.toString() || '',
+      payment_method: 'cash',
+      discount: '0'
+    });
+  };
+
+  const handleApprove = async () => {
+    if (!paymentData.amount_paid) {
+      toast.error('Please enter amount paid');
+      return;
+    }
+    setSubmitting(true);
     try {
-      await paymentRequestsAPI.approve(id, 0, 'cash');
-      toast.success('Payment request approved');
+      await paymentRequestsAPI.approve(
+        selectedRequest.id, 
+        parseFloat(paymentData.discount) || 0, 
+        paymentData.payment_method,
+        parseFloat(paymentData.amount_paid) || 0
+      );
+      toast.success('Payment approved & plan assigned');
+      setSelectedRequest(null);
       fetchRequests();
     } catch (error) {
-      toast.error('Failed to approve request');
+      toast.error(error.response?.data?.detail || 'Failed to approve request');
+    } finally {
+      setSubmitting(false);
     }
   };
+
+  const handleReject = async (id) => {
+    if (!window.confirm('Are you sure you want to reject this request?')) return;
+    try {
+      await paymentRequestsAPI.reject(id);
+      toast.success('Request rejected');
+      fetchRequests();
+    } catch (error) {
+      toast.error('Failed to reject request');
+    }
+  };
+
+  const finalAmount = selectedRequest 
+    ? (selectedRequest.plan_price || 0) - (parseFloat(paymentData.discount) || 0) 
+    : 0;
+  const remainingDue = finalAmount - (parseFloat(paymentData.amount_paid) || 0);
 
   return (
     <DashboardLayout role="admin">
@@ -468,20 +513,118 @@ export const PendingPayments = () => {
                     </p>
                     <p className="text-xs text-zinc-600">{formatDate(request.created_at)}</p>
                   </div>
-                  <Button
-                    className="btn-primary text-sm"
-                    onClick={() => handleApprove(request.id)}
-                    data-testid={`approve-btn-${request.id}`}
-                  >
-                    <CheckCircle size={16} className="mr-2" />
-                    Approve
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleReject(request.id)}
+                    >
+                      <XCircle size={16} />
+                    </Button>
+                    <Button
+                      className="btn-primary text-sm"
+                      onClick={() => openApproveDialog(request)}
+                      data-testid={`approve-btn-${request.id}`}
+                    >
+                      <CheckCircle size={16} className="mr-2" />
+                      Approve
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </Card>
       </div>
+
+      {/* Approve Payment Dialog */}
+      {selectedRequest && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+          <Card className="bg-zinc-900 border-zinc-800 w-full max-w-md mx-4">
+            <CardHeader>
+              <CardTitle className="text-xl">Approve Payment</CardTitle>
+              <p className="text-zinc-500 text-sm">
+                {selectedRequest.user_name} - {selectedRequest.plan_name}
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="p-3 bg-zinc-800/50 rounded-lg">
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Plan Price</span>
+                  <span className="text-white">{formatCurrency(selectedRequest.plan_price)}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs text-zinc-500">Discount (₹)</Label>
+                  <Input
+                    className="input-dark mt-1"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="0"
+                    value={paymentData.discount}
+                    onChange={(e) => setPaymentData({
+                      ...paymentData, 
+                      discount: e.target.value.replace(/[^0-9]/g, '')
+                    })}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-zinc-500">Amount Received (₹)</Label>
+                  <Input
+                    className="input-dark mt-1"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="0"
+                    value={paymentData.amount_paid}
+                    onChange={(e) => setPaymentData({
+                      ...paymentData, 
+                      amount_paid: e.target.value.replace(/[^0-9]/g, '')
+                    })}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-xs text-zinc-500">Payment Method</Label>
+                <select
+                  className="input-dark mt-1 w-full h-10 px-3 rounded-md bg-zinc-900/50 border border-zinc-800"
+                  value={paymentData.payment_method}
+                  onChange={(e) => setPaymentData({...paymentData, payment_method: e.target.value})}
+                >
+                  <option value="cash">Cash</option>
+                  <option value="upi">UPI</option>
+                  <option value="card">Card</option>
+                  <option value="online">Online</option>
+                </select>
+              </div>
+
+              <div className="p-3 bg-zinc-800/50 rounded-lg space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Final Amount</span>
+                  <span className="text-cyan-400 font-bold">{formatCurrency(finalAmount)}</span>
+                </div>
+                {remainingDue > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Remaining Due</span>
+                    <span className="text-orange-400 font-bold">{formatCurrency(remainingDue)}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => setSelectedRequest(null)}>
+                  Cancel
+                </Button>
+                <Button className="btn-primary" onClick={handleApprove} disabled={submitting}>
+                  {submitting ? 'Processing...' : 'Confirm & Assign Plan'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </DashboardLayout>
   );
 };
