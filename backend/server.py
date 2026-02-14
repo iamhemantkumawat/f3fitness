@@ -120,6 +120,11 @@ class UserUpdate(BaseModel):
     pt_trainer_id: Optional[str] = None
     pt_sessions_remaining: Optional[int] = None
     role: Optional[str] = None
+    # Trainer specific fields
+    speciality: Optional[str] = None
+    instagram_url: Optional[str] = None
+    bio: Optional[str] = None
+    is_visible_on_website: Optional[bool] = None
 
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
