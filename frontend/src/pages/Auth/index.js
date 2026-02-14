@@ -60,11 +60,11 @@ export const Login = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-transparent" />
         <div className="relative z-10 flex flex-col justify-center px-12">
           <img src={LOGO_URL} alt="F3 Fitness" className="w-48 mb-8 invert" />
-          <h1 className="text-5xl font-black uppercase tracking-tighter text-foreground mb-4" style={{ fontFamily: 'Barlow Condensed' }}>
+          <h1 className="text-5xl font-black uppercase tracking-tighter text-white mb-4" style={{ fontFamily: 'Barlow Condensed' }}>
             Transform Your
             <span className="text-cyan-400"> Body</span>
           </h1>
-          <p className="text-muted-foreground text-lg max-w-md">
+          <p className="text-zinc-300 text-lg max-w-md">
             Join Jaipur's premier fitness community. Your journey to a stronger you starts here.
           </p>
         </div>
@@ -338,11 +338,11 @@ export const Signup = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-transparent" />
         <div className="relative z-10 flex flex-col justify-center px-12">
           <img src={LOGO_URL} alt="F3 Fitness" className="w-48 mb-8 invert" />
-          <h1 className="text-5xl font-black uppercase tracking-tighter text-foreground mb-4" style={{ fontFamily: 'Barlow Condensed' }}>
+          <h1 className="text-5xl font-black uppercase tracking-tighter text-white mb-4" style={{ fontFamily: 'Barlow Condensed' }}>
             Start Your
             <span className="text-orange-500"> Journey</span>
           </h1>
-          <p className="text-muted-foreground text-lg max-w-md">
+          <p className="text-zinc-300 text-lg max-w-md">
             Join thousands of members who have transformed their lives at F3 Fitness Gym.
           </p>
         </div>
