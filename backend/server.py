@@ -1761,6 +1761,12 @@ async def get_memberships(user_id: Optional[str] = None, current_user: dict = De
     for m in memberships:
         plan = await db.plans.find_one({"id": m["plan_id"]}, {"_id": 0, "name": 1})
         m["plan_name"] = plan["name"] if plan else None
+        
+        # Calculate total amount paid for this membership
+        payments = await db.payments.find({"membership_id": m["id"]}, {"amount_paid": 1}).to_list(100)
+        total_paid = sum(p.get("amount_paid", 0) for p in payments)
+        m["amount_paid"] = total_paid
+        m["amount_due"] = m.get("final_price", 0) - total_paid
     
     return memberships
 
@@ -1775,6 +1781,12 @@ async def get_active_membership(user_id: str, current_user: dict = Depends(get_c
     if membership:
         plan = await db.plans.find_one({"id": membership["plan_id"]}, {"_id": 0, "name": 1})
         membership["plan_name"] = plan["name"] if plan else None
+        
+        # Calculate total amount paid for this membership
+        payments = await db.payments.find({"membership_id": membership["id"]}, {"amount_paid": 1}).to_list(100)
+        total_paid = sum(p.get("amount_paid", 0) for p in payments)
+        membership["amount_paid"] = total_paid
+        membership["amount_due"] = membership.get("final_price", 0) - total_paid
     
     return membership
 
