@@ -94,7 +94,7 @@ export const PlansSettings = () => {
             <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
               Plans
             </h1>
-            <p className="text-zinc-500">Manage membership plans</p>
+            <p className="text-muted-foreground">Manage membership plans</p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
@@ -110,7 +110,7 @@ export const PlansSettings = () => {
                 Add Plan
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-card border-zinc-800">
+            <DialogContent className="bg-card border-border">
               <DialogHeader>
                 <DialogTitle className="text-xl uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
                   {editingPlan ? 'Edit Plan' : 'Add Plan'}
@@ -118,7 +118,7 @@ export const PlansSettings = () => {
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Plan Name</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Plan Name</Label>
                   <Input
                     data-testid="plan-name"
                     className="input-dark mt-2"
@@ -128,7 +128,7 @@ export const PlansSettings = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Duration (Days)</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Duration (Days)</Label>
                   <Input
                     data-testid="plan-duration"
                     type="number"
@@ -139,7 +139,7 @@ export const PlansSettings = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Price (₹)</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Price (₹)</Label>
                   <Input
                     data-testid="plan-price"
                     type="number"
@@ -155,7 +155,7 @@ export const PlansSettings = () => {
                     checked={formData.is_active}
                     onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
                   />
-                  <Label className="text-zinc-400">Active</Label>
+                  <Label className="text-muted-foreground">Active</Label>
                 </div>
                 <DialogFooter>
                   <Button type="submit" className="btn-primary" data-testid="save-plan-btn">
@@ -172,7 +172,7 @@ export const PlansSettings = () => {
             [...Array(4)].map((_, i) => (
               <Card key={i} className="glass-card animate-pulse">
                 <CardContent className="p-6">
-                  <div className="h-24 bg-zinc-800 rounded" />
+                  <div className="h-24 bg-muted rounded" />
                 </CardContent>
               </Card>
             ))
@@ -182,8 +182,8 @@ export const PlansSettings = () => {
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <h3 className="text-xl font-bold text-white">{plan.name}</h3>
-                      <p className="text-zinc-500">{plan.duration_days} days</p>
+                      <h3 className="text-xl font-bold text-foreground">{plan.name}</h3>
+                      <p className="text-muted-foreground">{plan.duration_days} days</p>
                     </div>
                     <span className={plan.is_active ? 'badge-active' : 'badge-expired'}>
                       {plan.is_active ? 'Active' : 'Inactive'}
@@ -194,7 +194,7 @@ export const PlansSettings = () => {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="flex-1 border-zinc-700 hover:bg-zinc-800"
+                      className="flex-1 border-zinc-700 hover:bg-muted"
                       onClick={() => handleEdit(plan)}
                       data-testid={`edit-plan-${plan.id}`}
                     >
@@ -275,7 +275,7 @@ export const AnnouncementsSettings = () => {
             <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
               Announcements
             </h1>
-            <p className="text-zinc-500">Manage gym announcements</p>
+            <p className="text-muted-foreground">Manage gym announcements</p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
@@ -284,7 +284,7 @@ export const AnnouncementsSettings = () => {
                 New Announcement
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-card border-zinc-800">
+            <DialogContent className="bg-card border-border">
               <DialogHeader>
                 <DialogTitle className="text-xl uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
                   New Announcement
@@ -292,7 +292,7 @@ export const AnnouncementsSettings = () => {
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Title</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Title</Label>
                   <Input
                     data-testid="announcement-title"
                     className="input-dark mt-2"
@@ -302,10 +302,10 @@ export const AnnouncementsSettings = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Content</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Content</Label>
                   <textarea
                     data-testid="announcement-content"
-                    className="input-dark mt-2 w-full min-h-[100px] p-3 rounded-md bg-zinc-900/50 border border-zinc-800"
+                    className="input-dark mt-2 w-full min-h-[100px] p-3 rounded-md bg-muted/50 border border-border"
                     value={formData.content}
                     onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                     required
@@ -326,13 +326,13 @@ export const AnnouncementsSettings = () => {
             [...Array(3)].map((_, i) => (
               <Card key={i} className="glass-card animate-pulse">
                 <CardContent className="p-6">
-                  <div className="h-16 bg-zinc-800 rounded" />
+                  <div className="h-16 bg-muted rounded" />
                 </CardContent>
               </Card>
             ))
           ) : announcements.length === 0 ? (
             <Card className="glass-card">
-              <CardContent className="p-8 text-center text-zinc-500">
+              <CardContent className="p-8 text-center text-muted-foreground">
                 No announcements yet
               </CardContent>
             </Card>
@@ -342,9 +342,9 @@ export const AnnouncementsSettings = () => {
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h3 className="font-semibold text-white text-lg">{ann.title}</h3>
-                      <p className="text-zinc-400 mt-1">{ann.content}</p>
-                      <p className="text-xs text-zinc-600 mt-2">{formatDate(ann.created_at)}</p>
+                      <h3 className="font-semibold text-foreground text-lg">{ann.title}</h3>
+                      <p className="text-muted-foreground mt-1">{ann.content}</p>
+                      <p className="text-xs text-muted-foreground mt-2">{formatDate(ann.created_at)}</p>
                     </div>
                     <Button
                       size="sm"
@@ -418,7 +418,7 @@ export const HolidaysSettings = () => {
             <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
               Holidays
             </h1>
-            <p className="text-zinc-500">Manage gym holidays</p>
+            <p className="text-muted-foreground">Manage gym holidays</p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
@@ -427,7 +427,7 @@ export const HolidaysSettings = () => {
                 Add Holiday
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-card border-zinc-800">
+            <DialogContent className="bg-card border-border">
               <DialogHeader>
                 <DialogTitle className="text-xl uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
                   Add Holiday
@@ -435,7 +435,7 @@ export const HolidaysSettings = () => {
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Date</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Date</Label>
                   <Input
                     data-testid="holiday-date"
                     type="date"
@@ -446,7 +446,7 @@ export const HolidaysSettings = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Holiday Name</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Holiday Name</Label>
                   <Input
                     data-testid="holiday-name"
                     className="input-dark mt-2"
@@ -470,12 +470,12 @@ export const HolidaysSettings = () => {
             <CardContent className="p-6">
               <div className="animate-pulse space-y-3">
                 {[...Array(5)].map((_, i) => (
-                  <div key={i} className="h-12 bg-zinc-800 rounded" />
+                  <div key={i} className="h-12 bg-muted rounded" />
                 ))}
               </div>
             </CardContent>
           ) : holidays.length === 0 ? (
-            <CardContent className="p-8 text-center text-zinc-500">
+            <CardContent className="p-8 text-center text-muted-foreground">
               No holidays added
             </CardContent>
           ) : (
@@ -487,8 +487,8 @@ export const HolidaysSettings = () => {
                       <Calendar size={20} className="text-amber-400" />
                     </div>
                     <div>
-                      <p className="font-medium text-white">{holiday.name}</p>
-                      <p className="text-sm text-zinc-500">{formatDate(holiday.holiday_date)}</p>
+                      <p className="font-medium text-foreground">{holiday.name}</p>
+                      <p className="text-sm text-muted-foreground">{formatDate(holiday.holiday_date)}</p>
                     </div>
                   </div>
                   <Button
@@ -580,12 +580,12 @@ export const SMTPSettings = () => {
     return (
       <DashboardLayout role="admin">
         <div className="animate-pulse">
-          <div className="h-8 w-48 bg-zinc-800 rounded mb-6" />
+          <div className="h-8 w-48 bg-muted rounded mb-6" />
           <Card className="glass-card">
             <CardContent className="p-6">
               <div className="space-y-4">
                 {[...Array(5)].map((_, i) => (
-                  <div key={i} className="h-12 bg-zinc-800 rounded" />
+                  <div key={i} className="h-12 bg-muted rounded" />
                 ))}
               </div>
             </CardContent>
@@ -602,7 +602,7 @@ export const SMTPSettings = () => {
           <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
             SMTP Settings
           </h1>
-          <p className="text-zinc-500">Configure email notifications</p>
+          <p className="text-muted-foreground">Configure email notifications</p>
         </div>
 
         <Card className="glass-card">
@@ -610,7 +610,7 @@ export const SMTPSettings = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">SMTP Host</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">SMTP Host</Label>
                   <Input
                     data-testid="smtp-host"
                     className="input-dark mt-2"
@@ -620,7 +620,7 @@ export const SMTPSettings = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">SMTP Port</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">SMTP Port</Label>
                   <Input
                     data-testid="smtp-port"
                     type="number"
@@ -631,7 +631,7 @@ export const SMTPSettings = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Username</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Username</Label>
                   <Input
                     data-testid="smtp-user"
                     className="input-dark mt-2"
@@ -641,7 +641,7 @@ export const SMTPSettings = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Password</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Password</Label>
                   <Input
                     data-testid="smtp-pass"
                     type="password"
@@ -652,7 +652,7 @@ export const SMTPSettings = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Sender Email</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Sender Email</Label>
                   <Input
                     data-testid="smtp-sender"
                     type="email"
@@ -668,7 +668,7 @@ export const SMTPSettings = () => {
                     checked={formData.smtp_secure}
                     onCheckedChange={(checked) => setFormData({ ...formData, smtp_secure: checked })}
                   />
-                  <Label className="text-zinc-400">Use TLS/SSL</Label>
+                  <Label className="text-muted-foreground">Use TLS/SSL</Label>
                 </div>
               </div>
 
@@ -678,8 +678,8 @@ export const SMTPSettings = () => {
             </form>
 
             {/* Test Email */}
-            <div className="mt-8 pt-6 border-t border-zinc-800">
-              <h3 className="text-lg font-semibold text-white mb-4">Test Email</h3>
+            <div className="mt-8 pt-6 border-t border-border">
+              <h3 className="text-lg font-semibold text-foreground mb-4">Test Email</h3>
               <div className="flex gap-3">
                 <Input
                   data-testid="test-email"
@@ -767,12 +767,12 @@ export const WhatsAppSettings = () => {
     return (
       <DashboardLayout role="admin">
         <div className="animate-pulse">
-          <div className="h-8 w-48 bg-zinc-800 rounded mb-6" />
+          <div className="h-8 w-48 bg-muted rounded mb-6" />
           <Card className="glass-card">
             <CardContent className="p-6">
               <div className="space-y-4">
                 {[...Array(3)].map((_, i) => (
-                  <div key={i} className="h-12 bg-zinc-800 rounded" />
+                  <div key={i} className="h-12 bg-muted rounded" />
                 ))}
               </div>
             </CardContent>
@@ -789,14 +789,14 @@ export const WhatsAppSettings = () => {
           <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
             WhatsApp Settings
           </h1>
-          <p className="text-zinc-500">Configure Twilio WhatsApp notifications</p>
+          <p className="text-muted-foreground">Configure Twilio WhatsApp notifications</p>
         </div>
 
         <Card className="glass-card">
           <CardContent className="p-6">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label className="text-xs uppercase tracking-wider text-zinc-500">Twilio Account SID</Label>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Twilio Account SID</Label>
                 <Input
                   data-testid="twilio-sid"
                   className="input-dark mt-2"
@@ -806,7 +806,7 @@ export const WhatsAppSettings = () => {
                 />
               </div>
               <div>
-                <Label className="text-xs uppercase tracking-wider text-zinc-500">Twilio Auth Token</Label>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Twilio Auth Token</Label>
                 <Input
                   data-testid="twilio-token"
                   type="password"
@@ -817,7 +817,7 @@ export const WhatsAppSettings = () => {
                 />
               </div>
               <div>
-                <Label className="text-xs uppercase tracking-wider text-zinc-500">WhatsApp Number (with country code)</Label>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">WhatsApp Number (with country code)</Label>
                 <Input
                   data-testid="twilio-number"
                   className="input-dark mt-2"
@@ -833,8 +833,8 @@ export const WhatsAppSettings = () => {
             </form>
 
             {/* Test Message */}
-            <div className="mt-8 pt-6 border-t border-zinc-800">
-              <h3 className="text-lg font-semibold text-white mb-4">Test WhatsApp</h3>
+            <div className="mt-8 pt-6 border-t border-border">
+              <h3 className="text-lg font-semibold text-foreground mb-4">Test WhatsApp</h3>
               <div className="flex gap-3">
                 <Input
                   data-testid="test-number"
@@ -895,10 +895,10 @@ export const ActivityLogsSettings = () => {
             <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
               Activity Logs
             </h1>
-            <p className="text-zinc-500">Monitor user activities</p>
+            <p className="text-muted-foreground">Monitor user activities</p>
           </div>
           <select
-            className="input-dark w-48 h-10 px-3 rounded-md bg-zinc-900/50 border border-zinc-800"
+            className="input-dark w-48 h-10 px-3 rounded-md bg-muted/50 border border-border"
             value={filters.action}
             onChange={(e) => setFilters({ ...filters, action: e.target.value })}
           >
@@ -912,31 +912,31 @@ export const ActivityLogsSettings = () => {
         <Card className="glass-card">
           <CardContent className="p-0">
             {loading ? (
-              <div className="p-8 text-center text-zinc-500">Loading...</div>
+              <div className="p-8 text-center text-muted-foreground">Loading...</div>
             ) : logs.length === 0 ? (
-              <div className="p-8 text-center text-zinc-500">No activity logs found</div>
+              <div className="p-8 text-center text-muted-foreground">No activity logs found</div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-zinc-800 bg-zinc-900/50">
-                      <th className="text-left py-3 px-4 text-xs uppercase tracking-wider text-zinc-500">Timestamp</th>
-                      <th className="text-left py-3 px-4 text-xs uppercase tracking-wider text-zinc-500">User</th>
-                      <th className="text-left py-3 px-4 text-xs uppercase tracking-wider text-zinc-500">Action</th>
-                      <th className="text-left py-3 px-4 text-xs uppercase tracking-wider text-zinc-500">Description</th>
-                      <th className="text-left py-3 px-4 text-xs uppercase tracking-wider text-zinc-500">IP Address</th>
+                    <tr className="border-b border-border bg-muted/50">
+                      <th className="text-left py-3 px-4 text-xs uppercase tracking-wider text-muted-foreground">Timestamp</th>
+                      <th className="text-left py-3 px-4 text-xs uppercase tracking-wider text-muted-foreground">User</th>
+                      <th className="text-left py-3 px-4 text-xs uppercase tracking-wider text-muted-foreground">Action</th>
+                      <th className="text-left py-3 px-4 text-xs uppercase tracking-wider text-muted-foreground">Description</th>
+                      <th className="text-left py-3 px-4 text-xs uppercase tracking-wider text-muted-foreground">IP Address</th>
                     </tr>
                   </thead>
                   <tbody>
                     {logs.map((log) => (
-                      <tr key={log.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30">
-                        <td className="py-3 px-4 text-sm text-zinc-400">
+                      <tr key={log.id} className="border-b border-border/50 hover:bg-muted/30">
+                        <td className="py-3 px-4 text-sm text-muted-foreground">
                           {new Date(log.timestamp).toLocaleString('en-IN')}
                         </td>
                         <td className="py-3 px-4">
                           <div>
-                            <p className="text-sm text-white">{log.user_name || 'Unknown'}</p>
-                            <p className="text-xs text-zinc-500">{log.user_email || log.user_id}</p>
+                            <p className="text-sm text-foreground">{log.user_name || 'Unknown'}</p>
+                            <p className="text-xs text-muted-foreground">{log.user_email || log.user_id}</p>
                           </div>
                         </td>
                         <td className="py-3 px-4">
@@ -944,13 +944,13 @@ export const ActivityLogsSettings = () => {
                             log.action === 'login' ? 'bg-green-500/20 text-green-400' :
                             log.action === 'signup' ? 'bg-cyan-500/20 text-cyan-400' :
                             log.action === 'payment' ? 'bg-yellow-500/20 text-yellow-400' :
-                            'bg-zinc-700 text-zinc-400'
+                            'bg-muted text-muted-foreground'
                           }`}>
                             {log.action}
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-sm text-zinc-400">{log.description}</td>
-                        <td className="py-3 px-4 text-sm text-zinc-500 font-mono">{log.ip_address || '-'}</td>
+                        <td className="py-3 px-4 text-sm text-muted-foreground">{log.description}</td>
+                        <td className="py-3 px-4 text-sm text-muted-foreground font-mono">{log.ip_address || '-'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1032,11 +1032,11 @@ export const PaymentGatewaySettings = () => {
           <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
             Payment Gateway Settings
           </h1>
-          <p className="text-zinc-500">Configure Razorpay integration</p>
+          <p className="text-muted-foreground">Configure Razorpay integration</p>
         </div>
 
         <Card className="glass-card max-w-2xl">
-          <CardHeader className="border-b border-zinc-800">
+          <CardHeader className="border-b border-border">
             <CardTitle className="flex items-center gap-2 text-lg">
               <CreditCard size={20} className="text-cyan-400" />
               Razorpay Configuration
@@ -1044,11 +1044,11 @@ export const PaymentGatewaySettings = () => {
           </CardHeader>
           <CardContent className="p-6">
             {loading ? (
-              <p className="text-zinc-500">Loading...</p>
+              <p className="text-muted-foreground">Loading...</p>
             ) : (
               <form onSubmit={handleSave} className="space-y-6">
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Razorpay Key ID</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Razorpay Key ID</Label>
                   <Input
                     data-testid="razorpay-key-id"
                     type="text"
@@ -1059,7 +1059,7 @@ export const PaymentGatewaySettings = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Razorpay Key Secret</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Razorpay Key Secret</Label>
                   <Input
                     data-testid="razorpay-key-secret"
                     type="password"
@@ -1068,7 +1068,7 @@ export const PaymentGatewaySettings = () => {
                     value={settings.razorpay_key_secret}
                     onChange={(e) => setSettings({ ...settings, razorpay_key_secret: e.target.value })}
                   />
-                  <p className="text-xs text-zinc-500 mt-1">Leave empty to keep existing secret</p>
+                  <p className="text-xs text-muted-foreground mt-1">Leave empty to keep existing secret</p>
                 </div>
                 <Button type="submit" className="btn-primary" disabled={saving}>
                   {saving ? 'Saving...' : 'Save Settings'}
@@ -1079,11 +1079,11 @@ export const PaymentGatewaySettings = () => {
         </Card>
 
         <Card className="glass-card max-w-2xl">
-          <CardHeader className="border-b border-zinc-800">
+          <CardHeader className="border-b border-border">
             <CardTitle className="text-lg">Getting Razorpay Credentials</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <ol className="list-decimal list-inside space-y-2 text-zinc-400 text-sm">
+            <ol className="list-decimal list-inside space-y-2 text-muted-foreground text-sm">
               <li>Login to your <a href="https://dashboard.razorpay.com" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">Razorpay Dashboard</a></li>
               <li>Go to Settings &gt; API Keys</li>
               <li>Generate a new key pair (or use existing)</li>

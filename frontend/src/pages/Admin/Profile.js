@@ -125,7 +125,7 @@ const ProfilePage = ({ role }) => {
           <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
             My Profile
           </h1>
-          <p className="text-zinc-500">Manage your personal information</p>
+          <p className="text-muted-foreground">Manage your personal information</p>
         </div>
 
         {/* Profile Header */}
@@ -152,9 +152,9 @@ const ProfilePage = ({ role }) => {
                 </label>
               </div>
               <div className="text-center sm:text-left">
-                <h2 className="text-2xl font-bold text-white">{user.name}</h2>
+                <h2 className="text-2xl font-bold text-foreground">{user.name}</h2>
                 <p className="text-cyan-400 font-mono text-lg">{user.member_id}</p>
-                <p className="text-zinc-500 capitalize">{user.role}</p>
+                <p className="text-muted-foreground capitalize">{user.role}</p>
               </div>
             </div>
           </CardContent>
@@ -171,7 +171,7 @@ const ProfilePage = ({ role }) => {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Full Name</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Full Name</Label>
                   <Input
                     data-testid="profile-name"
                     className="input-dark mt-2"
@@ -180,7 +180,7 @@ const ProfilePage = ({ role }) => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Email</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Email</Label>
                   <Input
                     className="input-dark mt-2 bg-zinc-900/30"
                     value={user.email}
@@ -188,7 +188,7 @@ const ProfilePage = ({ role }) => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Phone Number</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Phone Number</Label>
                   <Input
                     data-testid="profile-phone"
                     className="input-dark mt-2"
@@ -197,10 +197,10 @@ const ProfilePage = ({ role }) => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Gender</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Gender</Label>
                   <select
                     data-testid="profile-gender"
-                    className="input-dark mt-2 w-full h-10 px-3 rounded-md bg-zinc-900/50 border border-zinc-800"
+                    className="input-dark mt-2 w-full h-10 px-3 rounded-md bg-muted/50 border border-border"
                     value={formData.gender}
                     onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
                   >
@@ -211,7 +211,7 @@ const ProfilePage = ({ role }) => {
                   </select>
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Date of Birth</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Date of Birth</Label>
                   <Input
                     data-testid="profile-dob"
                     type="date"
@@ -221,7 +221,7 @@ const ProfilePage = ({ role }) => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Emergency Contact</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Emergency Contact</Label>
                   <Input
                     data-testid="profile-emergency"
                     className="input-dark mt-2"
@@ -230,7 +230,7 @@ const ProfilePage = ({ role }) => {
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Address</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Address</Label>
                   <Input
                     data-testid="profile-address"
                     className="input-dark mt-2"
@@ -239,7 +239,7 @@ const ProfilePage = ({ role }) => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">City</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">City</Label>
                   <Input
                     data-testid="profile-city"
                     className="input-dark mt-2"
@@ -248,7 +248,7 @@ const ProfilePage = ({ role }) => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">ZIP Code</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">ZIP Code</Label>
                   <Input
                     data-testid="profile-zip"
                     className="input-dark mt-2"
@@ -276,20 +276,20 @@ const ProfilePage = ({ role }) => {
           <CardContent className="p-6">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-xs uppercase text-zinc-500">Member ID</p>
+                <p className="text-xs uppercase text-muted-foreground">Member ID</p>
                 <p className="text-cyan-400 font-mono text-lg">{user.member_id}</p>
               </div>
               <div>
-                <p className="text-xs uppercase text-zinc-500">Role</p>
-                <p className="text-white capitalize">{user.role}</p>
+                <p className="text-xs uppercase text-muted-foreground">Role</p>
+                <p className="text-foreground capitalize">{user.role}</p>
               </div>
               <div>
-                <p className="text-xs uppercase text-zinc-500">Joining Date</p>
-                <p className="text-white">{formatDate(user.joining_date)}</p>
+                <p className="text-xs uppercase text-muted-foreground">Joining Date</p>
+                <p className="text-foreground">{formatDate(user.joining_date)}</p>
               </div>
               <div>
-                <p className="text-xs uppercase text-zinc-500">Account Created</p>
-                <p className="text-white">{formatDate(user.created_at)}</p>
+                <p className="text-xs uppercase text-muted-foreground">Account Created</p>
+                <p className="text-foreground">{formatDate(user.created_at)}</p>
               </div>
             </div>
           </CardContent>
@@ -306,7 +306,7 @@ const ProfilePage = ({ role }) => {
           <CardContent className="p-6">
             <form onSubmit={handleChangePassword} className="space-y-4">
               <div>
-                <Label className="text-xs uppercase tracking-wider text-zinc-500">Current Password</Label>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Current Password</Label>
                 <div className="relative mt-2">
                   <Input
                     data-testid="current-password"
@@ -319,7 +319,7 @@ const ProfilePage = ({ role }) => {
                   />
                   <button
                     type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     onClick={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
                   >
                     {showPasswords.current ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -328,7 +328,7 @@ const ProfilePage = ({ role }) => {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">New Password</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">New Password</Label>
                   <div className="relative mt-2">
                     <Input
                       data-testid="new-password"
@@ -342,7 +342,7 @@ const ProfilePage = ({ role }) => {
                     />
                     <button
                       type="button"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       onClick={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}
                     >
                       {showPasswords.new ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -350,7 +350,7 @@ const ProfilePage = ({ role }) => {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Confirm New Password</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Confirm New Password</Label>
                   <div className="relative mt-2">
                     <Input
                       data-testid="confirm-password"
@@ -364,7 +364,7 @@ const ProfilePage = ({ role }) => {
                     />
                     <button
                       type="button"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
                     >
                       {showPasswords.confirm ? <EyeOff size={18} /> : <Eye size={18} />}

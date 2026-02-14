@@ -78,8 +78,8 @@ export const AssignPlan = () => {
     return (
       <DashboardLayout role="admin">
         <div className="animate-pulse">
-          <div className="h-8 w-48 bg-zinc-800 rounded mb-6" />
-          <div className="h-64 bg-zinc-800 rounded-xl" />
+          <div className="h-8 w-48 bg-muted rounded mb-6" />
+          <div className="h-64 bg-muted rounded-xl" />
         </div>
       </DashboardLayout>
     );
@@ -92,7 +92,7 @@ export const AssignPlan = () => {
           <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
             Assign Plan
           </h1>
-          <p className="text-zinc-500">Assign a membership plan to {user?.name}</p>
+          <p className="text-muted-foreground">Assign a membership plan to {user?.name}</p>
         </div>
 
         {/* Member Info */}
@@ -103,7 +103,7 @@ export const AssignPlan = () => {
                 <span className="text-xl font-bold text-cyan-400">{user?.name?.charAt(0)}</span>
               </div>
               <div>
-                <h3 className="text-xl font-bold text-white">{user?.name}</h3>
+                <h3 className="text-xl font-bold text-foreground">{user?.name}</h3>
                 <p className="text-cyan-400 font-mono">{user?.member_id}</p>
               </div>
             </div>
@@ -125,15 +125,15 @@ export const AssignPlan = () => {
                   className={`p-4 rounded-lg border cursor-pointer transition-all ${
                     selectedPlan?.id === plan.id
                       ? 'border-cyan-500 bg-cyan-500/10'
-                      : 'border-zinc-800 hover:border-zinc-700'
+                      : 'border-border hover:border-zinc-700'
                   }`}
                   onClick={() => setSelectedPlan(plan)}
                   data-testid={`plan-option-${plan.id}`}
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="font-semibold text-white">{plan.name}</h4>
-                      <p className="text-sm text-zinc-500">{plan.duration_days} days</p>
+                      <h4 className="font-semibold text-foreground">{plan.name}</h4>
+                      <p className="text-sm text-muted-foreground">{plan.duration_days} days</p>
                     </div>
                     <div className="text-right">
                       <p className="text-xl font-bold text-cyan-400">{formatCurrency(plan.price)}</p>
@@ -160,7 +160,7 @@ export const AssignPlan = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-xs uppercase tracking-wider text-zinc-500">Discount Amount (₹)</Label>
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Discount Amount (₹)</Label>
                     <Input
                       data-testid="discount-input"
                       type="text"
@@ -175,7 +175,7 @@ export const AssignPlan = () => {
                     />
                   </div>
                   <div>
-                    <Label className="text-xs uppercase tracking-wider text-zinc-500">Initial Payment (₹)</Label>
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Initial Payment (₹)</Label>
                     <Input
                       data-testid="initial-payment-input"
                       type="text"
@@ -190,10 +190,10 @@ export const AssignPlan = () => {
                     />
                   </div>
                   <div>
-                    <Label className="text-xs uppercase tracking-wider text-zinc-500">Payment Method</Label>
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Payment Method</Label>
                     <select
                       data-testid="payment-method-select"
-                      className="input-dark mt-2 w-full h-10 px-3 rounded-md bg-zinc-900/50 border border-zinc-800"
+                      className="input-dark mt-2 w-full h-10 px-3 rounded-md bg-muted/50 border border-border"
                       value={paymentMethod}
                       onChange={(e) => setPaymentMethod(e.target.value)}
                     >
@@ -206,29 +206,29 @@ export const AssignPlan = () => {
                 </div>
 
                 {/* Summary */}
-                <div className="p-4 bg-zinc-900/50 rounded-lg mt-6 space-y-2">
+                <div className="p-4 bg-muted/50 rounded-lg mt-6 space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-zinc-500">Plan Price</span>
-                    <span className="text-white">{formatCurrency(selectedPlan.price)}</span>
+                    <span className="text-muted-foreground">Plan Price</span>
+                    <span className="text-foreground">{formatCurrency(selectedPlan.price)}</span>
                   </div>
                   {discountAmount > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-zinc-500">Discount</span>
+                      <span className="text-muted-foreground">Discount</span>
                       <span className="text-red-400">- {formatCurrency(discountAmount)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between pt-2 border-t border-zinc-800">
-                    <span className="font-semibold text-white">Final Price</span>
+                  <div className="flex justify-between pt-2 border-t border-border">
+                    <span className="font-semibold text-foreground">Final Price</span>
                     <span className="text-xl font-bold text-cyan-400">{formatCurrency(finalPrice)}</span>
                   </div>
                   {initialPaymentAmount > 0 && (
                     <>
                       <div className="flex justify-between">
-                        <span className="text-zinc-500">Initial Payment</span>
+                        <span className="text-muted-foreground">Initial Payment</span>
                         <span className="text-emerald-400">- {formatCurrency(initialPaymentAmount)}</span>
                       </div>
-                      <div className="flex justify-between pt-2 border-t border-zinc-800">
-                        <span className="font-semibold text-white">Remaining Due</span>
+                      <div className="flex justify-between pt-2 border-t border-border">
+                        <span className="font-semibold text-foreground">Remaining Due</span>
                         <span className={`text-xl font-bold ${remainingAmount > 0 ? 'text-orange-400' : 'text-emerald-400'}`}>
                           {formatCurrency(remainingAmount > 0 ? remainingAmount : 0)}
                         </span>
