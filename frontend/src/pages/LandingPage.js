@@ -64,6 +64,7 @@ const LandingPage = () => {
   const [currentHeroImage, setCurrentHeroImage] = useState(0);
   const [testimonials, setTestimonials] = useState([]);
   const [plans, setPlans] = useState([]);
+  const [trainers, setTrainers] = useState(defaultTrainers);
 
   // BMI Calculator State
   const [bmiData, setBmiData] = useState({ weight: '', height: '' });
@@ -84,6 +85,7 @@ const LandingPage = () => {
     // Fetch data
     fetchTestimonials();
     fetchPlans();
+    fetchTrainers();
 
     return () => clearInterval(interval);
   }, []);
@@ -105,6 +107,18 @@ const LandingPage = () => {
       setPlans(data.slice(0, 4));
     } catch (error) {
       console.error('Failed to fetch plans');
+    }
+  };
+
+  const fetchTrainers = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/trainers/public`);
+      const data = await response.json();
+      if (data && data.length > 0) {
+        setTrainers(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch trainers, using defaults');
     }
   };
 
