@@ -1089,13 +1089,20 @@ export const CreateMember = () => {
                 </div>
                 <div>
                   <Label className="text-xs uppercase tracking-wider text-zinc-500">Phone Number *</Label>
-                  <Input
-                    data-testid="input-phone"
-                    className="input-dark mt-2"
-                    value={formData.phone_number}
-                    onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
-                    required
-                  />
+                  <div className="flex gap-2 mt-2">
+                    <span className="flex items-center px-3 bg-zinc-800 rounded-l-md border border-r-0 border-zinc-700 text-zinc-400">
+                      +91
+                    </span>
+                    <Input
+                      data-testid="input-phone"
+                      className="input-dark rounded-l-none flex-1"
+                      placeholder="9876543210"
+                      value={formData.phone_number}
+                      onChange={(e) => setFormData({ ...formData, phone_number: e.target.value.replace(/\D/g, '') })}
+                      required
+                      maxLength={10}
+                    />
+                  </div>
                 </div>
                 <div>
                   <Label className="text-xs uppercase tracking-wider text-zinc-500">Password *</Label>
