@@ -7,7 +7,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { 
-  Search, UserCheck, UserX, CheckCircle, Calendar, Clock
+  Search, UserCheck, UserX, CheckCircle, Calendar, Clock, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -17,20 +17,28 @@ export const MarkAttendance = () => {
   const [recentAttendance, setRecentAttendance] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
   useEffect(() => {
     fetchRecentAttendance();
-  }, []);
+  }, [selectedDate]);
 
   const fetchRecentAttendance = async () => {
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const response = await attendanceAPI.getAll({ date: today });
-      setRecentAttendance(response.data.slice(0, 10));
+      const response = await attendanceAPI.getAll({ date: selectedDate });
+      setRecentAttendance(response.data);
     } catch (error) {
       console.error('Failed to fetch attendance');
     }
   };
+
+  const changeDate = (days) => {
+    const current = new Date(selectedDate);
+    current.setDate(current.getDate() + days);
+    setSelectedDate(current.toISOString().split('T')[0]);
+  };
+
+  const isToday = selectedDate === new Date().toISOString().split('T')[0];
 
   // Search users as admin types
   const handleSearchChange = async (value) => {
