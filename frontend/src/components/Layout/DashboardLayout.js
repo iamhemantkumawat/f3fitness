@@ -68,6 +68,14 @@ const adminMenuItems = [
     ]
   },
   {
+    label: 'Broadcast',
+    icon: Send,
+    children: [
+      { label: 'WhatsApp Broadcast', path: '/dashboard/admin/broadcast/whatsapp' },
+      { label: 'Email Broadcast', path: '/dashboard/admin/broadcast/email' }
+    ]
+  },
+  {
     label: 'Settings',
     icon: Settings,
     children: [
@@ -76,6 +84,8 @@ const adminMenuItems = [
       { label: 'Holidays', path: '/dashboard/admin/settings/holidays' },
       { label: 'SMTP Settings', path: '/dashboard/admin/settings/smtp' },
       { label: 'WhatsApp Settings', path: '/dashboard/admin/settings/whatsapp' },
+      { label: 'Email Templates', path: '/dashboard/admin/settings/email-templates' },
+      { label: 'WhatsApp Templates', path: '/dashboard/admin/settings/whatsapp-templates' },
       { label: 'Payment Gateway', path: '/dashboard/admin/settings/payment-gateway' },
       { label: 'Activity Logs', path: '/dashboard/admin/settings/activity-logs' }
     ]
