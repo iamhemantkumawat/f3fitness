@@ -3171,7 +3171,7 @@ async def broadcast_whatsapp(
 @api_router.post("/broadcast/email")
 async def broadcast_email(
     request: BroadcastRequest,
-    subject: str = Body(...),
+    subject: str,
     background_tasks: BackgroundTasks = None,
     current_user: dict = Depends(get_admin_user)
 ):
