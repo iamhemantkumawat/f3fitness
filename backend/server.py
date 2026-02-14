@@ -200,6 +200,8 @@ class MembershipResponse(BaseModel):
     original_price: float
     discount_amount: float
     final_price: float
+    amount_paid: float = 0
+    amount_due: float = 0
     created_at: str
 
 # Payment Models
