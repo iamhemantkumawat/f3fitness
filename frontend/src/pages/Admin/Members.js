@@ -326,6 +326,7 @@ export const MembersList = () => {
                   <th className="cursor-pointer" onClick={() => handleSort('expiry')}>
                     <div className="flex items-center gap-2">Expiry {getSortIcon('expiry')}</div>
                   </th>
+                  <th>Due</th>
                   <th>Status</th>
                   <th className="pr-6">Actions</th>
                 </tr>
