@@ -563,7 +563,7 @@ const LandingPage = () => {
                 <p className="text-zinc-500 mb-4">180 days</p>
                 <p className="text-lg text-zinc-500 line-through mb-1">₹9,000</p>
                 <p className="text-4xl font-bold text-cyan-400 mb-6">
-                  ₹4,500
+                  ₹6,000
                 </p>
                 <Link to="/signup">
                   <Button className="w-full bg-zinc-800 hover:bg-zinc-700">
