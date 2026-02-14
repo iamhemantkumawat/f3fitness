@@ -24,7 +24,7 @@ const WHATSAPP_TEMPLATE_TYPES = [
 ];
 
 const AVAILABLE_VARIABLES = [
-  '{{name}}', '{{member_id}}', '{{plan_name}}', '{{start_date}}', '{{end_date}}',
+  '{{name}}', '{{member_id}}', '{{otp}}', '{{reset_link}}', '{{plan_name}}', '{{start_date}}', '{{end_date}}',
   '{{expiry_date}}', '{{days_left}}', '{{days}}', '{{amount}}', '{{payment_mode}}',
   '{{receipt_no}}', '{{holiday_date}}', '{{holiday_reason}}', '{{announcement_title}}',
   '{{announcement_content}}', '{{plan_type}}', '{{plan_title}}'
