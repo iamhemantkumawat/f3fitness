@@ -163,23 +163,30 @@ export const AssignPlan = () => {
                     <Label className="text-xs uppercase tracking-wider text-zinc-500">Discount Amount (₹)</Label>
                     <Input
                       data-testid="discount-input"
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
                       className="input-dark mt-2"
+                      placeholder="0"
                       value={discount}
-                      onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
-                      min={0}
-                      max={selectedPlan.price}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9]/g, '');
+                        setDiscount(val);
+                      }}
                     />
                   </div>
                   <div>
                     <Label className="text-xs uppercase tracking-wider text-zinc-500">Initial Payment (₹)</Label>
                     <Input
                       data-testid="initial-payment-input"
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
                       className="input-dark mt-2"
+                      placeholder="0"
                       value={initialPayment}
-                      onChange={(e) => setInitialPayment(parseFloat(e.target.value) || 0)}
-                      min={0}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9]/g, '');
+                        setInitialPayment(val);
+                      }}
                     />
                   </div>
                   <div>
@@ -199,19 +206,35 @@ export const AssignPlan = () => {
                 </div>
 
                 {/* Summary */}
-                <div className="p-4 bg-zinc-900/50 rounded-lg mt-6">
-                  <div className="flex justify-between mb-2">
+                <div className="p-4 bg-zinc-900/50 rounded-lg mt-6 space-y-2">
+                  <div className="flex justify-between">
                     <span className="text-zinc-500">Plan Price</span>
                     <span className="text-white">{formatCurrency(selectedPlan.price)}</span>
                   </div>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-zinc-500">Discount</span>
-                    <span className="text-red-400">- {formatCurrency(discount)}</span>
-                  </div>
+                  {discountAmount > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-zinc-500">Discount</span>
+                      <span className="text-red-400">- {formatCurrency(discountAmount)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between pt-2 border-t border-zinc-800">
                     <span className="font-semibold text-white">Final Price</span>
                     <span className="text-xl font-bold text-cyan-400">{formatCurrency(finalPrice)}</span>
                   </div>
+                  {initialPaymentAmount > 0 && (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-zinc-500">Initial Payment</span>
+                        <span className="text-emerald-400">- {formatCurrency(initialPaymentAmount)}</span>
+                      </div>
+                      <div className="flex justify-between pt-2 border-t border-zinc-800">
+                        <span className="font-semibold text-white">Remaining Due</span>
+                        <span className={`text-xl font-bold ${remainingAmount > 0 ? 'text-orange-400' : 'text-emerald-400'}`}>
+                          {formatCurrency(remainingAmount > 0 ? remainingAmount : 0)}
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div className="flex gap-4 pt-4">
