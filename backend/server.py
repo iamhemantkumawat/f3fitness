@@ -1072,6 +1072,7 @@ async def signup_with_otp(user: SignupWithOTP, background_tasks: BackgroundTasks
         "member_id": member_id,
         "name": user.name,
         "email": user.email,
+        "phone": f"{user.country_code}{user.phone_number.lstrip('0')}",
         "phone_number": user.phone_number,
         "country_code": user.country_code,
         "password_hash": hash_password(user.password),
@@ -1087,6 +1088,7 @@ async def signup_with_otp(user: SignupWithOTP, background_tasks: BackgroundTasks
         "pt_trainer_id": None,
         "pt_sessions_remaining": 0,
         "joining_date": now,
+        "is_active": True,
         "created_at": now
     }
     
