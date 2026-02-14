@@ -2455,6 +2455,19 @@ async def update_template(template: TemplateUpdate, current_user: dict = Depends
     
     return {"message": "Template updated"}
 
+@api_router.delete("/templates/{template_type}/{channel}")
+async def reset_template(template_type: str, channel: str, current_user: dict = Depends(get_admin_user)):
+    """Reset template to default by deleting customized version"""
+    template_id = f"{template_type}_{channel}"
+    
+    # Delete the customized template so default will be used
+    result = await db.templates.delete_one({"id": template_id})
+    
+    if result.deleted_count > 0:
+        return {"message": "Template reset to default"}
+    else:
+        return {"message": "Template already at default"}
+
 # ==================== ACTIVITY LOGS ROUTES ====================
 
 @api_router.get("/activity-logs")
