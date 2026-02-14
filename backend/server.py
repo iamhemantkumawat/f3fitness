@@ -1158,11 +1158,15 @@ async def login(credentials: UserLogin, request: Request):
     if not user or not verify_password(credentials.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
+    # Check if user is active
+    if user.get("is_active") == False:
+        raise HTTPException(status_code=401, detail="Account is disabled. Contact admin.")
+    
     # Log login activity
     ip_address = request.client.host if request.client else None
     await log_activity(user["id"], "login", "User logged in", ip_address)
     
-    token = create_access_token({"sub": user["id"], "role": user["role"]})
+    token = create_access_token({"sub": user["id"], "role": user["role"]}, credentials.rememberMe)
     return {"token": token, "user": {k: v for k, v in user.items() if k not in ["password_hash", "_id"]}}
 
 @api_router.post("/auth/forgot-password")
