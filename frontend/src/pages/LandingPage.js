@@ -796,7 +796,6 @@ const LandingPage = () => {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-4">
               <img src={LOGO_URL} alt="F3 Fitness" className="h-10 invert" />
-              <p className="text-zinc-500">© 2024 F3 Fitness Health Club. All rights reserved.</p>
             </div>
             <div className="flex items-center gap-6">
               <a href="https://instagram.com/f3fitnessclub" target="_blank" rel="noopener noreferrer" className="text-zinc-500 hover:text-pink-400">
@@ -809,6 +808,22 @@ const LandingPage = () => {
                 <Mail size={24} />
               </a>
             </div>
+          </div>
+          <div className="mt-8 pt-8 border-t border-zinc-800 text-center">
+            <p className="text-zinc-500">
+              © 2026 F3 Fitness Health Club. All rights reserved.
+            </p>
+            <p className="text-zinc-600 text-sm mt-2">
+              Made by{' '}
+              <a 
+                href="https://instagram.com/iamhemantkumawat" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-cyan-500 hover:text-cyan-400"
+              >
+                Hemant Kumawat
+              </a>
+            </p>
           </div>
         </div>
       </footer>
