@@ -92,7 +92,7 @@ export const MarkAttendance = () => {
           <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
             Mark Attendance
           </h1>
-          <p className="text-zinc-500">Search by Name, Phone, Email or Member ID</p>
+          <p className="text-muted-foreground">Search by Name, Phone, Email or Member ID</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -101,9 +101,9 @@ export const MarkAttendance = () => {
             <CardContent className="p-8">
               <form onSubmit={handleMarkAttendance} className="space-y-6">
                 <div className="relative">
-                  <Label className="text-xs uppercase tracking-wider text-zinc-500">Search Member</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Search Member</Label>
                   <div className="relative mt-2">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={20} />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
                     <Input
                       data-testid="member-id-input"
                       className="input-dark pl-12 text-xl h-16"
@@ -123,12 +123,12 @@ export const MarkAttendance = () => {
                         <button
                           key={user.id}
                           type="button"
-                          className="w-full p-4 text-left hover:bg-zinc-800 flex items-center justify-between border-b border-zinc-800 last:border-0"
+                          className="w-full p-4 text-left hover:bg-muted flex items-center justify-between border-b border-border last:border-0"
                           onClick={() => selectUser(user)}
                         >
                           <div>
-                            <p className="font-medium text-white">{user.name}</p>
-                            <p className="text-sm text-zinc-400">{user.phone} • {user.email}</p>
+                            <p className="font-medium text-foreground">{user.name}</p>
+                            <p className="text-sm text-muted-foreground">{user.phone} • {user.email}</p>
                           </div>
                           <span className="font-mono text-cyan-400 text-sm">{user.member_id}</span>
                         </button>
@@ -191,22 +191,22 @@ export const MarkAttendance = () => {
                   )}
                 </div>
               </div>
-              <p className="text-sm text-zinc-500 mt-2">
+              <p className="text-sm text-muted-foreground mt-2">
                 {recentAttendance.length} member{recentAttendance.length !== 1 ? 's' : ''} checked in on {formatDate(selectedDate)}
               </p>
             </CardHeader>
             <CardContent>
               {recentAttendance.length === 0 ? (
-                <p className="text-zinc-500 text-center py-4">No check-ins {isToday ? 'today' : 'on this date'}</p>
+                <p className="text-muted-foreground text-center py-4">No check-ins {isToday ? 'today' : 'on this date'}</p>
               ) : (
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {recentAttendance.map((att) => (
-                    <div key={att.id} className="flex items-center justify-between p-3 bg-zinc-900/50 rounded-lg">
+                    <div key={att.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                       <div>
-                        <p className="font-medium text-white">{att.user_name}</p>
+                        <p className="font-medium text-foreground">{att.user_name}</p>
                         <p className="text-sm text-cyan-400 font-mono">{att.member_id}</p>
                       </div>
-                      <p className="text-sm text-zinc-500">
+                      <p className="text-sm text-muted-foreground">
                         {att.check_in_time?.split('T')[1]?.substring(0, 5) || '--:--'}
                       </p>
                     </div>
@@ -248,7 +248,7 @@ export const TodayAttendance = () => {
           <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
             Today's Attendance
           </h1>
-          <p className="text-zinc-500">{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}</p>
+          <p className="text-muted-foreground">{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}</p>
         </div>
 
         {/* Stats */}
@@ -264,7 +264,7 @@ export const TodayAttendance = () => {
                   <UserCheck size={24} className="text-emerald-400" />
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wider text-zinc-500">Present</p>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Present</p>
                   <p className="text-3xl font-bold text-emerald-400">{data.present_count}</p>
                 </div>
               </div>
@@ -281,7 +281,7 @@ export const TodayAttendance = () => {
                   <UserX size={24} className="text-red-400" />
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wider text-zinc-500">Absent</p>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Absent</p>
                   <p className="text-3xl font-bold text-red-400">{data.absent_count}</p>
                 </div>
               </div>
@@ -300,26 +300,26 @@ export const TodayAttendance = () => {
             {loading ? (
               <div className="animate-pulse space-y-3">
                 {[...Array(5)].map((_, i) => (
-                  <div key={i} className="h-12 bg-zinc-800 rounded" />
+                  <div key={i} className="h-12 bg-muted rounded" />
                 ))}
               </div>
             ) : (
               <div className="space-y-2">
                 {(view === 'present' ? data.present : data.absent).map((item) => (
-                  <div key={item.id || item.user_id} className="flex items-center justify-between p-3 bg-zinc-900/50 rounded-lg">
+                  <div key={item.id || item.user_id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <div>
-                      <p className="font-medium text-white">{item.user_name || item.name}</p>
+                      <p className="font-medium text-foreground">{item.user_name || item.name}</p>
                       <p className="text-sm text-cyan-400 font-mono">{item.member_id}</p>
                     </div>
                     {view === 'present' && (
-                      <p className="text-sm text-zinc-500">
+                      <p className="text-sm text-muted-foreground">
                         {item.check_in_time?.split('T')[1]?.substring(0, 5) || '--:--'}
                       </p>
                     )}
                   </div>
                 ))}
                 {(view === 'present' ? data.present : data.absent).length === 0 && (
-                  <p className="text-zinc-500 text-center py-4">
+                  <p className="text-muted-foreground text-center py-4">
                     No {view === 'present' ? 'present' : 'absent'} members
                   </p>
                 )}
@@ -375,12 +375,12 @@ export const AttendanceHistory = () => {
           <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
             Attendance History
           </h1>
-          <p className="text-zinc-500">View member's attendance history</p>
+          <p className="text-muted-foreground">View member's attendance history</p>
         </div>
 
         {/* Search */}
         <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
           <Input
             data-testid="member-search"
             className="input-dark pl-10"
@@ -389,18 +389,18 @@ export const AttendanceHistory = () => {
             onChange={(e) => handleSearch(e.target.value)}
           />
           {searchResults.length > 0 && (
-            <div className="absolute z-10 w-full mt-2 bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
+            <div className="absolute z-10 w-full mt-2 bg-zinc-900 border border-border rounded-lg overflow-hidden">
               {searchResults.map((user) => (
                 <button
                   key={user.id}
                   type="button"
-                  className="w-full p-3 text-left hover:bg-zinc-800 flex items-center justify-between"
+                  className="w-full p-3 text-left hover:bg-muted flex items-center justify-between"
                   onClick={() => selectUser(user)}
                   data-testid={`search-result-${user.member_id}`}
                 >
                   <div>
-                    <p className="font-medium text-white">{user.name}</p>
-                    <p className="text-sm text-zinc-500">{user.phone_number}</p>
+                    <p className="font-medium text-foreground">{user.name}</p>
+                    <p className="text-sm text-muted-foreground">{user.phone_number}</p>
                   </div>
                   <span className="font-mono text-cyan-400">{user.member_id}</span>
                 </button>
@@ -412,7 +412,7 @@ export const AttendanceHistory = () => {
         {/* History */}
         {selectedUser && (
           <Card className="glass-card">
-            <CardHeader className="border-b border-zinc-800">
+            <CardHeader className="border-b border-border">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-cyan-500/20 rounded-full flex items-center justify-center">
                   <span className="text-lg font-bold text-cyan-400">{selectedUser.name.charAt(0)}</span>
@@ -427,18 +427,18 @@ export const AttendanceHistory = () => {
               {loading ? (
                 <div className="animate-pulse space-y-3">
                   {[...Array(5)].map((_, i) => (
-                    <div key={i} className="h-10 bg-zinc-800 rounded" />
+                    <div key={i} className="h-10 bg-muted rounded" />
                   ))}
                 </div>
               ) : history.length === 0 ? (
-                <p className="text-zinc-500 text-center py-8">No attendance records found</p>
+                <p className="text-muted-foreground text-center py-8">No attendance records found</p>
               ) : (
                 <div className="space-y-2">
                   {history.map((record) => (
-                    <div key={record.id} className="flex items-center justify-between p-3 bg-zinc-900/50 rounded-lg">
+                    <div key={record.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                       <div className="flex items-center gap-3">
                         <Calendar size={16} className="text-cyan-400" />
-                        <span className="text-white">
+                        <span className="text-foreground">
                           {new Date(record.check_in_time).toLocaleDateString('en-IN', {
                             weekday: 'short',
                             day: '2-digit',
@@ -447,7 +447,7 @@ export const AttendanceHistory = () => {
                           })}
                         </span>
                       </div>
-                      <span className="text-zinc-500">
+                      <span className="text-muted-foreground">
                         {record.check_in_time?.split('T')[1]?.substring(0, 5) || '--:--'}
                       </span>
                     </div>
