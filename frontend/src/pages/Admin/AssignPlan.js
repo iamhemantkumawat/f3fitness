@@ -16,8 +16,8 @@ export const AssignPlan = () => {
   const [user, setUser] = useState(null);
   const [plans, setPlans] = useState([]);
   const [selectedPlan, setSelectedPlan] = useState(null);
-  const [discount, setDiscount] = useState(0);
-  const [initialPayment, setInitialPayment] = useState(0);
+  const [discount, setDiscount] = useState('');
+  const [initialPayment, setInitialPayment] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -41,7 +41,10 @@ export const AssignPlan = () => {
     }
   };
 
-  const finalPrice = selectedPlan ? selectedPlan.price - discount : 0;
+  const discountAmount = parseFloat(discount) || 0;
+  const initialPaymentAmount = parseFloat(initialPayment) || 0;
+  const finalPrice = selectedPlan ? selectedPlan.price - discountAmount : 0;
+  const remainingAmount = finalPrice - initialPaymentAmount;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -49,13 +52,17 @@ export const AssignPlan = () => {
       toast.error('Please select a plan');
       return;
     }
+    if (initialPaymentAmount > finalPrice) {
+      toast.error('Initial payment cannot exceed final price');
+      return;
+    }
     setSubmitting(true);
     try {
       await membershipsAPI.create({
         user_id: userId,
         plan_id: selectedPlan.id,
-        discount_amount: discount,
-        initial_payment: initialPayment,
+        discount_amount: discountAmount,
+        initial_payment: initialPaymentAmount,
         payment_method: paymentMethod
       });
       toast.success('Plan assigned successfully');
