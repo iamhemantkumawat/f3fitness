@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTheme } from '../context/ThemeContext';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -7,7 +8,7 @@ import { Label } from '../components/ui/label';
 import { 
   Dumbbell, Users, Clock, Award, Phone, Mail, MapPin, 
   Instagram, ChevronRight, Star, Calculator, ArrowRight,
-  Activity, Heart, Zap, Target, CheckCircle
+  Activity, Heart, Zap, Target, CheckCircle, Sun, Moon
 } from 'lucide-react';
 
 const LOGO_URL = "https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png";
