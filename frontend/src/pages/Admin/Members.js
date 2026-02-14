@@ -684,7 +684,23 @@ export const MembersList = () => {
 export const TrainersList = () => {
   const [trainers, setTrainers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTrainer, setSelectedTrainer] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = React.useRef(null);
   const navigate = useNavigate();
+
+  const [editData, setEditData] = useState({
+    name: '',
+    email: '',
+    phone_number: '',
+    speciality: '',
+    bio: '',
+    instagram_url: '',
+    profile_photo_url: '',
+    is_visible_on_website: true
+  });
 
   useEffect(() => {
     fetchTrainers();
@@ -708,6 +724,83 @@ export const TrainersList = () => {
     return DEFAULT_AVATAR;
   };
 
+  const openEditDialog = (trainer) => {
+    setSelectedTrainer(trainer);
+    setEditData({
+      name: trainer.name || '',
+      email: trainer.email || '',
+      phone_number: trainer.phone_number || '',
+      speciality: trainer.speciality || '',
+      bio: trainer.bio || '',
+      instagram_url: trainer.instagram_url || '',
+      profile_photo_url: trainer.profile_photo_url || '',
+      is_visible_on_website: trainer.is_visible_on_website !== false
+    });
+    setEditMode(true);
+  };
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image must be less than 2MB');
+      return;
+    }
+    
+    setUploading(true);
+    try {
+      const photoFormData = new FormData();
+      photoFormData.append('file', file);
+      
+      const response = await uploadAPI.profilePhoto(photoFormData, selectedTrainer.id);
+      setEditData({ ...editData, profile_photo_url: response.data.profile_photo_url || response.data.url });
+      toast.success('Photo uploaded');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to upload photo');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeletePhoto = async () => {
+    try {
+      await uploadAPI.deletePhoto(selectedTrainer.id);
+      setEditData({ ...editData, profile_photo_url: '' });
+      toast.success('Photo removed');
+    } catch (error) {
+      toast.error('Failed to remove photo');
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await usersAPI.update(selectedTrainer.id, editData);
+      toast.success('Trainer updated successfully');
+      setEditMode(false);
+      fetchTrainers();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to update trainer');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    const newPassword = prompt('Enter new password for trainer:');
+    if (!newPassword || newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    try {
+      await usersAPI.adminResetPassword(selectedTrainer.id, newPassword);
+      toast.success('Password reset successfully');
+    } catch (error) {
+      toast.error('Failed to reset password');
+    }
+  };
+
   return (
     <DashboardLayout role="admin">
       <div className="space-y-6 animate-fade-in" data-testid="trainers-list">
@@ -716,7 +809,7 @@ export const TrainersList = () => {
             <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
               Trainers
             </h1>
-            <p className="text-zinc-500">Manage gym trainers</p>
+            <p className="text-zinc-500">Manage gym trainers - shown on landing page</p>
           </div>
           <Button 
             className="btn-primary" 
@@ -745,20 +838,30 @@ export const TrainersList = () => {
             </Card>
           ) : (
             trainers.map((trainer) => (
-              <Card key={trainer.id} className="glass-card hover:border-white/10 transition-all cursor-pointer">
+              <Card 
+                key={trainer.id} 
+                className="glass-card hover:border-cyan-500/50 transition-all cursor-pointer"
+                onClick={() => openEditDialog(trainer)}
+              >
                 <CardContent className="p-6">
                   <div className="flex items-center gap-4">
-                    <Avatar className="w-14 h-14">
+                    <Avatar className="w-16 h-16">
                       <AvatarImage src={getAvatarUrl(trainer)} />
                       <AvatarFallback className="bg-orange-500/20 text-orange-400 text-xl">
                         {trainer.name?.charAt(0)?.toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
+                    <div className="flex-1">
                       <h3 className="font-semibold text-white">{trainer.name}</h3>
-                      <p className="text-sm text-cyan-400 font-mono">{trainer.member_id}</p>
+                      <p className="text-sm text-cyan-400">{trainer.speciality || 'Fitness Coach'}</p>
                       <p className="text-sm text-zinc-500">{trainer.phone_number}</p>
+                      {trainer.is_visible_on_website !== false && (
+                        <span className="inline-block mt-1 text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded">
+                          Visible on Website
+                        </span>
+                      )}
                     </div>
+                    <Edit size={18} className="text-zinc-500" />
                   </div>
                 </CardContent>
               </Card>
@@ -766,6 +869,136 @@ export const TrainersList = () => {
           )}
         </div>
       </div>
+
+      {/* Edit Trainer Dialog */}
+      <Dialog open={editMode} onOpenChange={setEditMode}>
+        <DialogContent className="bg-zinc-900 border-zinc-800 max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Edit Trainer</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Photo Section */}
+            <div className="flex flex-col items-center gap-3">
+              <Avatar className="w-24 h-24">
+                <AvatarImage src={editData.profile_photo_url || MALE_AVATAR} />
+                <AvatarFallback className="bg-orange-500/20 text-orange-400 text-3xl">
+                  {editData.name?.charAt(0)?.toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handlePhotoUpload}
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+              />
+              <div className="flex gap-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  <Camera size={14} className="mr-1" />
+                  {uploading ? 'Uploading...' : 'Change Photo'}
+                </Button>
+                {editData.profile_photo_url && (
+                  <Button 
+                    type="button" 
+                    variant="destructive" 
+                    size="sm"
+                    onClick={handleDeletePhoto}
+                  >
+                    <Trash2 size={14} />
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-zinc-500">Max 2MB • JPG, PNG, WebP</p>
+            </div>
+
+            {/* Form Fields */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+                <Label className="text-xs text-zinc-500">Full Name</Label>
+                <Input
+                  className="input-dark mt-1"
+                  value={editData.name}
+                  onChange={(e) => setEditData({...editData, name: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-zinc-500">Email</Label>
+                <Input
+                  className="input-dark mt-1"
+                  type="email"
+                  value={editData.email}
+                  onChange={(e) => setEditData({...editData, email: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-zinc-500">Phone</Label>
+                <Input
+                  className="input-dark mt-1"
+                  value={editData.phone_number}
+                  onChange={(e) => setEditData({...editData, phone_number: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-zinc-500">Role/Title (shown on website)</Label>
+                <Input
+                  className="input-dark mt-1"
+                  placeholder="e.g. Head Trainer"
+                  value={editData.speciality}
+                  onChange={(e) => setEditData({...editData, speciality: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-zinc-500">Speciality (shown on website)</Label>
+                <Input
+                  className="input-dark mt-1"
+                  placeholder="e.g. Strength & Conditioning"
+                  value={editData.bio}
+                  onChange={(e) => setEditData({...editData, bio: e.target.value})}
+                />
+              </div>
+              <div className="col-span-2">
+                <Label className="text-xs text-zinc-500">Instagram URL</Label>
+                <Input
+                  className="input-dark mt-1"
+                  placeholder="https://instagram.com/username"
+                  value={editData.instagram_url}
+                  onChange={(e) => setEditData({...editData, instagram_url: e.target.value})}
+                />
+              </div>
+              <div className="col-span-2 flex items-center gap-3 pt-2">
+                <Checkbox
+                  checked={editData.is_visible_on_website}
+                  onCheckedChange={(checked) => setEditData({...editData, is_visible_on_website: checked})}
+                />
+                <Label className="text-sm text-zinc-300">Show on landing page</Label>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-between pt-4 border-t border-zinc-800">
+              <Button variant="outline" onClick={handleResetPassword}>
+                <Key size={14} className="mr-2" />
+                Reset Password
+              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setEditMode(false)}>
+                  Cancel
+                </Button>
+                <Button className="btn-primary" onClick={handleSave} disabled={saving}>
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };
