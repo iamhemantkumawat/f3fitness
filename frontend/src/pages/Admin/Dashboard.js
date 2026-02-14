@@ -51,10 +51,10 @@ export const AdminDashboard = () => {
     return (
       <DashboardLayout role="admin">
         <div className="animate-pulse space-y-6">
-          <div className="h-8 w-48 bg-zinc-800 rounded" />
+          <div className="h-8 w-48 bg-muted rounded" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-32 bg-zinc-800 rounded-xl" />
+              <div key={i} className="h-32 bg-muted rounded-xl" />
             ))}
           </div>
         </div>
@@ -66,10 +66,10 @@ export const AdminDashboard = () => {
     <DashboardLayout role="admin">
       <div className="space-y-6 animate-fade-in" data-testid="admin-dashboard">
         <div>
-          <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
+          <h1 className="text-3xl font-bold uppercase tracking-tight text-foreground" style={{ fontFamily: 'Barlow Condensed' }}>
             Dashboard
           </h1>
-          <p className="text-zinc-500">Welcome back! Here's what's happening today.</p>
+          <p className="text-muted-foreground">Welcome back! Here's what's happening today.</p>
         </div>
 
         {/* Stats Grid */}
