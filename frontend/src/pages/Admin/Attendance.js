@@ -153,19 +153,53 @@ export const MarkAttendance = () => {
             </CardContent>
           </Card>
 
-          {/* Recent Check-ins */}
+          {/* Check-ins with Date Picker */}
           <Card className="glass-card">
             <CardHeader>
-              <CardTitle className="text-lg uppercase tracking-wide flex items-center gap-2" style={{ fontFamily: 'Barlow Condensed' }}>
-                <Clock size={20} className="text-cyan-400" />
-                Recent Check-ins (Today)
-              </CardTitle>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <CardTitle className="text-lg uppercase tracking-wide flex items-center gap-2" style={{ fontFamily: 'Barlow Condensed' }}>
+                  <Clock size={20} className="text-cyan-400" />
+                  {isToday ? "Today's Check-ins" : `Check-ins`}
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => changeDate(-1)}>
+                    <ChevronLeft size={16} />
+                  </Button>
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    max={new Date().toISOString().split('T')[0]}
+                    className="input-dark h-8 px-2 text-sm rounded bg-zinc-900 border border-zinc-700"
+                  />
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => changeDate(1)}
+                    disabled={isToday}
+                  >
+                    <ChevronRight size={16} />
+                  </Button>
+                  {!isToday && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
+                    >
+                      Today
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <p className="text-sm text-zinc-500 mt-2">
+                {recentAttendance.length} member{recentAttendance.length !== 1 ? 's' : ''} checked in on {formatDate(selectedDate)}
+              </p>
             </CardHeader>
             <CardContent>
               {recentAttendance.length === 0 ? (
-                <p className="text-zinc-500 text-center py-4">No check-ins today</p>
+                <p className="text-zinc-500 text-center py-4">No check-ins {isToday ? 'today' : 'on this date'}</p>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-3 max-h-96 overflow-y-auto">
                   {recentAttendance.map((att) => (
                     <div key={att.id} className="flex items-center justify-between p-3 bg-zinc-900/50 rounded-lg">
                       <div>
@@ -173,7 +207,7 @@ export const MarkAttendance = () => {
                         <p className="text-sm text-cyan-400 font-mono">{att.member_id}</p>
                       </div>
                       <p className="text-sm text-zinc-500">
-                        {att.check_in_time.split('T')[1]?.substring(0, 5) || '--:--'}
+                        {att.check_in_time?.split('T')[1]?.substring(0, 5) || '--:--'}
                       </p>
                     </div>
                   ))}
