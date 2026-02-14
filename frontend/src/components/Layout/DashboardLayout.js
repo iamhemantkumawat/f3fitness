@@ -211,64 +211,68 @@ const Header = ({ onMenuClick }) => {
   };
 
   return (
-    <header className="h-16 bg-card/30 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-4 lg:px-6">
+    <header className="h-16 bg-card/30 backdrop-blur-md border-b border-border flex items-center justify-between px-4 lg:px-6">
       <div className="flex items-center gap-4">
         <button
           onClick={onMenuClick}
-          className="lg:hidden p-2 hover:bg-white/5 rounded-lg"
+          className="lg:hidden p-2 hover:bg-accent rounded-lg"
           data-testid="mobile-menu-btn"
         >
           <Menu size={24} />
         </button>
         
-        <div className="hidden sm:flex items-center gap-2 text-zinc-400">
+        <div className="hidden sm:flex items-center gap-2 text-muted-foreground">
           <Clock size={18} />
           <span className="font-mono text-sm">
             {currentTime.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
           </span>
-          <span className="font-mono text-lg text-cyan-400">
+          <span className="font-mono text-lg text-primary">
             {currentTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </span>
         </div>
       </div>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger className="flex items-center gap-3 hover:bg-white/5 rounded-lg p-2" data-testid="user-dropdown">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={user?.profile_photo_url} />
-            <AvatarFallback className="bg-cyan-500/20 text-cyan-400">
-              {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-            </AvatarFallback>
-          </Avatar>
-          <div className="hidden sm:block text-left">
-            <p className="text-sm font-medium text-white">{user?.name}</p>
-            <p className="text-xs text-zinc-500 capitalize">{user?.role}</p>
-          </div>
-          <ChevronDown size={16} className="text-zinc-500" />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48 bg-card border-zinc-800">
-          <DropdownMenuItem className="text-zinc-400">
-            <span className="text-xs uppercase tracking-wider">ID: {user?.member_id}</span>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="bg-zinc-800" />
-          <DropdownMenuItem
-            onClick={() => navigate(`/dashboard/${user?.role}/profile`)}
-            className="cursor-pointer"
-            data-testid="profile-link"
-          >
-            <User size={16} className="mr-2" />
-            My Profile
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={handleLogout}
-            className="cursor-pointer text-red-400"
-            data-testid="logout-btn"
-          >
-            <LogOut size={16} className="mr-2" />
-            Logout
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <div className="flex items-center gap-2">
+        <ThemeToggle />
+        
+        <DropdownMenu>
+          <DropdownMenuTrigger className="flex items-center gap-3 hover:bg-accent rounded-lg p-2" data-testid="user-dropdown">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={user?.profile_photo_url} />
+              <AvatarFallback className="bg-primary/20 text-primary">
+                {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="hidden sm:block text-left">
+              <p className="text-sm font-medium text-foreground">{user?.name}</p>
+              <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
+            </div>
+            <ChevronDown size={16} className="text-muted-foreground" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48 bg-card border-border">
+            <DropdownMenuItem className="text-muted-foreground">
+              <span className="text-xs uppercase tracking-wider">ID: {user?.member_id}</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-border" />
+            <DropdownMenuItem
+              onClick={() => navigate(`/dashboard/${user?.role}/profile`)}
+              className="cursor-pointer"
+              data-testid="profile-link"
+            >
+              <User size={16} className="mr-2" />
+              My Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={handleLogout}
+              className="cursor-pointer text-destructive"
+              data-testid="logout-btn"
+            >
+              <LogOut size={16} className="mr-2" />
+              Logout
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </header>
   );
 };
