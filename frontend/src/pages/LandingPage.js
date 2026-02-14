@@ -368,32 +368,32 @@ const LandingPage = () => {
       </section>
 
       {/* Calculators Section */}
-      <section id="calculators" className="py-24">
+      <section id="calculators" className={`py-24 ${theme === 'dark' ? '' : 'bg-white'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold uppercase tracking-tight mb-4" style={{ fontFamily: 'Barlow Condensed' }}>
-              Fitness <span className="text-cyan-400">Calculators</span>
+            <h2 className={`text-4xl md:text-5xl font-bold uppercase tracking-tight mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`} style={{ fontFamily: 'Barlow Condensed' }}>
+              Fitness <span className="text-cyan-500">Calculators</span>
             </h2>
-            <p className="text-zinc-400 max-w-2xl mx-auto">
+            <p className={`${theme === 'dark' ? 'text-zinc-400' : 'text-gray-600'} max-w-2xl mx-auto`}>
               Track your fitness metrics with our free tools
             </p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* BMI Calculator */}
-            <Card className="bg-zinc-900/50 border-zinc-800">
+            <Card className={`${theme === 'dark' ? 'bg-zinc-900/50 border-zinc-800' : 'bg-white border-gray-200 shadow-lg'}`}>
               <CardContent className="p-8">
                 <div className="flex items-center gap-3 mb-6">
-                  <Calculator className="text-cyan-400" size={28} />
-                  <h3 className="text-2xl font-bold">BMI Calculator</h3>
+                  <Calculator className="text-cyan-500" size={28} />
+                  <h3 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>BMI Calculator</h3>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div>
-                    <Label className="text-zinc-500">Weight (kg)</Label>
+                    <Label className={`${theme === 'dark' ? 'text-zinc-400' : 'text-gray-600'}`}>Weight (kg)</Label>
                     <Input 
                       type="number"
-                      className="bg-zinc-800 border-zinc-700 mt-2"
+                      className={`${theme === 'dark' ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} mt-2`}
                       placeholder="70"
                       value={bmiData.weight}
                       onChange={(e) => setBmiData({...bmiData, weight: e.target.value})}
@@ -401,10 +401,10 @@ const LandingPage = () => {
                     />
                   </div>
                   <div>
-                    <Label className="text-zinc-500">Height (cm)</Label>
+                    <Label className={`${theme === 'dark' ? 'text-zinc-400' : 'text-gray-600'}`}>Height (cm)</Label>
                     <Input 
                       type="number"
-                      className="bg-zinc-800 border-zinc-700 mt-2"
+                      className={`${theme === 'dark' ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} mt-2`}
                       placeholder="175"
                       value={bmiData.height}
                       onChange={(e) => setBmiData({...bmiData, height: e.target.value})}
@@ -413,62 +413,62 @@ const LandingPage = () => {
                   </div>
                 </div>
                 
-                <Button onClick={calculateBMI} className="w-full bg-cyan-500 text-black hover:bg-cyan-400" data-testid="bmi-calculate">
+                <Button onClick={calculateBMI} className="w-full bg-cyan-500 text-black hover:bg-cyan-400 font-bold" data-testid="bmi-calculate">
                   Calculate BMI
                 </Button>
 
                 {bmiResult && (
-                  <div className="mt-6 p-4 bg-zinc-800 rounded-lg text-center">
-                    <p className="text-4xl font-bold text-cyan-400">{bmiResult.bmi}</p>
-                    <p className="text-zinc-400">{bmiResult.category}</p>
+                  <div className={`mt-6 p-4 ${theme === 'dark' ? 'bg-zinc-800' : 'bg-cyan-50 border border-cyan-200'} rounded-lg text-center`}>
+                    <p className="text-4xl font-bold text-cyan-500">{bmiResult.bmi}</p>
+                    <p className={`${theme === 'dark' ? 'text-zinc-400' : 'text-gray-600'}`}>{bmiResult.category}</p>
                   </div>
                 )}
               </CardContent>
             </Card>
 
             {/* Calorie Calculator */}
-            <Card className="bg-zinc-900/50 border-zinc-800">
+            <Card className={`${theme === 'dark' ? 'bg-zinc-900/50 border-zinc-800' : 'bg-white border-gray-200 shadow-lg'}`}>
               <CardContent className="p-8">
                 <div className="flex items-center gap-3 mb-6">
                   <Zap className="text-orange-500" size={28} />
-                  <h3 className="text-2xl font-bold">Calorie Calculator</h3>
+                  <h3 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Calorie Calculator</h3>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
-                    <Label className="text-zinc-500">Weight (kg)</Label>
+                    <Label className={`${theme === 'dark' ? 'text-zinc-400' : 'text-gray-600'}`}>Weight (kg)</Label>
                     <Input 
                       type="number"
-                      className="bg-zinc-800 border-zinc-700 mt-2"
+                      className={`${theme === 'dark' ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} mt-2`}
                       placeholder="70"
                       value={calorieData.weight}
                       onChange={(e) => setCalorieData({...calorieData, weight: e.target.value})}
                     />
                   </div>
                   <div>
-                    <Label className="text-zinc-500">Height (cm)</Label>
+                    <Label className={`${theme === 'dark' ? 'text-zinc-400' : 'text-gray-600'}`}>Height (cm)</Label>
                     <Input 
                       type="number"
-                      className="bg-zinc-800 border-zinc-700 mt-2"
+                      className={`${theme === 'dark' ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} mt-2`}
                       placeholder="175"
                       value={calorieData.height}
                       onChange={(e) => setCalorieData({...calorieData, height: e.target.value})}
                     />
                   </div>
                   <div>
-                    <Label className="text-zinc-500">Age</Label>
+                    <Label className={`${theme === 'dark' ? 'text-zinc-400' : 'text-gray-600'}`}>Age</Label>
                     <Input 
                       type="number"
-                      className="bg-zinc-800 border-zinc-700 mt-2"
+                      className={`${theme === 'dark' ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} mt-2`}
                       placeholder="25"
                       value={calorieData.age}
                       onChange={(e) => setCalorieData({...calorieData, age: e.target.value})}
                     />
                   </div>
                   <div>
-                    <Label className="text-zinc-500">Gender</Label>
+                    <Label className={`${theme === 'dark' ? 'text-zinc-400' : 'text-gray-600'}`}>Gender</Label>
                     <select 
-                      className="w-full h-10 px-3 mt-2 bg-zinc-800 border border-zinc-700 rounded-md"
+                      className={`w-full h-10 px-3 mt-2 ${theme === 'dark' ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} border rounded-md`}
                       value={calorieData.gender}
                       onChange={(e) => setCalorieData({...calorieData, gender: e.target.value})}
                     >
@@ -479,9 +479,9 @@ const LandingPage = () => {
                 </div>
                 
                 <div className="mb-6">
-                  <Label className="text-zinc-500">Activity Level</Label>
+                  <Label className={`${theme === 'dark' ? 'text-zinc-400' : 'text-gray-600'}`}>Activity Level</Label>
                   <select 
-                    className="w-full h-10 px-3 mt-2 bg-zinc-800 border border-zinc-700 rounded-md"
+                    className={`w-full h-10 px-3 mt-2 ${theme === 'dark' ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} border rounded-md`}
                     value={calorieData.activity_level}
                     onChange={(e) => setCalorieData({...calorieData, activity_level: e.target.value})}
                   >
@@ -493,7 +493,7 @@ const LandingPage = () => {
                   </select>
                 </div>
                 
-                <Button onClick={calculateCalories} className="w-full bg-orange-500 text-white hover:bg-orange-400" data-testid="calorie-calculate">
+                <Button onClick={calculateCalories} className="w-full bg-orange-500 text-white hover:bg-orange-400 font-bold" data-testid="calorie-calculate">
                   Calculate Calories
                 </Button>
 
