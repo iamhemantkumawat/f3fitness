@@ -1109,19 +1109,34 @@ export const EditMember = () => {
                   type="file"
                   ref={fileInputRef}
                   onChange={handlePhotoUpload}
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp"
                   className="hidden"
                 />
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                  data-testid="upload-photo-btn"
-                >
-                  <Camera size={16} className="mr-2" />
-                  {uploading ? 'Uploading...' : 'Change Photo'}
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    data-testid="upload-photo-btn"
+                  >
+                    <Camera size={16} className="mr-2" />
+                    {uploading ? 'Uploading...' : 'Change Photo'}
+                  </Button>
+                  {formData.profile_photo_url && (
+                    <Button 
+                      type="button" 
+                      variant="destructive" 
+                      onClick={handleDeletePhoto}
+                      data-testid="delete-photo-btn"
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-zinc-500 text-center">
+                  Max size: 2MB • Formats: JPG, PNG, WebP • Recommended: 300x300px
+                </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
