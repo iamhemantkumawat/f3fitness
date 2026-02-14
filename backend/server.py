@@ -2477,8 +2477,12 @@ async def test_whatsapp(to_number: str, current_user: dict = Depends(get_admin_u
 async def get_templates(current_user: dict = Depends(get_admin_user)):
     templates = await db.templates.find({}, {"_id": 0}).to_list(100)
     
-    # Add default templates if not exist
-    template_types = ["welcome", "attendance", "absent_warning", "birthday", "holiday", "plan_shared", "renewal_reminder"]
+    # Add default templates if not exist - include ALL template types
+    template_types = [
+        "welcome", "otp", "password_reset", "attendance", "absent_warning", 
+        "birthday", "holiday", "plan_shared", "renewal_reminder", 
+        "membership_activated", "payment_received", "announcement"
+    ]
     channels = ["email", "whatsapp"]
     
     existing_keys = set(f"{t['template_type']}_{t['channel']}" for t in templates)
