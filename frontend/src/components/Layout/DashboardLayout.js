@@ -160,6 +160,7 @@ const SidebarItem = ({ item, isActive, isChild = false }) => {
 
 const Sidebar = ({ menuItems, isMobileOpen, setIsMobileOpen }) => {
   const location = useLocation();
+  const { theme } = useTheme();
 
   return (
     <>
@@ -179,7 +180,7 @@ const Sidebar = ({ menuItems, isMobileOpen, setIsMobileOpen }) => {
       >
         <div className="p-6">
           <Link to="/" className="flex items-center gap-2">
-            <img src={LOGO_URL} alt="F3 Fitness" className="h-10 invert" />
+            <img src={theme === 'dark' ? LOGO_DARK : LOGO_LIGHT} alt="F3 Fitness" className="h-10" />
           </Link>
         </div>
 
