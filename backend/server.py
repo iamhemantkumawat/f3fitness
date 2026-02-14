@@ -1264,14 +1264,8 @@ async def forgot_password(req: ForgotPasswordRequest, background_tasks: Backgrou
         "used": False
     })
     
-    # Use template system for password reset notifications
+    # Use template system for password reset notifications (handles both email and WhatsApp)
     await send_notification(user, "password_reset", {"otp": otp}, background_tasks)
-    
-    # Send OTP via WhatsApp
-    if user.get("phone_number"):
-        full_phone = f"{user.get('country_code', '+91')}{user['phone_number'].lstrip('0')}"
-        whatsapp_message = f"🔐 F3 Fitness Password Reset\n\nYour OTP is: {otp}\n\nValid for 10 minutes. Do not share this code with anyone."
-        background_tasks.add_task(send_whatsapp, full_phone, whatsapp_message)
     
     return {"message": "If an account exists, a reset OTP has been sent to your email and phone"}
 
