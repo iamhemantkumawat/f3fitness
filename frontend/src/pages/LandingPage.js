@@ -30,8 +30,8 @@ const services = [
   { icon: Zap, title: "CrossFit", description: "High-intensity functional training" }
 ];
 
-// Trainers
-const trainers = [
+// Default trainers (fallback if API fails)
+const defaultTrainers = [
   {
     name: "Faizan Khan",
     role: "Head Trainer",
