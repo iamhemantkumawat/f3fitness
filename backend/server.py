@@ -3281,54 +3281,66 @@ async def broadcast_email(
     sent_count = 0
     failed_count = 0
     
-    # Professional email template - white/light theme
-    email_template = """
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    </head>
-    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
-        <table role="presentation" style="width: 100%; border-collapse: collapse;">
-            <tr>
-                <td align="center" style="padding: 40px 0;">
-                    <table role="presentation" style="width: 600px; max-width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-                        <!-- Header -->
-                        <tr>
-                            <td style="padding: 30px 40px; background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); border-radius: 8px 8px 0 0;">
-                                <img src="https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png" alt="F3 Fitness" style="height: 50px; filter: brightness(0) invert(1);">
-                            </td>
-                        </tr>
-                        <!-- Content -->
-                        <tr>
-                            <td style="padding: 40px;">
-                                <h1 style="margin: 0 0 20px; color: #1f2937; font-size: 24px; font-weight: 600;">Hello, {{name}}!</h1>
-                                <div style="color: #4b5563; font-size: 16px; line-height: 1.6;">
-                                    {{content}}
-                                </div>
-                            </td>
-                        </tr>
-                        <!-- Footer -->
-                        <tr>
-                            <td style="padding: 30px 40px; background-color: #f9fafb; border-radius: 0 0 8px 8px; border-top: 1px solid #e5e7eb;">
-                                <p style="margin: 0; color: #6b7280; font-size: 14px;">
-                                    <strong>F3 Fitness Health Club</strong><br>
-                                    Vidyadhar Nagar, Jaipur, Rajasthan<br>
-                                    <a href="tel:+919876543210" style="color: #06b6d4; text-decoration: none;">+91 98765 43210</a>
-                                </p>
-                                <p style="margin: 15px 0 0; color: #9ca3af; font-size: 12px;">
-                                    Transform Your Body, Transform Your Life!
-                                </p>
-                            </td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-        </table>
-    </body>
-    </html>
-    """
+    # Professional email template with detailed F3 Fitness footer
+    email_template = """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body { margin:0; padding:0; font-family: Arial, sans-serif; background: linear-gradient(135deg,#f4f6f8,#eef1f5); }
+.wrapper { padding:40px 15px; }
+.container { max-width:600px; margin:0 auto; background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.05); border:1px solid #e5e7eb; }
+.header { background:linear-gradient(135deg,#0ea5b7,#0b7285); padding:40px 30px; text-align:center; }
+.logo { width:160px; margin-bottom:10px; }
+.tagline { color:#e0f2fe; font-size:13px; letter-spacing:2px; font-weight:600; }
+.content { padding:40px 35px 35px 35px; color:#374151; font-size:16px; line-height:1.7; }
+.content h2 { margin-top:0; font-size:24px; color:#111827; }
+.highlight-box { margin-top:25px; padding:18px; background:#f0f9ff; border-left:4px solid #0ea5b7; border-radius:6px; font-size:14px; color:#0f766e; }
+.footer { background:#f3f4f6; padding:25px 25px; font-size:14px; color:#6b7280; border-top:1px solid #e5e7eb; text-align:center; line-height:1.7; }
+.footer-title { font-size:18px; font-weight:700; color:#111827; margin-bottom:10px; }
+.footer-address { max-width:480px; margin:0 auto 15px auto; }
+.footer-contact { margin-bottom:10px; }
+.footer-hours { margin-bottom:20px; }
+.footer-social { color:#0ea5b7; font-weight:700; text-decoration:none; }
+.footer a { color:#0ea5b7; text-decoration:none; font-weight:500; }
+.small { margin-top:20px; padding-top:15px; border-top:1px solid #e5e7eb; font-size:11px; color:#9ca3af; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="container">
+    <div class="header">
+      <img src="https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png" alt="F3 Fitness Logo" class="logo">
+      <div class="tagline">TRAIN • TRANSFORM • TRIUMPH</div>
+    </div>
+    <div class="content">
+      <h2>Hello, {{name}}!</h2>
+      <div style="white-space: pre-wrap;">{{content}}</div>
+    </div>
+    <div class="footer">
+      <div class="footer-title">F3 Fitness Health Club</div>
+      <div class="footer-address">
+        4th Avenue Plot No 4R-B, Mode, near Mandir Marg,<br>
+        Sector 4, Vidyadhar Nagar, Jaipur, Rajasthan 302039
+      </div>
+      <div class="footer-contact">
+        📞 072300 52193 &nbsp;|&nbsp; 📧 info@f3fitness.in
+      </div>
+      <div class="footer-hours">
+        🕒 Mon–Sat: 5:00 AM – 10:00 PM &nbsp;|&nbsp; Sun: 6:00 AM – 12:00 PM
+      </div>
+      <div>
+        Follow us on Instagram: <a href="https://instagram.com/f3fitnessclub" class="footer-social">@f3fitnessclub</a>
+      </div>
+      <div class="small">
+        © 2026 F3 Fitness Health Club. All rights reserved.
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>"""
     
     for user in users:
         if user.get("email"):
