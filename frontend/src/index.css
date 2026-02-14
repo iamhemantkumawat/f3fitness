@@ -148,15 +148,15 @@
 }
 
 .data-table th {
-  @apply text-left text-xs font-semibold uppercase tracking-wider text-zinc-500 pb-4 border-b border-zinc-800;
+  @apply text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground pb-4 border-b border-border;
 }
 
 .data-table td {
-  @apply py-4 border-b border-zinc-800/50;
+  @apply py-4 border-b border-border/50;
 }
 
 .data-table tr:hover td {
-  @apply bg-white/5;
+  @apply bg-accent/50;
 }
 
 /* Calendar Styles */
