@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 
 const EMAIL_TEMPLATE_TYPES = [
   { type: 'welcome', label: 'Welcome Email', description: 'Sent when a new member joins' },
+  { type: 'otp', label: 'OTP Verification', description: 'Sent for email/phone verification' },
+  { type: 'password_reset', label: 'Password Reset', description: 'Sent when user requests password reset' },
   { type: 'membership_activated', label: 'Membership Activated', description: 'Sent when membership is activated' },
   { type: 'payment_received', label: 'Payment Receipt', description: 'Sent after payment is received' },
   { type: 'renewal_reminder', label: 'Renewal Reminder', description: 'Sent before membership expires' },
