@@ -499,28 +499,96 @@ const LandingPage = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {plans.map((plan, index) => (
-              <Card key={plan.id} className={`bg-zinc-900 border-zinc-800 ${index === 1 ? 'ring-2 ring-cyan-500' : ''}`}>
-                <CardContent className="p-6">
-                  {index === 1 && (
-                    <span className="inline-block bg-cyan-500 text-black text-xs font-bold uppercase px-2 py-1 rounded mb-4">
-                      Popular
-                    </span>
-                  )}
-                  <h3 className="text-xl font-bold text-white mb-2">{plan.name}</h3>
-                  <p className="text-zinc-500 mb-4">{plan.duration_days} days</p>
-                  <p className="text-4xl font-bold text-cyan-400 mb-6">
-                    ₹{plan.price.toLocaleString('en-IN')}
-                  </p>
-                  <Link to="/signup">
-                    <Button className="w-full bg-zinc-800 hover:bg-zinc-700">
-                      Get Started
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+            {/* 1 Day Pass */}
+            <Card className="bg-zinc-900 border-zinc-800">
+              <CardContent className="p-6">
+                <h3 className="text-xl font-bold text-white mb-2">Day Pass</h3>
+                <p className="text-zinc-500 mb-4">1 day access</p>
+                <p className="text-4xl font-bold text-cyan-400 mb-6">
+                  ₹300
+                </p>
+                <Link to="/signup">
+                  <Button className="w-full bg-zinc-800 hover:bg-zinc-700">
+                    Get Started
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* Monthly */}
+            <Card className="bg-zinc-900 border-zinc-800">
+              <CardContent className="p-6">
+                <h3 className="text-xl font-bold text-white mb-2">Monthly</h3>
+                <p className="text-zinc-500 mb-4">30 days</p>
+                <p className="text-lg text-zinc-500 line-through mb-1">₹2,500</p>
+                <p className="text-4xl font-bold text-cyan-400 mb-6">
+                  ₹2,000
+                </p>
+                <Link to="/signup">
+                  <Button className="w-full bg-zinc-800 hover:bg-zinc-700">
+                    Get Started
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* Quarterly - Popular */}
+            <Card className="bg-zinc-900 border-zinc-800 ring-2 ring-cyan-500">
+              <CardContent className="p-6">
+                <span className="inline-block bg-cyan-500 text-black text-xs font-bold uppercase px-2 py-1 rounded mb-4">
+                  Popular
+                </span>
+                <h3 className="text-xl font-bold text-white mb-2">Quarterly</h3>
+                <p className="text-zinc-500 mb-4">90 days</p>
+                <p className="text-lg text-zinc-500 line-through mb-1">₹6,000</p>
+                <p className="text-4xl font-bold text-cyan-400 mb-6">
+                  ₹4,000
+                </p>
+                <Link to="/signup">
+                  <Button className="w-full bg-cyan-500 hover:bg-cyan-600 text-black">
+                    Get Started
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* 6 Month */}
+            <Card className="bg-zinc-900 border-zinc-800">
+              <CardContent className="p-6">
+                <span className="inline-block bg-orange-500 text-black text-xs font-bold uppercase px-2 py-1 rounded mb-4">
+                  Best Value
+                </span>
+                <h3 className="text-xl font-bold text-white mb-2">6 Months</h3>
+                <p className="text-zinc-500 mb-4">180 days</p>
+                <p className="text-lg text-zinc-500 line-through mb-1">₹9,000</p>
+                <p className="text-4xl font-bold text-cyan-400 mb-6">
+                  ₹4,500
+                </p>
+                <Link to="/signup">
+                  <Button className="w-full bg-zinc-800 hover:bg-zinc-700">
+                    Get Started
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* 12 Month */}
+            <Card className="bg-zinc-900 border-zinc-800">
+              <CardContent className="p-6">
+                <h3 className="text-xl font-bold text-white mb-2">Yearly</h3>
+                <p className="text-zinc-500 mb-4">365 days</p>
+                <p className="text-lg text-zinc-500 line-through mb-1">₹12,000</p>
+                <p className="text-4xl font-bold text-cyan-400 mb-6">
+                  ₹10,000
+                </p>
+                <Link to="/signup">
+                  <Button className="w-full bg-zinc-800 hover:bg-zinc-700">
+                    Get Started
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
