@@ -984,6 +984,36 @@ export const TrainersList = () => {
               </div>
             </div>
 
+            {/* Password Change Section */}
+            <div className="pt-4 border-t border-zinc-800">
+              <Label className="text-xs text-zinc-500 mb-2 block">Change Password</Label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    className="input-dark pr-10"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Enter new password (min 6 chars)"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                  />
+                  <button 
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                <Button 
+                  variant="outline" 
+                  onClick={handleResetPassword}
+                  disabled={newPassword.length < 6}
+                >
+                  Update
+                </Button>
+              </div>
+            </div>
+
             {/* Actions */}
             <div className="flex justify-between pt-4 border-t border-zinc-800">
               <Button variant="outline" onClick={handleResetPassword}>
