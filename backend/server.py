@@ -780,43 +780,34 @@ async def get_template(template_type: str, channel: str) -> dict:
             """
         },
         ("payment_received", "whatsapp"): {
-            "content": "💰 Hi {{name}}, payment received!\n\nReceipt: {{receipt_no}}\nAmount: ₹{{amount}}\nMode: {{payment_mode}}\nFor: {{description}}\n\nThank you! - F3 Fitness Gym"
+            "content": "💰 Hi {{name}}, payment received!\n\nReceipt: {{receipt_no}}\nAmount: ₹{{amount}}\nMode: {{payment_mode}}\n\nThank you! - F3 Fitness Gym"
         },
         ("holiday", "email"): {
             "subject": "Holiday Notice - F3 Fitness Gym 🏖️",
-            "content": """
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #09090b; color: #fff; padding: 40px;">
-                <img src="https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png" style="width: 150px; margin-bottom: 20px;" />
-                <h1 style="color: #f97316;">Holiday Notice 🏖️</h1>
-                <p>Hi {{name}},</p>
-                <p>Please note that F3 Fitness Gym will be closed on:</p>
-                <div style="background: #18181b; padding: 20px; margin: 20px 0; border-radius: 8px; text-align: center;">
-                    <p style="font-size: 24px; color: #06b6d4; margin: 0;"><strong>{{holiday_date}}</strong></p>
-                    <p style="color: #71717a; margin: 10px 0 0 0;">{{holiday_reason}}</p>
-                </div>
-                <p>Plan your workouts accordingly. See you soon!</p>
-            </div>
-            """
+            "content": """<h2>Holiday Notice 🏖️</h2>
+<p>Hi <strong>{{name}}</strong>,</p>
+<p>Please note that F3 Fitness Gym will be closed on:</p>
+<div class="highlight-box" style="text-align:center;">
+  <strong style="font-size:20px; color:#0891b2;">{{holiday_date}}</strong><br>
+  <span>{{holiday_reason}}</span>
+</div>
+<p>Plan your workouts accordingly. See you soon!</p>"""
         },
         ("holiday", "whatsapp"): {
-            "content": "🏖️ Hi {{name}}, F3 Fitness Gym will be closed on {{holiday_date}} for {{holiday_reason}}. Plan your workouts accordingly. See you soon! 💪"
+            "content": "🏖️ Hi {{name}},\n\nF3 Fitness Gym will be closed on *{{holiday_date}}* for {{holiday_reason}}.\n\nPlan your workouts accordingly. See you soon! 💪\n\n- F3 Fitness"
         },
         ("announcement", "email"): {
             "subject": "📢 {{announcement_title}} - F3 Fitness Gym",
-            "content": """
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #09090b; color: #fff; padding: 40px;">
-                <img src="https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png" style="width: 150px; margin-bottom: 20px;" />
-                <h1 style="color: #06b6d4;">📢 {{announcement_title}}</h1>
-                <p>Hi {{name}},</p>
-                <div style="background: #18181b; padding: 20px; margin: 20px 0; border-radius: 8px;">
-                    <p>{{announcement_content}}</p>
-                </div>
-                <p>Stay fit, stay healthy!</p>
-            </div>
-            """
+            "content": """<h2>📢 {{announcement_title}}</h2>
+<p>Hi <strong>{{name}}</strong>,</p>
+<div class="highlight-box">
+  {{announcement_content}}
+</div>
+<p>Stay fit, stay healthy!</p>
+<center><a href="https://f3fitness.in" class="button">Visit Website</a></center>"""
         },
         ("announcement", "whatsapp"): {
-            "content": "📢 {{announcement_title}}\n\nHi {{name}}, {{announcement_content}}\n\n- F3 Fitness Gym"
+            "content": "📢 *{{announcement_title}}*\n\nHi {{name}},\n\n{{announcement_content}}\n\n- F3 Fitness Gym"
         }
     }
     return defaults.get((template_type, channel), {"subject": "", "content": ""})
