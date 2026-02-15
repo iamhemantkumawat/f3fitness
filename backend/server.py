@@ -2303,7 +2303,259 @@ async def get_membership_payments(membership_id: str, current_user: dict = Depen
         "payments": payments
     }
 
-# ==================== PAYMENT REQUESTS ROUTES ====================
+# ==================== PDF INVOICE GENERATION ====================
+
+@api_router.get("/invoices/{payment_id}/pdf")
+async def get_invoice_pdf(payment_id: str, current_user: dict = Depends(get_current_user)):
+    """Generate and download PDF invoice"""
+    from weasyprint import HTML, CSS
+    
+    payment = await db.payments.find_one({"id": payment_id}, {"_id": 0})
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    
+    # Check authorization
+    if current_user["role"] != "admin" and payment["user_id"] != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    user = await db.users.find_one({"id": payment["user_id"]}, {"_id": 0})
+    
+    # Get membership and plan details
+    membership = None
+    plan = None
+    if payment.get("membership_id"):
+        membership = await db.memberships.find_one({"id": payment["membership_id"]}, {"_id": 0})
+        if membership:
+            plan = await db.plans.find_one({"id": membership["plan_id"]}, {"_id": 0})
+    
+    receipt_no = payment.get("receipt_no", f"F3-{payment['id'][:8].upper()}")
+    payment_date = payment.get("payment_date", "")
+    if payment_date:
+        try:
+            dt = datetime.fromisoformat(payment_date.replace('Z', '+00:00'))
+            payment_date_formatted = dt.strftime("%d %b %Y")
+        except:
+            payment_date_formatted = payment_date[:10] if payment_date else "N/A"
+    else:
+        payment_date_formatted = "N/A"
+    
+    # Build HTML for PDF - optimized for single page
+    html_content = f'''<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+@page {{ size: A4; margin: 15mm; }}
+* {{ margin: 0; padding: 0; box-sizing: border-box; }}
+body {{ font-family: Arial, sans-serif; font-size: 11px; line-height: 1.4; color: #333; }}
+.container {{ max-width: 100%; }}
+.header {{ background: linear-gradient(135deg, #0ea5b7, #0b7285); padding: 20px; text-align: center; color: white; border-radius: 8px 8px 0 0; }}
+.header h1 {{ font-size: 20px; font-weight: 700; letter-spacing: 1px; margin-bottom: 3px; }}
+.header p {{ font-size: 10px; opacity: 0.9; }}
+.receipt-badge {{ background: rgba(255,255,255,0.2); display: inline-block; padding: 6px 16px; border-radius: 15px; margin-top: 10px; font-weight: 600; font-size: 11px; }}
+.content {{ padding: 20px; }}
+.info-grid {{ display: flex; justify-content: space-between; gap: 15px; margin-bottom: 15px; }}
+.info-box {{ flex: 1; background: #f8fafc; padding: 12px; border-radius: 6px; border-left: 3px solid #0ea5b7; }}
+.info-box h3 {{ font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 8px; }}
+.info-box p {{ font-size: 11px; color: #334155; margin: 2px 0; }}
+.info-box .highlight {{ color: #0ea5b7; font-weight: 600; }}
+table {{ width: 100%; border-collapse: collapse; margin: 15px 0; }}
+th {{ background: #0ea5b7; color: white; padding: 10px; text-align: left; font-size: 10px; text-transform: uppercase; }}
+td {{ padding: 10px; border-bottom: 1px solid #e5e7eb; font-size: 11px; color: #334155; }}
+.total-row td {{ background: #f0f9ff; font-weight: 700; font-size: 13px; color: #0b7285; }}
+.thank-you {{ text-align: center; padding: 15px; background: linear-gradient(135deg, #f0f9ff, #e0f2fe); border-radius: 6px; margin: 15px 0; }}
+.thank-you p {{ color: #0b7285; font-size: 11px; }}
+.thank-you .motto {{ font-weight: 600; margin-top: 3px; }}
+.footer {{ background: #f8fafc; padding: 15px; border-top: 1px solid #e5e7eb; text-align: center; border-radius: 0 0 8px 8px; }}
+.footer-title {{ font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 5px; }}
+.footer-address {{ font-size: 9px; color: #64748b; line-height: 1.5; margin-bottom: 8px; }}
+.footer-contact {{ font-size: 9px; color: #64748b; }}
+.footer-hours {{ font-size: 8px; color: #94a3b8; margin-top: 5px; }}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>F3 FITNESS HEALTH CLUB</h1>
+    <p>Your Fitness Journey Partner</p>
+    <div class="receipt-badge">Receipt: {receipt_no}</div>
+  </div>
+  
+  <div class="content">
+    <div class="info-grid">
+      <div class="info-box">
+        <h3>Billed To</h3>
+        <p><strong>{user.get("name", "N/A") if user else "N/A"}</strong></p>
+        <p>Member ID: <span class="highlight">{user.get("member_id", "N/A") if user else "N/A"}</span></p>
+        <p>{user.get("phone_number", "") if user else ""}</p>
+        <p>{user.get("email", "") if user else ""}</p>
+      </div>
+      <div class="info-box" style="text-align: right;">
+        <h3>Invoice Details</h3>
+        <p><strong>Invoice #:</strong> <span class="highlight">{receipt_no}</span></p>
+        <p><strong>Date:</strong> {payment_date_formatted}</p>
+        <p><strong>Payment Mode:</strong> {payment.get("payment_method", "Cash").title()}</p>
+      </div>
+    </div>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th style="text-align: right;">Amount</th>
+        </tr>
+      </thead>
+      <tbody>'''
+    
+    if membership and plan:
+        start_date = membership.get("start_date", "")[:10] if membership.get("start_date") else ""
+        end_date = membership.get("end_date", "")[:10] if membership.get("end_date") else ""
+        original_price = membership.get("original_price", 0)
+        discount = membership.get("discount_amount", 0)
+        
+        html_content += f'''
+        <tr>
+          <td>
+            <strong>{plan.get("name", "Membership Plan")}</strong><br>
+            <small style="color: #64748b;">{start_date} to {end_date} ({plan.get("duration_days", "")} days)</small>
+          </td>
+          <td style="text-align: right;">₹{original_price:,.0f}</td>
+        </tr>'''
+        
+        if discount > 0:
+            html_content += f'''
+        <tr>
+          <td style="color: #10b981;">Discount Applied</td>
+          <td style="text-align: right; color: #10b981;">-₹{discount:,.0f}</td>
+        </tr>'''
+    else:
+        html_content += f'''
+        <tr>
+          <td>{payment.get("notes", "Gym Payment")}</td>
+          <td style="text-align: right;">₹{payment.get("amount_paid", 0):,.0f}</td>
+        </tr>'''
+    
+    html_content += f'''
+        <tr class="total-row">
+          <td>Amount Paid</td>
+          <td style="text-align: right;">₹{payment.get("amount_paid", 0):,.0f}</td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <div class="thank-you">
+      <p>Thank you for being a valued member of F3 Fitness Health Club!</p>
+      <p class="motto">Transform Your Body, Transform Your Life!</p>
+    </div>
+  </div>
+  
+  <div class="footer">
+    <div class="footer-title">F3 FITNESS HEALTH CLUB</div>
+    <div class="footer-address">
+      4th Avenue Plot No 4R-B, Mode, near Mandir Marg,<br>
+      Sector 4, Vidyadhar Nagar, Jaipur, Rajasthan 302039
+    </div>
+    <div class="footer-contact">
+      Phone: 072300 52193 | Email: info@f3fitness.in
+    </div>
+    <div class="footer-hours">
+      Mon-Sat: 5:00 AM - 10:00 PM | Sun: 6:00 AM - 12:00 PM | Instagram: @f3fitnessclub
+    </div>
+  </div>
+</div>
+</body>
+</html>'''
+    
+    # Generate PDF
+    html = HTML(string=html_content)
+    pdf_bytes = html.write_pdf()
+    
+    # Return as downloadable file
+    filename = f"F3_Invoice_{receipt_no}.pdf"
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
+
+# ==================== WHATSAPP LOGS ROUTES ====================
+
+@api_router.get("/whatsapp-logs")
+async def get_whatsapp_logs(
+    status: Optional[str] = None,
+    limit: int = 100,
+    skip: int = 0,
+    current_user: dict = Depends(get_admin_user)
+):
+    """Get WhatsApp message logs with filtering"""
+    query = {}
+    if status:
+        query["status"] = status
+    
+    logs = await db.whatsapp_logs.find(query, {"_id": 0}).sort("timestamp", -1).skip(skip).limit(limit).to_list(limit)
+    
+    # Get total counts for stats
+    total = await db.whatsapp_logs.count_documents({})
+    sent = await db.whatsapp_logs.count_documents({"status": "sent"})
+    failed = await db.whatsapp_logs.count_documents({"status": "failed"})
+    pending = await db.whatsapp_logs.count_documents({"status": "pending"})
+    
+    return {
+        "logs": logs,
+        "stats": {
+            "total": total,
+            "sent": sent,
+            "failed": failed,
+            "pending": pending
+        },
+        "pagination": {
+            "skip": skip,
+            "limit": limit,
+            "total": total
+        }
+    }
+
+@api_router.delete("/whatsapp-logs")
+async def clear_whatsapp_logs(current_user: dict = Depends(get_admin_user)):
+    """Clear all WhatsApp logs"""
+    result = await db.whatsapp_logs.delete_many({})
+    return {"message": f"Deleted {result.deleted_count} log entries"}
+
+@api_router.get("/whatsapp-logs/stats")
+async def get_whatsapp_stats(current_user: dict = Depends(get_admin_user)):
+    """Get WhatsApp message statistics"""
+    total = await db.whatsapp_logs.count_documents({})
+    sent = await db.whatsapp_logs.count_documents({"status": "sent"})
+    failed = await db.whatsapp_logs.count_documents({"status": "failed"})
+    
+    # Get recent failures for debugging
+    recent_failures = await db.whatsapp_logs.find(
+        {"status": "failed"},
+        {"_id": 0}
+    ).sort("timestamp", -1).limit(10).to_list(10)
+    
+    # Get today's stats
+    today_start = get_ist_today_start().isoformat()
+    today_sent = await db.whatsapp_logs.count_documents({
+        "status": "sent",
+        "timestamp": {"$gte": today_start}
+    })
+    today_failed = await db.whatsapp_logs.count_documents({
+        "status": "failed",
+        "timestamp": {"$gte": today_start}
+    })
+    
+    return {
+        "total": total,
+        "sent": sent,
+        "failed": failed,
+        "success_rate": round((sent / total * 100), 2) if total > 0 else 0,
+        "today": {
+            "sent": today_sent,
+            "failed": today_failed
+        },
+        "recent_failures": recent_failures
+    }
 
 @api_router.get("/payment-requests", response_model=List[PaymentRequestResponse])
 async def get_payment_requests(status: Optional[str] = None, current_user: dict = Depends(get_admin_user)):
