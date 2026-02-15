@@ -375,3 +375,75 @@ To test WhatsApp:
 - /app/test_reports/iteration_11.json - User History, Invoice, Import Membership enhancements (100% pass)
 - /app/test_reports/iteration_12.json - Invoice UI with logo/footer, Member portal enhancements (95% pass)
 
+## Session 13 Updates (February 15, 2026)
+
+### WhatsApp Enhancements
+- ✅ **WhatsApp Logs Page** - New page at `/dashboard/admin/settings/whatsapp-logs` to view message delivery status
+  - Stats cards: Total Messages, Sent, Failed, Success Rate
+  - Today's stats display
+  - Filterable logs table with status, timestamps, error details
+  - Pagination support
+  - Clear logs functionality
+  - Recent failures debugging section
+- ✅ **Message Logging** - All WhatsApp messages now logged to `whatsapp_logs` collection with status tracking
+- ✅ **Improved Error Messages** - WhatsApp test endpoint returns detailed success/failure info
+
+### PDF Invoice Generation
+- ✅ **Server-Side PDF Generation** - New endpoint `GET /api/invoices/{paymentId}/pdf` generates PDF using WeasyPrint
+- ✅ **Direct PDF Download** - "Download PDF" button downloads actual PDF file (not print dialog)
+- ✅ **Single-Page Optimized** - PDF formatted to fit on one A4 page with logo, header, footer
+- ✅ **Print Preview Fixed** - Print button now shows properly formatted invoice without logo issues
+
+### Session Persistence (Remember Me)
+- ✅ **Remember Me Toggle Works** - When checked, uses localStorage (persists after browser close)
+- ✅ **Session Storage** - When unchecked, uses sessionStorage (clears on tab close)
+- ✅ **API Token Updated** - Token retrieval now checks both localStorage and sessionStorage
+
+### Phone Number +91 Default
+- ✅ **WhatsApp Test Input** - Pre-filled with "+91"
+- ✅ **Profile Phone Number** - Shows "+91" prefix before input field
+- ✅ **Emergency Contact** - Shows "+91" prefix before input field
+
+### Member Portal Bug Fixes
+- ✅ **My History Page Fixed** - Changed from localStorage to useAuth() for user context
+- ✅ **Login Navigation Fixed** - Routes now correctly go to `/dashboard/admin`, `/dashboard/trainer`, `/dashboard/member`
+- ✅ **Payments API Access** - Members can now view their own payments (was admin-only)
+
+### Dependencies Added (Production Server Required)
+```bash
+# System dependencies for PDF generation
+sudo apt-get install -y libpango-1.0-0 libpangocairo-1.0-0 libpangoft2-1.0-0
+
+# Python packages
+pip install weasyprint reportlab
+```
+
+### API Endpoints Added
+- `GET /api/invoices/{paymentId}/pdf` - Generate and download PDF invoice
+- `GET /api/whatsapp-logs` - Get WhatsApp message logs with filtering
+- `GET /api/whatsapp-logs/stats` - Get WhatsApp statistics
+- `DELETE /api/whatsapp-logs` - Clear all WhatsApp logs
+
+### Files Created/Updated
+- `/app/frontend/src/pages/Admin/WhatsAppLogs.js` - New WhatsApp logs page
+- `/app/frontend/src/components/InvoiceModal.js` - Updated with PDF download
+- `/app/frontend/src/context/AuthContext.js` - Remember Me support
+- `/app/frontend/src/lib/api.js` - Token from both storages, new APIs
+- `/app/frontend/src/pages/Auth/index.js` - Fixed navigation routes
+- `/app/frontend/src/pages/Admin/Profile.js` - +91 prefix for phone fields
+- `/app/frontend/src/pages/Admin/Settings.js` - +91 default for WhatsApp test
+- `/app/frontend/src/pages/Member/MemberHistory.js` - Fixed useAuth()
+- `/app/backend/server.py` - WhatsApp logs, PDF generation, payments API fix
+
+### Known Issues
+- ⚠️ Trainer login credentials unknown - Need to reset trainer password or check database
+- ⚠️ Test members have no memberships - Need to assign plans to see membership status
+
+### Verified Working
+- ✅ WhatsApp test sending messages (100% success rate in logs)
+- ✅ Invoice PDF downloads correctly
+- ✅ Member dashboard shows "No active membership" when no plan assigned
+- ✅ My History page loads without errors
+- ✅ Profile page shows +91 prefix on phone fields
+- ✅ WhatsApp settings shows +91 default in test input
+
