@@ -194,6 +194,9 @@ class MembershipCreate(BaseModel):
     discount_amount: float = 0
     initial_payment: float = 0
     payment_method: str = "cash"
+    # Custom dates for importing existing members with active memberships
+    custom_start_date: Optional[str] = None  # Format: YYYY-MM-DD
+    custom_end_date: Optional[str] = None    # Format: YYYY-MM-DD
 
 class MembershipResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
