@@ -548,6 +548,16 @@ export const MembersList = () => {
                       variant="outline"
                       size="sm"
                       className="justify-start"
+                      onClick={() => navigate(`/dashboard/admin/members/${selectedMember.id}/history`)}
+                      data-testid="view-history-btn"
+                    >
+                      <History size={14} className="mr-2" />
+                      View History
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="justify-start"
                       onClick={() => setShowPasswordDialog(true)}
                       data-testid="reset-password-btn"
                     >
