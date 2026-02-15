@@ -8,9 +8,10 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { InvoiceModal } from '../../components/InvoiceModal';
 import { 
   Search, Plus, CreditCard, Calendar, TrendingUp, 
-  DollarSign, CheckCircle, XCircle, Clock
+  DollarSign, CheckCircle, XCircle, Clock, FileText
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -18,6 +19,8 @@ export const PaymentsList = () => {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dateFilter, setDateFilter] = useState('');
+  const [selectedPaymentId, setSelectedPaymentId] = useState(null);
+  const [showInvoice, setShowInvoice] = useState(false);
 
   useEffect(() => {
     fetchPayments();
@@ -37,6 +40,11 @@ export const PaymentsList = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleViewInvoice = (paymentId) => {
+    setSelectedPaymentId(paymentId);
+    setShowInvoice(true);
   };
 
   return (
@@ -70,21 +78,22 @@ export const PaymentsList = () => {
                   <th>Member ID</th>
                   <th>Amount</th>
                   <th>Method</th>
-                  <th className="pr-6">Notes</th>
+                  <th>Notes</th>
+                  <th className="pr-6 text-center">Invoice</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   [...Array(5)].map((_, i) => (
                     <tr key={i}>
-                      <td colSpan={6} className="pl-6">
+                      <td colSpan={7} className="pl-6">
                         <div className="h-4 bg-muted rounded animate-pulse" />
                       </td>
                     </tr>
                   ))
                 ) : payments.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-center text-muted-foreground py-8 pl-6">
+                    <td colSpan={7} className="text-center text-muted-foreground py-8 pl-6">
                       No payments found
                     </td>
                   </tr>
@@ -96,7 +105,17 @@ export const PaymentsList = () => {
                       <td className="font-mono text-cyan-400">{payment.member_id}</td>
                       <td className="font-semibold text-emerald-400">{formatCurrency(payment.amount_paid)}</td>
                       <td className="text-muted-foreground capitalize">{payment.payment_method}</td>
-                      <td className="pr-6 text-muted-foreground truncate max-w-xs">{payment.notes || '-'}</td>
+                      <td className="text-muted-foreground truncate max-w-xs">{payment.notes || '-'}</td>
+                      <td className="pr-6 text-center">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleViewInvoice(payment.id)}
+                          data-testid={`invoice-btn-${payment.id}`}
+                        >
+                          <FileText size={14} className="mr-1" /> Invoice
+                        </Button>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -105,6 +124,13 @@ export const PaymentsList = () => {
           </div>
         </Card>
       </div>
+
+      {/* Invoice Modal */}
+      <InvoiceModal 
+        isOpen={showInvoice} 
+        onClose={() => setShowInvoice(false)} 
+        paymentId={selectedPaymentId} 
+      />
     </DashboardLayout>
   );
 };
