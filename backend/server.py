@@ -824,6 +824,34 @@ async def get_template(template_type: str, channel: str) -> dict:
         },
         ("announcement", "whatsapp"): {
             "content": "📢 *{{announcement_title}}*\n\nHi {{name}},\n\n{{announcement_content}}\n\n- F3 Fitness Gym"
+        },
+        ("new_user_credentials", "email"): {
+            "subject": "Welcome to F3 Fitness Gym - Your Login Details 🏋️",
+            "content": """<h2>Welcome to F3 Fitness Gym! 🏋️</h2>
+<p>Hi <strong>{{name}}</strong>,</p>
+<p>Your account has been created successfully. Here are your login credentials:</p>
+<div class="highlight-box">
+  <strong>Member ID:</strong> {{member_id}}<br>
+  <strong>Email:</strong> {{email}}<br>
+  <strong>Password:</strong> <code style="color:#dc2626; font-weight:700;">{{password}}</code>
+</div>
+<p style="color:#dc2626; font-weight:500;">⚠️ Please change your password after your first login for security.</p>
+<center><a href="https://f3fitness.in/login" class="button">Login Now</a></center>
+<div class="divider"></div>
+<p>Transform Your Body, Transform Your Life! 💪</p>"""
+        },
+        ("new_user_credentials", "whatsapp"): {
+            "content": "🏋️ Welcome to F3 Fitness Gym!\n\nHello {{name}},\n\nYour account is ready!\n\n📋 *Login Details:*\nMember ID: {{member_id}}\nEmail: {{email}}\nPassword: {{password}}\n\n🔗 Login at: https://f3fitness.in/login\n\n⚠️ Change your password after first login.\n\nTransform Your Body, Transform Your Life! 💪\n\n- F3 Fitness Team"
+        },
+        ("test_email", "email"): {
+            "subject": "F3 Fitness Gym - Test Email ✅",
+            "content": """<h2>SMTP Test Successful! ✅</h2>
+<p>This is a test email from F3 Fitness Gym.</p>
+<div class="highlight-box">
+  Your SMTP configuration is working correctly.<br>
+  You can now send emails to your members!
+</div>
+<p>Keep motivating your members! 💪</p>"""
         }
     }
     return defaults.get((template_type, channel), {"subject": "", "content": ""})
