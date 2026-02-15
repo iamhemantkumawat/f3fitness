@@ -921,7 +921,15 @@ async def send_whatsapp(to_number: str, message: str):
     """Send WhatsApp message using Twilio"""
     settings = await db.settings.find_one({"id": "1"}, {"_id": 0})
     if not settings or not settings.get("twilio_account_sid"):
-        logger.warning("WhatsApp not configured")
+        logger.warning("WhatsApp not configured - missing twilio_account_sid")
+        return False
+    
+    if not settings.get("twilio_auth_token"):
+        logger.warning("WhatsApp not configured - missing twilio_auth_token")
+        return False
+    
+    if not settings.get("twilio_whatsapp_number"):
+        logger.warning("WhatsApp not configured - missing twilio_whatsapp_number")
         return False
     
     # Clean phone number - remove spaces, dashes, and ensure E.164 format
@@ -951,6 +959,10 @@ async def send_whatsapp(to_number: str, message: str):
             
             # Clean the from number as well
             from_number = settings["twilio_whatsapp_number"].replace(' ', '').replace('-', '')
+            if not from_number.startswith('+'):
+                from_number = '+' + from_number
+            
+            logger.info(f"Sending WhatsApp from {from_number} to {to_number}")
             
             msg = twilio_client.messages.create(
                 from_=f'whatsapp:{from_number}',
@@ -960,7 +972,9 @@ async def send_whatsapp(to_number: str, message: str):
             logger.info(f"WhatsApp message sent: {msg.sid}")
             return True
     except Exception as e:
-        logger.error(f"WhatsApp send failed: {e}")
+        logger.error(f"WhatsApp send failed: {str(e)}")
+        import traceback
+        logger.error(f"WhatsApp traceback: {traceback.format_exc()}")
         return False
 
 async def send_notification(user: dict, template_type: str, variables: dict, background_tasks: BackgroundTasks = None):
