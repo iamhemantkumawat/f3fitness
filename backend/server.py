@@ -2635,6 +2635,68 @@ async def get_activity_logs(
     
     return logs
 
+# ==================== USER HISTORY ROUTES ====================
+
+@api_router.get("/users/{user_id}/history")
+async def get_user_history(user_id: str, current_user: dict = Depends(get_admin_user)):
+    """Get complete history of a user - memberships, payments, attendance"""
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Get all memberships (past and present)
+    memberships = await db.memberships.find(
+        {"user_id": user_id}, 
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    
+    # Enrich memberships with plan names
+    for m in memberships:
+        plan = await db.plans.find_one({"id": m.get("plan_id")}, {"_id": 0, "name": 1, "duration_days": 1})
+        if plan:
+            m["plan_name"] = plan.get("name")
+            m["duration_days"] = plan.get("duration_days")
+    
+    # Get all payments
+    payments = await db.payments.find(
+        {"user_id": user_id}, 
+        {"_id": 0}
+    ).sort("payment_date", -1).to_list(100)
+    
+    # Get attendance count
+    attendance_count = await db.attendance.count_documents({"user_id": user_id})
+    
+    # Get last attendance
+    last_attendance = await db.attendance.find_one(
+        {"user_id": user_id}, 
+        {"_id": 0},
+        sort=[("check_in_time", -1)]
+    )
+    
+    # Calculate total payments
+    total_paid = sum(p.get("amount_paid", 0) for p in payments)
+    
+    return {
+        "user": {
+            "id": user.get("id"),
+            "name": user.get("name"),
+            "member_id": user.get("member_id"),
+            "email": user.get("email"),
+            "phone_number": user.get("phone_number"),
+            "joining_date": user.get("joining_date") or user.get("created_at", "")[:10],
+            "profile_photo_url": user.get("profile_photo_url")
+        },
+        "memberships": memberships,
+        "payments": payments,
+        "stats": {
+            "total_memberships": len(memberships),
+            "total_payments": len(payments),
+            "total_amount_paid": total_paid,
+            "attendance_count": attendance_count,
+            "last_attendance": last_attendance.get("check_in_time") if last_attendance else None
+        }
+    }
+
 # ==================== PAYMENT GATEWAY SETTINGS ====================
 
 @api_router.get("/settings/payment-gateway")
