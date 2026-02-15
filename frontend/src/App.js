@@ -27,6 +27,7 @@ import { WhatsAppTemplatesSettings } from './pages/Admin/WhatsAppTemplates';
 import { MemberDashboard, MemberPlans } from './pages/Member/Dashboard';
 import { HealthTracking } from './pages/Member/HealthTracking';
 import { CalorieTracker } from './pages/Member/CalorieTracker';
+import { MemberHistory } from './pages/Member/MemberHistory';
 
 // Trainer Pages
 import { TrainerDashboard, TrainerClients } from './pages/Trainer/Dashboard';
