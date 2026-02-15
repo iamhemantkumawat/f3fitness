@@ -2170,6 +2170,95 @@ async def create_payment(payment: PaymentCreate, background_tasks: BackgroundTas
     result["member_id"] = user["member_id"]
     return result
 
+# ==================== INVOICE ROUTES ====================
+
+@api_router.get("/invoices/{payment_id}")
+async def get_invoice(payment_id: str, current_user: dict = Depends(get_current_user)):
+    """Get invoice details for a payment"""
+    payment = await db.payments.find_one({"id": payment_id}, {"_id": 0})
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    
+    # Check authorization - admin can view all, members can only view their own
+    if current_user["role"] != "admin" and payment["user_id"] != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Not authorized to view this invoice")
+    
+    user = await db.users.find_one({"id": payment["user_id"]}, {"_id": 0})
+    
+    # Get membership details if linked
+    membership = None
+    plan = None
+    if payment.get("membership_id"):
+        membership = await db.memberships.find_one({"id": payment["membership_id"]}, {"_id": 0})
+        if membership:
+            plan = await db.plans.find_one({"id": membership["plan_id"]}, {"_id": 0})
+    
+    # Get gym settings
+    settings = await db.settings.find_one({"id": "1"}, {"_id": 0})
+    
+    return {
+        "invoice": {
+            "receipt_no": payment.get("receipt_no", f"F3-{payment['id'][:8].upper()}"),
+            "payment_date": payment.get("payment_date"),
+            "amount_paid": payment.get("amount_paid"),
+            "payment_method": payment.get("payment_method"),
+            "notes": payment.get("notes")
+        },
+        "customer": {
+            "name": user.get("name") if user else "Unknown",
+            "member_id": user.get("member_id") if user else "",
+            "email": user.get("email") if user else "",
+            "phone": user.get("phone_number") if user else "",
+            "address": user.get("address") if user else ""
+        },
+        "membership": {
+            "plan_name": plan.get("name") if plan else None,
+            "duration_days": plan.get("duration_days") if plan else None,
+            "start_date": membership.get("start_date") if membership else None,
+            "end_date": membership.get("end_date") if membership else None,
+            "original_price": membership.get("original_price") if membership else None,
+            "discount": membership.get("discount_amount") if membership else 0,
+            "final_price": membership.get("final_price") if membership else None
+        } if membership else None,
+        "gym": {
+            "name": settings.get("gym_name", "F3 Fitness Gym") if settings else "F3 Fitness Gym",
+            "address": settings.get("gym_address", "") if settings else "",
+            "phone": settings.get("gym_phone", "") if settings else "",
+            "email": settings.get("gym_email", "") if settings else ""
+        }
+    }
+
+@api_router.get("/memberships/{membership_id}/payments")
+async def get_membership_payments(membership_id: str, current_user: dict = Depends(get_current_user)):
+    """Get all payments for a specific membership"""
+    membership = await db.memberships.find_one({"id": membership_id}, {"_id": 0})
+    if not membership:
+        raise HTTPException(status_code=404, detail="Membership not found")
+    
+    # Check authorization
+    if current_user["role"] != "admin" and membership["user_id"] != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    payments = await db.payments.find(
+        {"membership_id": membership_id}, 
+        {"_id": 0}
+    ).sort("payment_date", -1).to_list(100)
+    
+    plan = await db.plans.find_one({"id": membership["plan_id"]}, {"_id": 0})
+    
+    return {
+        "membership": {
+            "id": membership["id"],
+            "plan_name": plan.get("name") if plan else None,
+            "start_date": membership.get("start_date"),
+            "end_date": membership.get("end_date"),
+            "final_price": membership.get("final_price"),
+            "amount_paid": sum(p.get("amount_paid", 0) for p in payments),
+            "amount_due": membership.get("final_price", 0) - sum(p.get("amount_paid", 0) for p in payments)
+        },
+        "payments": payments
+    }
+
 # ==================== PAYMENT REQUESTS ROUTES ====================
 
 @api_router.get("/payment-requests", response_model=List[PaymentRequestResponse])
