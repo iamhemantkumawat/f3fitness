@@ -237,6 +237,15 @@ export const MemberDashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Invoice Modal */}
+      {lastPayment && (
+        <InvoiceModal 
+          isOpen={showInvoice} 
+          onClose={() => setShowInvoice(false)} 
+          paymentId={lastPayment.id} 
+        />
+      )}
     </DashboardLayout>
   );
 };
