@@ -83,7 +83,15 @@ export const paymentsAPI = {
 
 // Invoice APIs
 export const invoiceAPI = {
-  get: (paymentId) => api.get(`/invoices/${paymentId}`)
+  get: (paymentId) => api.get(`/invoices/${paymentId}`),
+  downloadPDF: (paymentId) => api.get(`/invoices/${paymentId}/pdf`, { responseType: 'blob' })
+};
+
+// WhatsApp Logs APIs
+export const whatsappLogsAPI = {
+  getAll: (params) => api.get('/whatsapp-logs', { params }),
+  getStats: () => api.get('/whatsapp-logs/stats'),
+  clear: () => api.delete('/whatsapp-logs')
 };
 
 // Payment Requests APIs
