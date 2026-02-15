@@ -706,7 +706,7 @@ export const WhatsAppSettings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
-  const [testNumber, setTestNumber] = useState('');
+  const [testNumber, setTestNumber] = useState('+91');
   const [formData, setFormData] = useState({
     twilio_account_sid: '',
     twilio_auth_token: '',
