@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '../../components/Layout/DashboardLayout';
-import { usersAPI, invoiceAPI } from '../../lib/api';
+import { usersAPI } from '../../lib/api';
 import { formatCurrency } from '../../lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
+import { InvoiceModal } from '../../components/InvoiceModal';
 import { 
   ArrowLeft, User, Calendar, CreditCard, ClipboardList, 
-  FileText, Download, Printer, CheckCircle, XCircle, Clock
+  FileText, CheckCircle, XCircle, Clock
 } from 'lucide-react';
 import { toast } from 'sonner';
 
