@@ -108,10 +108,14 @@ export const AssignPlan = () => {
         initial_payment: initialPaymentAmount,
         payment_method: paymentMethod
       };
-      // Add custom dates if enabled
+      // Add custom dates if enabled (for existing members)
       if (useCustomDates && customStartDate && customEndDate) {
         payload.custom_start_date = customStartDate;
         payload.custom_end_date = customEndDate;
+        // Add custom payment date if provided
+        if (paymentDate) {
+          payload.payment_date = paymentDate;
+        }
       }
       await membershipsAPI.create(payload);
       toast.success('Plan assigned successfully');
