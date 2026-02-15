@@ -228,12 +228,18 @@ const ProfilePage = ({ role }) => {
                 </div>
                 <div>
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">Emergency Contact</Label>
-                  <Input
-                    data-testid="profile-emergency"
-                    className="input-dark mt-2"
-                    value={formData.emergency_phone}
-                    onChange={(e) => setFormData({ ...formData, emergency_phone: e.target.value })}
-                  />
+                  <div className="flex mt-2">
+                    <span className="inline-flex items-center px-3 bg-muted/50 border border-r-0 border-border rounded-l-md text-muted-foreground text-sm">
+                      +91
+                    </span>
+                    <Input
+                      data-testid="profile-emergency"
+                      className="input-dark rounded-l-none"
+                      placeholder="9999999999"
+                      value={formData.emergency_phone}
+                      onChange={(e) => setFormData({ ...formData, emergency_phone: e.target.value.replace(/^\+91/, '') })}
+                    />
+                  </div>
                 </div>
                 <div className="md:col-span-2">
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">Address</Label>
