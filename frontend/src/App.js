@@ -164,6 +164,7 @@ function AppRoutes() {
       <Route path="/dashboard/admin/settings/whatsapp" element={<ProtectedRoute allowedRoles={['admin']}><WhatsAppSettings /></ProtectedRoute>} />
       <Route path="/dashboard/admin/settings/payment-gateway" element={<ProtectedRoute allowedRoles={['admin']}><PaymentGatewaySettings /></ProtectedRoute>} />
       <Route path="/dashboard/admin/settings/activity-logs" element={<ProtectedRoute allowedRoles={['admin']}><ActivityLogsSettings /></ProtectedRoute>} />
+      <Route path="/dashboard/admin/settings/whatsapp-logs" element={<ProtectedRoute allowedRoles={['admin']}><WhatsAppLogsSettings /></ProtectedRoute>} />
       <Route path="/dashboard/admin/broadcast/whatsapp" element={<ProtectedRoute allowedRoles={['admin']}><WhatsAppBroadcast /></ProtectedRoute>} />
       <Route path="/dashboard/admin/broadcast/email" element={<ProtectedRoute allowedRoles={['admin']}><EmailBroadcast /></ProtectedRoute>} />
       <Route path="/dashboard/admin/settings/email-templates" element={<ProtectedRoute allowedRoles={['admin']}><EmailTemplatesSettings /></ProtectedRoute>} />
