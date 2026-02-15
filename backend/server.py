@@ -2096,11 +2096,16 @@ async def get_payments(
     user_id: Optional[str] = None,
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
-    current_user: dict = Depends(get_admin_user)
+    current_user: dict = Depends(get_current_user)
 ):
     query = {}
-    if user_id:
+    
+    # Non-admin users can only see their own payments
+    if current_user["role"] != "admin":
+        query["user_id"] = current_user["id"]
+    elif user_id:
         query["user_id"] = user_id
+        
     if date_from:
         query["payment_date"] = {"$gte": date_from}
     if date_to:
