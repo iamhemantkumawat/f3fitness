@@ -313,6 +313,31 @@ To test WhatsApp:
 ### Known Issues
 - ⚠️ WhatsApp test returns 500 - Twilio credentials need updating (not a code issue)
 
+## Session 11 Updates (February 2026)
+
+### Import Existing Membership Enhancements
+- ✅ **Auto-Calculate End Date** - When start date selected, end date auto-calculates based on plan duration
+- ✅ **Auto-Calculate Start Date** - When end date selected, start date auto-calculates based on plan duration
+- ✅ **Payment Date Field** - Custom payment date for recording when existing member actually paid
+- ✅ **Plan Duration Sync** - Dates recalculate when different plan is selected
+
+### User History Page (New)
+- ✅ **Separate Page** - Accessible via View History button in Member Details Quick Actions
+- ✅ **Stats Cards** - Total memberships, total paid, attendance count, last visit
+- ✅ **Membership History** - All past and current memberships with plan name, dates, status, amounts
+- ✅ **Payment History** - All payments with receipt numbers, dates, methods, and Invoice button
+
+### Invoice System (New)
+- ✅ **Invoice Modal** - Professional invoice display with gym header, customer details, invoice info
+- ✅ **View Invoice** - Click "Invoice" button on any payment to view full invoice
+- ✅ **Print Invoice** - Print button opens print dialog
+- ✅ **Download Invoice** - Download button generates printable HTML version
+
+### API Endpoints Added
+- ✅ `GET /api/users/{userId}/history` - Returns full user history (memberships, payments, stats)
+- ✅ `GET /api/invoices/{paymentId}` - Returns invoice details for a specific payment
+- ✅ `GET /api/memberships/{membershipId}/payments` - Returns all payments for a membership
+
 ## Test Reports
 - /app/test_reports/iteration_2.json - SMTP/WhatsApp bug fixes
 - /app/test_reports/iteration_3.json - New features (OTP, Dashboard widgets, Health Tracking)
@@ -320,5 +345,6 @@ To test WhatsApp:
 - /app/test_reports/iteration_5.json - Admin Members Enhancement (100% pass)
 - /app/test_reports/iteration_6.json - Bug fixes & Landing page updates (100% pass)
 - /app/test_reports/iteration_9.json - Theme & Email improvements (100% pass)
-- /app/test_reports/iteration_10.json - Template system & custom membership dates (91% pass, WhatsApp skipped)
+- /app/test_reports/iteration_10.json - Template system & custom membership dates (91% pass)
+- /app/test_reports/iteration_11.json - User History, Invoice, Import Membership enhancements (100% pass)
 
