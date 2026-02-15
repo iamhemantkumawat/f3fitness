@@ -15,7 +15,7 @@ import {
   Search, Plus, User, Phone, Mail, Calendar, MapPin, 
   CreditCard, Edit, Trash2, Eye, ChevronRight, EyeOff,
   ArrowUpDown, ArrowUp, ArrowDown, UserX, UserCheck,
-  Ban, RotateCcw, Key, MoreHorizontal, CheckSquare, Square, Camera
+  Ban, RotateCcw, Key, MoreHorizontal, CheckSquare, Square, Camera, History
 } from 'lucide-react';
 import { toast } from 'sonner';
 
