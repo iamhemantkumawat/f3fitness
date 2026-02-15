@@ -1995,6 +1995,15 @@ async def create_membership(membership: MembershipCreate, background_tasks: Back
     
     receipt_no = None
     if membership.initial_payment > 0:
+        # Use custom payment date if provided, otherwise use current time
+        if membership.payment_date:
+            payment_datetime = datetime.fromisoformat(membership.payment_date)
+            payment_date_str = payment_datetime.isoformat()
+            payment_date_display = payment_datetime.strftime("%d %b %Y")
+        else:
+            payment_date_str = now
+            payment_date_display = datetime.now().strftime("%d %b %Y")
+        
         receipt_no = f"F3-{datetime.now().strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
         payment_doc = {
             "id": str(uuid.uuid4()),
@@ -2002,7 +2011,7 @@ async def create_membership(membership: MembershipCreate, background_tasks: Back
             "membership_id": membership_id,
             "user_id": membership.user_id,
             "amount_paid": membership.initial_payment,
-            "payment_date": now,
+            "payment_date": payment_date_str,
             "payment_method": membership.payment_method,
             "notes": f"Payment for {plan['name']}",
             "recorded_by_admin_id": current_user["id"]
@@ -2014,7 +2023,7 @@ async def create_membership(membership: MembershipCreate, background_tasks: Back
             "receipt_no": receipt_no,
             "amount": membership.initial_payment,
             "payment_mode": membership.payment_method,
-            "payment_date": datetime.now().strftime("%d %b %Y"),
+            "payment_date": payment_date_display,
             "description": f"Payment for {plan['name']}"
         }, background_tasks)
     
