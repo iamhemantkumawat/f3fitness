@@ -165,7 +165,7 @@ export const AdminDashboard = () => {
               {!stats?.regular_absentees?.length ? (
                 <p className="text-muted-foreground text-center py-6 text-sm">No regular absentees</p>
               ) : (
-                <div className="space-y-2 max-h-64 overflow-y-auto">
+                <div className="space-y-2 max-h-[400px] overflow-y-auto">
                   {stats.regular_absentees.map((member, idx) => (
                     <div key={idx} className="flex items-center justify-between p-3 bg-red-500/5 rounded-lg border border-red-500/10">
                       <div>
@@ -173,13 +173,13 @@ export const AdminDashboard = () => {
                         <p className="text-xs text-muted-foreground">{member.member_id}</p>
                       </div>
                       <div className="text-right">
-                        <span className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded block">
+                        <span className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded block mb-1">
                           {member.days_absent === 'Never attended' ? 'Never' : `${member.days_absent} days`}
                         </span>
                         {member.phone_number && (
-                          <a href={`tel:${member.phone_number}`} className="text-red-400 hover:text-red-300 text-xs mt-1 inline-block">
-                            Call
-                          </a>
+                          <span className="text-xs text-muted-foreground font-mono">
+                            {member.phone_number}
+                          </span>
                         )}
                       </div>
                     </div>
