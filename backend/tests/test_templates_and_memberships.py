@@ -287,8 +287,11 @@ class TestWhatsAppTestEndpoint:
             print(f"✓ WhatsApp test returns 500 (unconfigured/failed): {data.get('detail', 'Unknown error')}")
         elif response.status_code == 200:
             print("✓ WhatsApp is actually configured and test passed!")
+        elif response.status_code in [502, 503, 504, 520, 521, 522, 523, 524]:
+            # Cloudflare/infrastructure transient errors - skip rather than fail
+            pytest.skip(f"Infrastructure/Cloudflare transient error (status {response.status_code})")
         else:
-            pytest.fail(f"Unexpected status code: {response.status_code}, body: {response.text}")
+            pytest.fail(f"Unexpected status code: {response.status_code}, body: {response.text[:500]}")
 
 
 class TestSMTPTestEndpoint:
