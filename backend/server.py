@@ -2456,15 +2456,12 @@ async def update_smtp_settings(settings: SMTPSettings, current_user: dict = Depe
 
 @api_router.post("/settings/smtp/test")
 async def test_smtp(to_email: str, current_user: dict = Depends(get_admin_user)):
-    email_body = """
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #09090b; color: #fff; padding: 40px;">
-        <img src="https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png" style="width: 150px; margin-bottom: 20px;" />
-        <h1 style="color: #06b6d4;">Test Email</h1>
-        <p>SMTP configuration is working correctly!</p>
-        <p style="color: #71717a;">This is a test email from F3 Fitness Gym.</p>
-    </div>
-    """
-    success = await send_email(to_email, "F3 Fitness Gym - Test Email", email_body)
+    # Use template system for test email
+    email_template = await get_template("test_email", "email")
+    subject = email_template.get("subject", "F3 Fitness Gym - Test Email")
+    content = email_template.get("content", "<h2>SMTP Test Successful!</h2><p>Your SMTP is working correctly.</p>")
+    email_body = wrap_email_in_template(content, subject)
+    success = await send_email(to_email, subject, email_body)
     if success:
         return {"message": "Test email sent successfully"}
     raise HTTPException(status_code=500, detail="Failed to send test email. Check SMTP settings.")
