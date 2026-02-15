@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { DashboardLayout } from '../../components/Layout/DashboardLayout';
 import { membershipsAPI, paymentsAPI } from '../../lib/api';
 import { formatCurrency } from '../../lib/utils';
@@ -14,16 +15,18 @@ import { toast } from 'sonner';
 
 export const MemberHistory = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [memberships, setMemberships] = useState([]);
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedPaymentId, setSelectedPaymentId] = useState(null);
   const [showInvoice, setShowInvoice] = useState(false);
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   useEffect(() => {
-    fetchHistory();
-  }, []);
+    if (user) {
+      fetchHistory();
+    }
+  }, [user]);
 
   const fetchHistory = async () => {
     try {
@@ -34,6 +37,7 @@ export const MemberHistory = () => {
       setMemberships(membershipRes.data);
       setPayments(paymentsRes.data);
     } catch (error) {
+      console.error('History error:', error);
       toast.error('Failed to load history');
     } finally {
       setLoading(false);
