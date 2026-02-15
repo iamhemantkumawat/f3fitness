@@ -60,15 +60,29 @@ export const AssignPlan = () => {
       toast.error('Initial payment cannot exceed final price');
       return;
     }
+    if (useCustomDates && (!customStartDate || !customEndDate)) {
+      toast.error('Please provide both custom start and end dates');
+      return;
+    }
+    if (useCustomDates && new Date(customStartDate) > new Date(customEndDate)) {
+      toast.error('Start date cannot be after end date');
+      return;
+    }
     setSubmitting(true);
     try {
-      await membershipsAPI.create({
+      const payload = {
         user_id: userId,
         plan_id: selectedPlan.id,
         discount_amount: discountAmount,
         initial_payment: initialPaymentAmount,
         payment_method: paymentMethod
-      });
+      };
+      // Add custom dates if enabled
+      if (useCustomDates && customStartDate && customEndDate) {
+        payload.custom_start_date = customStartDate;
+        payload.custom_end_date = customEndDate;
+      }
+      await membershipsAPI.create(payload);
       toast.success('Plan assigned successfully');
       navigate('/dashboard/admin/members');
     } catch (error) {
