@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { invoiceAPI } from '../../lib/api';
-import { formatCurrency } from '../../lib/utils';
-import { Button } from '../../components/ui/button';
+import { invoiceAPI } from '../lib/api';
+import { formatCurrency } from '../lib/utils';
+import { Button } from './ui/button';
 import { Download, Printer, X } from 'lucide-react';
 import { toast } from 'sonner';
 
