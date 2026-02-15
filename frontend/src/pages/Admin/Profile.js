@@ -189,12 +189,18 @@ const ProfilePage = ({ role }) => {
                 </div>
                 <div>
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">Phone Number</Label>
-                  <Input
-                    data-testid="profile-phone"
-                    className="input-dark mt-2"
-                    value={formData.phone_number}
-                    onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
-                  />
+                  <div className="flex mt-2">
+                    <span className="inline-flex items-center px-3 bg-muted/50 border border-r-0 border-border rounded-l-md text-muted-foreground text-sm">
+                      +91
+                    </span>
+                    <Input
+                      data-testid="profile-phone"
+                      className="input-dark rounded-l-none"
+                      placeholder="9999999999"
+                      value={formData.phone_number}
+                      onChange={(e) => setFormData({ ...formData, phone_number: e.target.value.replace(/^\+91/, '') })}
+                    />
+                  </div>
                 </div>
                 <div>
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">Gender</Label>
