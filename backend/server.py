@@ -2485,10 +2485,19 @@ async def update_whatsapp_settings(settings: WhatsAppSettings, current_user: dic
 
 @api_router.post("/settings/whatsapp/test")
 async def test_whatsapp(to_number: str, current_user: dict = Depends(get_admin_user)):
+    # Get settings to check configuration
+    settings = await db.settings.find_one({"id": "1"}, {"_id": 0})
+    if not settings or not settings.get("twilio_account_sid"):
+        raise HTTPException(status_code=400, detail="WhatsApp/Twilio not configured. Please add your Twilio credentials first.")
+    if not settings.get("twilio_auth_token"):
+        raise HTTPException(status_code=400, detail="Twilio Auth Token is missing.")
+    if not settings.get("twilio_whatsapp_number"):
+        raise HTTPException(status_code=400, detail="Twilio WhatsApp number is missing.")
+    
     success = await send_whatsapp(to_number, "🏋️ Hello from F3 Fitness Gym! WhatsApp integration is working. 💪")
     if success:
         return {"message": "Test message sent successfully"}
-    raise HTTPException(status_code=500, detail="Failed to send test message. Check WhatsApp settings.")
+    raise HTTPException(status_code=500, detail="Failed to send test message. Check WhatsApp settings and ensure your Twilio credentials are correct.")
 
 # ==================== TEMPLATE ROUTES ====================
 
