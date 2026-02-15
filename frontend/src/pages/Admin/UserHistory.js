@@ -351,9 +351,9 @@ export const UserHistory = () => {
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold text-foreground">{formatCurrency(m.final_price)}</p>
+                        <p className="font-semibold text-foreground">{formatCurrency(m.final_price || 0)}</p>
                         <p className="text-xs text-muted-foreground">
-                          Paid: {formatCurrency(m.amount_paid)} | Due: {formatCurrency(m.amount_due)}
+                          Paid: {formatCurrency(m.amount_paid || 0)} | Due: {formatCurrency(m.amount_due || 0)}
                         </p>
                       </div>
                     </div>
