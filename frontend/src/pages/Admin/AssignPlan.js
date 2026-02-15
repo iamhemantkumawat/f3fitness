@@ -228,26 +228,47 @@ export const AssignPlan = () => {
                   </label>
                   
                   {useCustomDates && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                      <div>
-                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Custom Start Date</Label>
-                        <Input
-                          data-testid="custom-start-date"
-                          type="date"
-                          className="input-dark mt-2"
-                          value={customStartDate}
-                          onChange={(e) => setCustomStartDate(e.target.value)}
-                        />
+                    <div className="space-y-4 mt-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                            <Calendar size={14} /> Membership Start Date
+                          </Label>
+                          <Input
+                            data-testid="custom-start-date"
+                            type="date"
+                            className="input-dark mt-2"
+                            value={customStartDate}
+                            onChange={(e) => handleStartDateChange(e.target.value)}
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">End date auto-calculates based on plan duration</p>
+                        </div>
+                        <div>
+                          <Label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                            <Calendar size={14} /> Membership End Date
+                          </Label>
+                          <Input
+                            data-testid="custom-end-date"
+                            type="date"
+                            className="input-dark mt-2"
+                            value={customEndDate}
+                            onChange={(e) => handleEndDateChange(e.target.value)}
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">Start date auto-calculates based on plan duration</p>
+                        </div>
                       </div>
                       <div>
-                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Custom End Date</Label>
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                          <Calendar size={14} /> Payment Date (When member paid)
+                        </Label>
                         <Input
-                          data-testid="custom-end-date"
+                          data-testid="payment-date"
                           type="date"
                           className="input-dark mt-2"
-                          value={customEndDate}
-                          onChange={(e) => setCustomEndDate(e.target.value)}
+                          value={paymentDate}
+                          onChange={(e) => setPaymentDate(e.target.value)}
                         />
+                        <p className="text-xs text-muted-foreground mt-1">Leave empty to use today's date</p>
                       </div>
                     </div>
                   )}
