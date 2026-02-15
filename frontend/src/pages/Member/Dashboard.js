@@ -23,6 +23,8 @@ export const MemberDashboard = () => {
   const [holidays, setHolidays] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [lastPayment, setLastPayment] = useState(null);
+  const [showInvoice, setShowInvoice] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -32,16 +34,21 @@ export const MemberDashboard = () => {
 
   const fetchData = async () => {
     try {
-      const [membershipRes, attendanceRes, announcementsRes, holidaysRes] = await Promise.all([
+      const [membershipRes, attendanceRes, announcementsRes, holidaysRes, paymentsRes] = await Promise.all([
         membershipsAPI.getActive(user.id),
         attendanceAPI.getUserHistory(user.id),
         announcementsAPI.getAll(),
-        holidaysAPI.getAll()
+        holidaysAPI.getAll(),
+        paymentsAPI.getAll({ user_id: user.id })
       ]);
       setMembership(membershipRes.data);
       setAttendance(attendanceRes.data);
       setAnnouncements(announcementsRes.data.slice(0, 5));
       setHolidays(holidaysRes.data);
+      // Get last payment for invoice
+      if (paymentsRes.data && paymentsRes.data.length > 0) {
+        setLastPayment(paymentsRes.data[0]);
+      }
     } catch (error) {
       console.error('Failed to load data');
     } finally {
