@@ -338,6 +338,32 @@ To test WhatsApp:
 - ✅ `GET /api/invoices/{paymentId}` - Returns invoice details for a specific payment
 - ✅ `GET /api/memberships/{membershipId}/payments` - Returns all payments for a membership
 
+## Session 12 Updates (February 2026)
+
+### Invoice System Enhancements
+- ✅ **F3 Logo in Invoice** - Professional header with F3 Fitness logo
+- ✅ **Detailed Footer** - Address, phone, email, Instagram, opening hours
+- ✅ **Invoice in All Payments** - Invoice button added to Admin > All Payments page
+- ✅ **Shared InvoiceModal Component** - Reusable component at `/app/frontend/src/components/InvoiceModal.js`
+
+### Member Portal Enhancements
+- ✅ **Member History Page** - New page at `/dashboard/member/history` showing membership & payment history
+- ✅ **Sidebar Menu** - "My History" link added to member sidebar navigation
+- ✅ **Dashboard Buttons** - "View Invoice" and "My History" buttons in membership card
+- ✅ **Invoice for Members** - Members can view and download their own invoices
+
+### Admin Dashboard Improvements
+- ✅ **Phone Numbers Display** - Regular Absentees shows phone numbers instead of Call button
+- ✅ **Increased Scroll Height** - Upcoming Renewals and Regular Absentees now have 400px max-height (was 256px)
+- ✅ **Show All Entries** - Scroll to see all entries (15+ members)
+
+### Files Updated/Created
+- `/app/frontend/src/components/InvoiceModal.js` - New shared invoice modal component
+- `/app/frontend/src/pages/Member/MemberHistory.js` - New member history page
+- `/app/frontend/src/pages/Admin/Payments.js` - Added Invoice column
+- `/app/frontend/src/pages/Member/Dashboard.js` - Added View Invoice/My History buttons
+- `/app/frontend/src/pages/Admin/Dashboard.js` - Phone numbers, increased scroll height
+
 ## Test Reports
 - /app/test_reports/iteration_2.json - SMTP/WhatsApp bug fixes
 - /app/test_reports/iteration_3.json - New features (OTP, Dashboard widgets, Health Tracking)
