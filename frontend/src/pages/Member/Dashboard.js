@@ -2,14 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { DashboardLayout } from '../../components/Layout/DashboardLayout';
-import { membershipsAPI, plansAPI, attendanceAPI, announcementsAPI, holidaysAPI, paymentRequestsAPI } from '../../lib/api';
+import { membershipsAPI, plansAPI, attendanceAPI, announcementsAPI, holidaysAPI, paymentRequestsAPI, paymentsAPI } from '../../lib/api';
 import { formatCurrency, formatDate, getDaysRemaining } from '../../lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Calendar } from '../../components/ui/calendar';
+import { InvoiceModal } from '../../components/InvoiceModal';
 import { 
   CreditCard, Calendar as CalendarIcon, Bell, Clock, CheckCircle, 
-  TrendingUp, Dumbbell, ArrowRight
+  TrendingUp, Dumbbell, ArrowRight, FileText, History
 } from 'lucide-react';
 import { toast } from 'sonner';
 
