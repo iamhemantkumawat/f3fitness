@@ -2676,10 +2676,33 @@ async def test_whatsapp(to_number: str, current_user: dict = Depends(get_admin_u
     if not settings.get("twilio_whatsapp_number"):
         raise HTTPException(status_code=400, detail="Twilio WhatsApp number is missing.")
     
-    success = await send_whatsapp(to_number, "🏋️ Hello from F3 Fitness Gym! WhatsApp integration is working. 💪")
-    if success:
-        return {"message": "Test message sent successfully"}
-    raise HTTPException(status_code=500, detail="Failed to send test message. Check WhatsApp settings and ensure your Twilio credentials are correct.")
+    # Clean the from number for logging
+    from_number = settings["twilio_whatsapp_number"].replace(' ', '').replace('-', '').replace('\u202a', '').replace('\u202c', '')
+    if not from_number.startswith('+'):
+        from_number = '+' + from_number
+    
+    try:
+        success = await send_whatsapp(to_number, "🏋️ Hello from F3 Fitness Gym! WhatsApp integration is working. 💪")
+        if success:
+            return {
+                "message": "Test message sent successfully", 
+                "success": True,
+                "from_number": from_number,
+                "to_number": to_number
+            }
+        else:
+            # Get the latest log entry for details
+            latest_log = await db.whatsapp_logs.find_one(
+                {"to_number": {"$regex": to_number.replace('+', '').replace(' ', '')}},
+                sort=[("timestamp", -1)]
+            )
+            error_detail = latest_log.get("error", "Unknown error") if latest_log else "Check server logs for details"
+            raise HTTPException(status_code=500, detail=f"Failed to send test message: {error_detail}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"WhatsApp test exception: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error sending message: {str(e)}")
 
 # ==================== TEMPLATE ROUTES ====================
 
