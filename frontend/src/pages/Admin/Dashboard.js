@@ -125,7 +125,7 @@ export const AdminDashboard = () => {
               {!stats?.upcoming_renewals?.length ? (
                 <p className="text-muted-foreground text-center py-6 text-sm">No renewals due soon</p>
               ) : (
-                <div className="space-y-2 max-h-64 overflow-y-auto">
+                <div className="space-y-2 max-h-[400px] overflow-y-auto">
                   {stats.upcoming_renewals.map((member, idx) => (
                     <div key={idx} className="flex items-center justify-between p-3 bg-amber-500/5 rounded-lg border border-amber-500/10">
                       <div>
