@@ -577,7 +577,32 @@ def get_ist_today_end():
     return datetime(ist_now.year, ist_now.month, ist_now.day, 23, 59, 59)
 
 def wrap_email_in_template(content: str, title: str = "F3 Fitness Notification") -> str:
-    """Wrap email content in professional F3 Fitness template - light/white theme with detailed footer"""
+    """Wrap email content in professional F3 Fitness template - light/white theme with detailed footer.
+    If content already appears to be a complete HTML email (has its own styling), returns it as-is with DOCTYPE wrapper.
+    """
+    # Check if content is already a complete styled email (user-customized template)
+    content_stripped = content.strip()
+    is_complete_email = (
+        content_stripped.startswith('<!DOCTYPE') or
+        content_stripped.startswith('<html') or
+        (content_stripped.startswith('<div') and 'style=' in content_stripped[:200] and ('max-width' in content_stripped[:300] or 'background' in content_stripped[:300]))
+    )
+    
+    if is_complete_email:
+        # Content is already a complete styled email, just wrap in basic HTML structure
+        return f'''<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{title}</title>
+</head>
+<body style="margin:0; padding:0; font-family: Arial, sans-serif; background: #f4f6f8;">
+{content}
+</body>
+</html>'''
+    
+    # Simple content - wrap in full professional template
     return f'''<!DOCTYPE html>
 <html>
 <head>
