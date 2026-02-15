@@ -1117,25 +1117,19 @@ async def send_otp(req: SendOTPRequest, background_tasks: BackgroundTasks):
     await db.otps.delete_many({"phone_number": req.phone_number})
     await db.otps.insert_one(otp_doc)
     
-    # Send WhatsApp OTP
+    # Send WhatsApp OTP using template
     full_phone = f"{req.country_code}{req.phone_number.lstrip('0')}"
-    whatsapp_message = f"🔐 Your F3 Fitness OTP is: {otp}\n\nValid for 10 minutes. Do not share this code with anyone."
+    whatsapp_template = await get_template("otp", "whatsapp")
+    whatsapp_message = replace_template_vars(whatsapp_template.get("content", "🔐 Your OTP: {{otp}}"), {"otp": otp, "name": "User"})
     background_tasks.add_task(send_whatsapp, full_phone, whatsapp_message)
     
-    # Send same OTP to Email
+    # Send same OTP to Email using template
     if req.email:
-        email_body = f"""
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #09090b; color: #fff; padding: 40px;">
-            <img src="https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png" style="width: 150px; margin-bottom: 20px;" />
-            <h1 style="color: #06b6d4;">Your OTP Code</h1>
-            <p>Use the following code to verify your account:</p>
-            <div style="background: #18181b; padding: 20px; text-align: center; margin: 20px 0;">
-                <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #06b6d4;">{otp}</span>
-            </div>
-            <p style="color: #71717a;">This code is valid for 10 minutes.</p>
-        </div>
-        """
-        background_tasks.add_task(send_email, req.email, "F3 Fitness - Verification OTP", email_body)
+        email_template = await get_template("otp", "email")
+        subject = replace_template_vars(email_template.get("subject", "Your F3 Fitness OTP Code"), {"otp": otp, "name": "User"})
+        content = replace_template_vars(email_template.get("content", ""), {"otp": otp, "name": "User"})
+        email_body = wrap_email_in_template(content, subject)
+        background_tasks.add_task(send_email, req.email, subject, email_body)
     
     return {"message": "OTP sent successfully", "phone_sent": True, "email_sent": bool(req.email)}
 
