@@ -197,6 +197,7 @@ class MembershipCreate(BaseModel):
     # Custom dates for importing existing members with active memberships
     custom_start_date: Optional[str] = None  # Format: YYYY-MM-DD
     custom_end_date: Optional[str] = None    # Format: YYYY-MM-DD
+    payment_date: Optional[str] = None       # Format: YYYY-MM-DD (when member actually paid)
 
 class MembershipResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
