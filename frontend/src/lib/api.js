@@ -45,6 +45,7 @@ export const usersAPI = {
   getAll: (params) => api.get('/users', { params }),
   getAllWithMembership: (params) => api.get('/admin/users-with-membership', { params }),
   getById: (id) => api.get(`/users/${id}`),
+  getHistory: (id) => api.get(`/users/${id}/history`),
   create: (data, role = 'member') => api.post(`/users?role=${role}`, data),
   update: (id, data) => api.put(`/users/${id}`, data),
   delete: (id) => api.delete(`/users/${id}`),
@@ -68,7 +69,8 @@ export const membershipsAPI = {
   getAll: (userId) => api.get('/memberships', { params: { user_id: userId } }),
   getActive: (userId) => api.get(`/memberships/active/${userId}`),
   create: (data) => api.post('/memberships', data),
-  cancel: (id) => api.put(`/memberships/${id}/cancel`)
+  cancel: (id) => api.put(`/memberships/${id}/cancel`),
+  getPayments: (membershipId) => api.get(`/memberships/${membershipId}/payments`)
 };
 
 // Payments APIs
@@ -77,6 +79,11 @@ export const paymentsAPI = {
   getTodayCollection: () => api.get('/payments/today-collection'),
   getSummary: (period, date) => api.get('/payments/summary', { params: { period, date } }),
   create: (data) => api.post('/payments', data)
+};
+
+// Invoice APIs
+export const invoiceAPI = {
+  get: (paymentId) => api.get(`/invoices/${paymentId}`)
 };
 
 // Payment Requests APIs
