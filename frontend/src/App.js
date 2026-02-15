@@ -14,6 +14,7 @@ import { Login, Signup, ForgotPassword } from './pages/Auth';
 import { AdminDashboard } from './pages/Admin/Dashboard';
 import { MembersList, TrainersList, CreateMember, EditMember } from './pages/Admin/Members';
 import { AssignPlan } from './pages/Admin/AssignPlan';
+import { UserHistory } from './pages/Admin/UserHistory';
 import { PaymentsList, AddPayment, PaymentReports, PendingPayments } from './pages/Admin/Payments';
 import { MarkAttendance, TodayAttendance, AttendanceHistory } from './pages/Admin/Attendance';
 import { PlansSettings, AnnouncementsSettings, HolidaysSettings, SMTPSettings, WhatsAppSettings, ActivityLogsSettings, PaymentGatewaySettings } from './pages/Admin/Settings';
