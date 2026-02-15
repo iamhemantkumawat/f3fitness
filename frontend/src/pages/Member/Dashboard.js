@@ -139,6 +139,28 @@ export const MemberDashboard = () => {
                       />
                     </div>
                   </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 pt-2">
+                    {lastPayment && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setShowInvoice(true)}
+                        data-testid="view-invoice-btn"
+                      >
+                        <FileText size={14} className="mr-1" /> View Invoice
+                      </Button>
+                    )}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => navigate('/dashboard/member/history')}
+                      data-testid="view-history-btn"
+                    >
+                      <History size={14} className="mr-1" /> My History
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-8">
