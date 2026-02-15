@@ -2522,7 +2522,8 @@ async def get_templates(current_user: dict = Depends(get_admin_user)):
     template_types = [
         "welcome", "otp", "password_reset", "attendance", "absent_warning", 
         "birthday", "holiday", "plan_shared", "renewal_reminder", 
-        "membership_activated", "payment_received", "announcement"
+        "membership_activated", "payment_received", "announcement",
+        "new_user_credentials", "test_email"
     ]
     channels = ["email", "whatsapp"]
     
