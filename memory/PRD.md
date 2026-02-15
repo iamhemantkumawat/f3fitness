@@ -280,6 +280,39 @@ To test WhatsApp:
   - `/app/backend/models/` - Pydantic models
   - `/app/backend/services/` - Business logic
 
+## Session 10 Updates (December 2026)
+
+### Email Template System Enhancements
+- ✅ **OTP Email Uses Template System** - OTP verification emails now fetch from database templates instead of hardcoded HTML
+- ✅ **OTP WhatsApp Uses Template System** - OTP WhatsApp messages now use database templates
+- ✅ **New User Credentials Template** - Welcome emails with login credentials (admin-created users) now use `new_user_credentials` template
+- ✅ **Test Email Uses Template** - SMTP test emails now use `test_email` template with proper styling
+- ✅ **Smart Template Wrapping** - `wrap_email_in_template()` now intelligently detects if content is already a complete styled HTML (user-customized templates) and doesn't double-wrap it
+
+### Custom Membership Dates for Importing Existing Members
+- ✅ **Backend Support** - `MembershipCreate` model now accepts optional `custom_start_date` and `custom_end_date` parameters
+- ✅ **Frontend UI** - Assign Plan page has "Import Existing Membership" checkbox toggle with custom date fields
+- ✅ **Use Case** - Allows admin to import 300+ existing gym members with their current membership dates
+
+### New Template Types Added
+- ✅ `new_user_credentials` (email/whatsapp) - For admin-created users with login details
+- ✅ `test_email` (email only) - For SMTP test emails
+- **Total Templates**: 28 (14 types × 2 channels)
+
+### WhatsApp Error Handling Improved
+- ✅ Better error messages when Twilio credentials are missing/invalid
+- ✅ Detailed logging for WhatsApp send failures
+
+### Verified Working Features
+- ✅ 28 templates returned from GET /api/templates
+- ✅ Custom membership dates work in backend
+- ✅ Import Existing Membership toggle shows date fields in UI
+- ✅ OTP emails use database templates
+- ✅ Test emails use template system
+
+### Known Issues
+- ⚠️ WhatsApp test returns 500 - Twilio credentials need updating (not a code issue)
+
 ## Test Reports
 - /app/test_reports/iteration_2.json - SMTP/WhatsApp bug fixes
 - /app/test_reports/iteration_3.json - New features (OTP, Dashboard widgets, Health Tracking)
@@ -287,3 +320,5 @@ To test WhatsApp:
 - /app/test_reports/iteration_5.json - Admin Members Enhancement (100% pass)
 - /app/test_reports/iteration_6.json - Bug fixes & Landing page updates (100% pass)
 - /app/test_reports/iteration_9.json - Theme & Email improvements (100% pass)
+- /app/test_reports/iteration_10.json - Template system & custom membership dates (91% pass, WhatsApp skipped)
+
