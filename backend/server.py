@@ -2382,6 +2382,7 @@ td {{ padding: 10px; border-bottom: 1px solid #e5e7eb; font-size: 11px; color: #
 <body>
 <div class="container">
   <div class="header">
+    <img src="data:image/png;base64,{F3_LOGO_BASE64}" alt="F3 Fitness Logo" style="max-width: 120px; margin-bottom: 10px; filter: invert(1);" />
     <h1>F3 FITNESS HEALTH CLUB</h1>
     <p>Your Fitness Journey Partner</p>
     <div class="receipt-badge">Receipt: {receipt_no}</div>
