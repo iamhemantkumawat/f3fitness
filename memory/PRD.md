@@ -373,4 +373,5 @@ To test WhatsApp:
 - /app/test_reports/iteration_9.json - Theme & Email improvements (100% pass)
 - /app/test_reports/iteration_10.json - Template system & custom membership dates (91% pass)
 - /app/test_reports/iteration_11.json - User History, Invoice, Import Membership enhancements (100% pass)
+- /app/test_reports/iteration_12.json - Invoice UI with logo/footer, Member portal enhancements (95% pass)
 
