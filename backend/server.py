@@ -944,27 +944,53 @@ async def send_email(to_email: str, subject: str, body: str):
         logger.error(f"Email send failed: {e}")
         return False
 
-async def send_whatsapp(to_number: str, message: str):
+async def send_whatsapp(to_number: str, message: str, log_to_db: bool = True):
     """Send WhatsApp message using Twilio"""
     settings = await db.settings.find_one({"id": "1"}, {"_id": 0})
+    
+    # Initialize log data
+    log_data = {
+        "id": str(uuid.uuid4()),
+        "to_number": to_number,
+        "message": message[:200] + "..." if len(message) > 200 else message,
+        "status": "pending",
+        "error": None,
+        "message_sid": None,
+        "timestamp": get_ist_now().isoformat()
+    }
+    
     if not settings or not settings.get("twilio_account_sid"):
         logger.warning("WhatsApp not configured - missing twilio_account_sid")
+        log_data["status"] = "failed"
+        log_data["error"] = "Twilio Account SID not configured"
+        if log_to_db:
+            await db.whatsapp_logs.insert_one(log_data)
         return False
     
     if not settings.get("twilio_auth_token"):
         logger.warning("WhatsApp not configured - missing twilio_auth_token")
+        log_data["status"] = "failed"
+        log_data["error"] = "Twilio Auth Token not configured"
+        if log_to_db:
+            await db.whatsapp_logs.insert_one(log_data)
         return False
     
     if not settings.get("twilio_whatsapp_number"):
         logger.warning("WhatsApp not configured - missing twilio_whatsapp_number")
+        log_data["status"] = "failed"
+        log_data["error"] = "WhatsApp number not configured"
+        if log_to_db:
+            await db.whatsapp_logs.insert_one(log_data)
         return False
     
     # Clean phone number - remove spaces, dashes, and ensure E.164 format
-    to_number = to_number.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+    to_number_clean = to_number.replace(' ', '').replace('-', '').replace('(', '').replace(')', '').replace('\u202a', '').replace('\u202c', '')
     
     # Ensure number starts with +
-    if not to_number.startswith('+'):
-        to_number = '+' + to_number.lstrip('+')
+    if not to_number_clean.startswith('+'):
+        to_number_clean = '+' + to_number_clean.lstrip('+')
+    
+    log_data["to_number"] = to_number_clean
     
     try:
         if settings.get("use_sandbox") and settings.get("sandbox_url"):
@@ -973,35 +999,52 @@ async def send_whatsapp(to_number: str, message: str):
                 response = await client.post(
                     settings["sandbox_url"],
                     data={
-                        "To": f"whatsapp:{to_number}",
+                        "To": f"whatsapp:{to_number_clean}",
                         "Body": message
                     }
                 )
                 logger.info(f"Sandbox response: {response.status_code}")
+                if response.status_code == 200:
+                    log_data["status"] = "sent"
+                    log_data["message_sid"] = "sandbox"
+                else:
+                    log_data["status"] = "failed"
+                    log_data["error"] = f"Sandbox returned status {response.status_code}"
+                if log_to_db:
+                    await db.whatsapp_logs.insert_one(log_data)
                 return response.status_code == 200
         else:
             # Use Twilio API directly
             from twilio.rest import Client
             twilio_client = Client(settings["twilio_account_sid"], settings["twilio_auth_token"])
             
-            # Clean the from number as well
-            from_number = settings["twilio_whatsapp_number"].replace(' ', '').replace('-', '')
+            # Clean the from number as well - remove invisible Unicode characters
+            from_number = settings["twilio_whatsapp_number"].replace(' ', '').replace('-', '').replace('\u202a', '').replace('\u202c', '')
             if not from_number.startswith('+'):
                 from_number = '+' + from_number
             
-            logger.info(f"Sending WhatsApp from {from_number} to {to_number}")
+            logger.info(f"Sending WhatsApp from {from_number} to {to_number_clean}")
             
             msg = twilio_client.messages.create(
                 from_=f'whatsapp:{from_number}',
                 body=message,
-                to=f'whatsapp:{to_number}'
+                to=f'whatsapp:{to_number_clean}'
             )
             logger.info(f"WhatsApp message sent: {msg.sid}")
+            log_data["status"] = "sent"
+            log_data["message_sid"] = msg.sid
+            if log_to_db:
+                await db.whatsapp_logs.insert_one(log_data)
             return True
     except Exception as e:
-        logger.error(f"WhatsApp send failed: {str(e)}")
+        error_msg = str(e)
+        logger.error(f"WhatsApp send failed: {error_msg}")
         import traceback
         logger.error(f"WhatsApp traceback: {traceback.format_exc()}")
+        log_data["status"] = "failed"
+        log_data["error"] = error_msg
+        if log_to_db:
+            await db.whatsapp_logs.insert_one(log_data)
         return False
 
 async def send_notification(user: dict, template_type: str, variables: dict, background_tasks: BackgroundTasks = None):
