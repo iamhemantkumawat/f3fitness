@@ -25,13 +25,13 @@ export const Login = () => {
   const navigateByRole = (role) => {
     switch (role) {
       case 'admin':
-        navigate('/admin');
+        navigate('/dashboard/admin');
         break;
       case 'trainer':
-        navigate('/trainer');
+        navigate('/dashboard/trainer');
         break;
       default:
-        navigate('/member');
+        navigate('/dashboard/member');
     }
   };
 
