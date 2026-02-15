@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { invoiceAPI } from '../lib/api';
 import { formatCurrency } from '../lib/utils';
 import { Button } from './ui/button';
-import { Download, Printer, X } from 'lucide-react';
+import { Download, Printer, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 // F3 Fitness Logo URL
@@ -11,6 +11,7 @@ const F3_LOGO_URL = "https://customer-assets.emergentagent.com/job_f3-fitness-gy
 export const InvoiceModal = ({ isOpen, onClose, paymentId }) => {
   const [invoice, setInvoice] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     if (isOpen && paymentId) {
@@ -30,6 +31,50 @@ export const InvoiceModal = ({ isOpen, onClose, paymentId }) => {
     }
   };
 
+  const handleDownloadPDF = async () => {
+    try {
+      setDownloading(true);
+      const response = await invoiceAPI.downloadPDF(paymentId);
+      
+      // Create blob from response
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create download link
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `F3_Invoice_${invoice?.invoice?.receipt_no || paymentId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      toast.success('Invoice downloaded successfully');
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error('Failed to download invoice');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handlePrint = () => {
+    // Create print-optimized content
+    const printContent = generatePrintableHTML();
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      // Wait for images to load before printing
+      printWindow.onload = () => {
+        setTimeout(() => {
+          printWindow.print();
+        }, 500);
+      };
+    }
+  };
+
   const generatePrintableHTML = () => {
     if (!invoice) return '';
     
@@ -43,46 +88,43 @@ export const InvoiceModal = ({ isOpen, onClose, paymentId }) => {
       <head>
         <meta charset="UTF-8">
         <title>Invoice - ${invoice.invoice?.receipt_no || 'F3 Fitness'}</title>
-        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
         <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: 'Poppins', Arial, sans-serif; background: #fff; padding: 20px; max-width: 800px; margin: 0 auto; }
-          .invoice-container { border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
-          .header { background: linear-gradient(135deg, #0ea5b7, #0b7285); padding: 30px; text-align: center; color: white; }
-          .header img { max-width: 150px; margin-bottom: 10px; filter: brightness(0) invert(1); }
-          .header h1 { font-size: 24px; font-weight: 700; letter-spacing: 2px; margin: 10px 0 5px 0; }
-          .header p { font-size: 12px; opacity: 0.9; }
-          .receipt-badge { background: rgba(255,255,255,0.2); display: inline-block; padding: 8px 20px; border-radius: 20px; margin-top: 15px; font-weight: 600; }
-          .content { padding: 30px; }
-          .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
-          .info-box { background: #f8fafc; padding: 20px; border-radius: 10px; border-left: 4px solid #0ea5b7; }
-          .info-box h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 12px; }
-          .info-box p { font-size: 14px; color: #334155; margin: 4px 0; }
-          .info-box .highlight { color: #0ea5b7; font-weight: 600; }
-          table { width: 100%; border-collapse: collapse; margin: 25px 0; }
-          th { background: #0ea5b7; color: white; padding: 14px; text-align: left; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
-          td { padding: 14px; border-bottom: 1px solid #e5e7eb; font-size: 14px; color: #334155; }
-          .total-row td { background: #f0f9ff; font-weight: 700; font-size: 16px; color: #0b7285; }
-          .footer { background: #f8fafc; padding: 25px 30px; border-top: 1px solid #e5e7eb; text-align: center; }
-          .footer-title { font-size: 14px; font-weight: 600; color: #334155; margin-bottom: 10px; }
-          .footer-address { font-size: 12px; color: #64748b; line-height: 1.6; max-width: 450px; margin: 0 auto 15px auto; }
-          .footer-contact { font-size: 12px; color: #64748b; }
-          .footer-contact a { color: #0ea5b7; text-decoration: none; }
-          .footer-hours { font-size: 11px; color: #94a3b8; margin-top: 10px; }
-          .footer-social { margin-top: 15px; font-size: 12px; color: #0ea5b7; font-weight: 500; }
-          .thank-you { text-align: center; padding: 20px; background: linear-gradient(135deg, #f0f9ff, #e0f2fe); margin: 20px 0; border-radius: 10px; }
-          .thank-you p { color: #0b7285; font-size: 14px; }
-          .thank-you .motto { font-weight: 600; margin-top: 5px; }
-          @media print { 
-            body { padding: 0; } 
-            .invoice-container { border: none; }
+          @page { size: A4; margin: 15mm; }
+          @media print {
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .no-print { display: none !important; }
           }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: Arial, Helvetica, sans-serif; background: #fff; font-size: 12px; line-height: 1.4; }
+          .invoice-container { max-width: 100%; border: 1px solid #ddd; }
+          .header { background: #0ea5b7; padding: 25px; text-align: center; color: white; }
+          .header h1 { font-size: 22px; font-weight: 700; letter-spacing: 2px; margin-bottom: 5px; }
+          .header p { font-size: 11px; opacity: 0.9; }
+          .receipt-badge { background: rgba(255,255,255,0.25); display: inline-block; padding: 8px 18px; border-radius: 20px; margin-top: 12px; font-weight: 600; font-size: 12px; }
+          .content { padding: 25px; }
+          .info-grid { display: table; width: 100%; margin-bottom: 20px; }
+          .info-box { display: table-cell; width: 50%; vertical-align: top; background: #f8f9fa; padding: 15px; border-left: 3px solid #0ea5b7; }
+          .info-box:last-child { text-align: right; margin-left: 15px; }
+          .info-box h3 { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #666; margin-bottom: 10px; }
+          .info-box p { font-size: 12px; color: #333; margin: 3px 0; }
+          .info-box .highlight { color: #0ea5b7; font-weight: 600; }
+          table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+          th { background: #0ea5b7; color: white; padding: 12px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+          td { padding: 12px; border-bottom: 1px solid #e5e5e5; font-size: 12px; color: #333; }
+          .total-row td { background: #e8f7f8; font-weight: 700; font-size: 14px; color: #0b7285; }
+          .footer { background: #f8f9fa; padding: 20px; border-top: 1px solid #ddd; text-align: center; }
+          .footer-title { font-size: 13px; font-weight: 600; color: #333; margin-bottom: 8px; }
+          .footer-address { font-size: 11px; color: #666; line-height: 1.6; margin-bottom: 10px; }
+          .footer-contact { font-size: 11px; color: #666; }
+          .footer-hours { font-size: 10px; color: #999; margin-top: 8px; }
+          .thank-you { text-align: center; padding: 15px; background: #e8f7f8; margin: 15px 0; }
+          .thank-you p { color: #0b7285; font-size: 12px; }
+          .thank-you .motto { font-weight: 600; margin-top: 5px; }
         </style>
       </head>
       <body>
         <div class="invoice-container">
           <div class="header">
-            <img src="${F3_LOGO_URL}" alt="F3 Fitness" />
             <h1>F3 FITNESS HEALTH CLUB</h1>
             <p>Your Fitness Journey Partner</p>
             <div class="receipt-badge">Receipt: ${invoice.invoice?.receipt_no || 'N/A'}</div>
@@ -101,7 +143,7 @@ export const InvoiceModal = ({ isOpen, onClose, paymentId }) => {
                 <h3>Invoice Details</h3>
                 <p><strong>Invoice #:</strong> <span class="highlight">${invoice.invoice?.receipt_no || 'N/A'}</span></p>
                 <p><strong>Date:</strong> ${paymentDate}</p>
-                <p><strong>Payment Method:</strong> ${invoice.invoice?.payment_method || 'Cash'}</p>
+                <p><strong>Payment Method:</strong> ${(invoice.invoice?.payment_method || 'Cash').charAt(0).toUpperCase() + (invoice.invoice?.payment_method || 'Cash').slice(1)}</p>
               </div>
             </div>
             
@@ -117,7 +159,7 @@ export const InvoiceModal = ({ isOpen, onClose, paymentId }) => {
                   <tr>
                     <td>
                       <strong>${invoice.membership.plan_name || 'Membership Plan'}</strong><br>
-                      <small style="color: #64748b;">
+                      <small style="color: #666;">
                         ${invoice.membership.start_date?.split('T')[0] || ''} to ${invoice.membership.end_date?.split('T')[0] || ''}
                         ${invoice.membership.duration_days ? ` (${invoice.membership.duration_days} days)` : ''}
                       </small>
@@ -145,7 +187,7 @@ export const InvoiceModal = ({ isOpen, onClose, paymentId }) => {
             
             <div class="thank-you">
               <p>Thank you for being a valued member of F3 Fitness Health Club!</p>
-              <p class="motto">Transform Your Body, Transform Your Life! 💪</p>
+              <p class="motto">Transform Your Body, Transform Your Life!</p>
             </div>
           </div>
           
@@ -156,38 +198,16 @@ export const InvoiceModal = ({ isOpen, onClose, paymentId }) => {
               Sector 4, Vidyadhar Nagar, Jaipur, Rajasthan 302039
             </div>
             <div class="footer-contact">
-              📞 <a href="tel:+917230052193">072300 52193</a> | 
-              ✉️ <a href="mailto:info@f3fitness.in">info@f3fitness.in</a>
+              Phone: 072300 52193 | Email: info@f3fitness.in
             </div>
             <div class="footer-hours">
-              ⏰ Mon-Sat: 5:00 AM - 10:00 PM | Sun: 6:00 AM - 12:00 PM
-            </div>
-            <div class="footer-social">
-              📸 Instagram: @f3fitnessclub
+              Mon-Sat: 5:00 AM - 10:00 PM | Sun: 6:00 AM - 12:00 PM | Instagram: @f3fitnessclub
             </div>
           </div>
         </div>
       </body>
       </html>
     `;
-  };
-
-  const handlePrint = () => {
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(generatePrintableHTML());
-    printWindow.document.close();
-    setTimeout(() => {
-      printWindow.print();
-    }, 250);
-  };
-
-  const handleDownload = () => {
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(generatePrintableHTML());
-    printWindow.document.close();
-    setTimeout(() => {
-      printWindow.print();
-    }, 250);
   };
 
   if (!isOpen) return null;
@@ -208,8 +228,19 @@ export const InvoiceModal = ({ isOpen, onClose, paymentId }) => {
             <Button variant="outline" size="sm" onClick={handlePrint} data-testid="print-invoice-btn">
               <Printer size={16} className="mr-2" /> Print
             </Button>
-            <Button variant="default" size="sm" onClick={handleDownload} data-testid="download-invoice-btn">
-              <Download size={16} className="mr-2" /> Download PDF
+            <Button 
+              variant="default" 
+              size="sm" 
+              onClick={handleDownloadPDF} 
+              disabled={downloading}
+              data-testid="download-invoice-btn"
+            >
+              {downloading ? (
+                <Loader2 size={16} className="mr-2 animate-spin" />
+              ) : (
+                <Download size={16} className="mr-2" />
+              )}
+              Download PDF
             </Button>
             <Button variant="ghost" size="icon" onClick={onClose}>
               <X size={18} />
@@ -302,7 +333,7 @@ export const InvoiceModal = ({ isOpen, onClose, paymentId }) => {
             {/* Thank You */}
             <div className="text-center p-4 bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg mb-6">
               <p className="text-muted-foreground">Thank you for being a valued member!</p>
-              <p className="font-semibold text-primary mt-1">Transform Your Body, Transform Your Life! 💪</p>
+              <p className="font-semibold text-primary mt-1">Transform Your Body, Transform Your Life!</p>
             </div>
 
             {/* Footer */}
@@ -312,10 +343,10 @@ export const InvoiceModal = ({ isOpen, onClose, paymentId }) => {
                 4th Avenue Plot No 4R-B, Mode, near Mandir Marg, Sector 4, Vidyadhar Nagar, Jaipur, Rajasthan 302039
               </p>
               <p className="text-muted-foreground text-xs mt-1">
-                📞 072300 52193 | ✉️ info@f3fitness.in | 📸 @f3fitnessclub
+                Phone: 072300 52193 | Email: info@f3fitness.in | Instagram: @f3fitnessclub
               </p>
               <p className="text-muted-foreground text-xs mt-1">
-                ⏰ Mon-Sat: 5:00 AM - 10:00 PM | Sun: 6:00 AM - 12:00 PM
+                Mon-Sat: 5:00 AM - 10:00 PM | Sun: 6:00 AM - 12:00 PM
               </p>
             </div>
           </div>
