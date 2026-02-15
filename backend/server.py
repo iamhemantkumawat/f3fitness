@@ -1909,12 +1909,17 @@ async def create_membership(membership: MembershipCreate, background_tasks: Back
         sort=[("end_date", -1)]
     )
     
-    if existing:
+    # Use custom dates if provided (for importing existing members)
+    if membership.custom_start_date and membership.custom_end_date:
+        # Parse custom dates
+        start_date = datetime.fromisoformat(membership.custom_start_date)
+        end_date = datetime.fromisoformat(membership.custom_end_date)
+    elif existing:
         start_date = datetime.fromisoformat(existing["end_date"])
+        end_date = start_date + timedelta(days=plan["duration_days"])
     else:
         start_date = get_ist_now()
-    
-    end_date = start_date + timedelta(days=plan["duration_days"])
+        end_date = start_date + timedelta(days=plan["duration_days"])
     
     final_price = plan["price"] - membership.discount_amount
     amount_paid = membership.initial_payment
