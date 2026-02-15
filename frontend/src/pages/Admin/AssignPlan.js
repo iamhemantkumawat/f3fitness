@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/ca
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import { CreditCard, ArrowRight, CheckCircle } from 'lucide-react';
+import { CreditCard, ArrowRight, CheckCircle, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const AssignPlan = () => {
@@ -25,6 +25,8 @@ export const AssignPlan = () => {
   const [useCustomDates, setUseCustomDates] = useState(false);
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
+  // Payment date for existing members
+  const [paymentDate, setPaymentDate] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -44,6 +46,35 @@ export const AssignPlan = () => {
       setLoading(false);
     }
   };
+
+  // Auto-calculate end date when start date changes
+  const handleStartDateChange = (value) => {
+    setCustomStartDate(value);
+    if (value && selectedPlan) {
+      const start = new Date(value);
+      start.setDate(start.getDate() + selectedPlan.duration_days);
+      setCustomEndDate(start.toISOString().split('T')[0]);
+    }
+  };
+
+  // Auto-calculate start date when end date changes
+  const handleEndDateChange = (value) => {
+    setCustomEndDate(value);
+    if (value && selectedPlan) {
+      const end = new Date(value);
+      end.setDate(end.getDate() - selectedPlan.duration_days);
+      setCustomStartDate(end.toISOString().split('T')[0]);
+    }
+  };
+
+  // When plan changes, recalculate dates if custom dates enabled
+  useEffect(() => {
+    if (useCustomDates && selectedPlan && customStartDate) {
+      const start = new Date(customStartDate);
+      start.setDate(start.getDate() + selectedPlan.duration_days);
+      setCustomEndDate(start.toISOString().split('T')[0]);
+    }
+  }, [selectedPlan]);
 
   const discountAmount = parseFloat(discount) || 0;
   const initialPaymentAmount = parseFloat(initialPayment) || 0;
