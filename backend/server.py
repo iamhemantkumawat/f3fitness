@@ -27,6 +27,7 @@ import json
 import asyncio
 from contextlib import asynccontextmanager
 from io import BytesIO
+from logo_base64 import F3_LOGO_BASE64
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
