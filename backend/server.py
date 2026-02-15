@@ -130,7 +130,7 @@ class UserUpdate(BaseModel):
     is_visible_on_website: Optional[bool] = None
 
 class ForgotPasswordRequest(BaseModel):
-    email: EmailStr
+    email: Optional[str] = None  # Can be email or phone number
 
 class ResetPasswordRequest(BaseModel):
     token: Optional[str] = None
