@@ -1418,46 +1418,28 @@ async def create_user(user: UserCreate, role: str = "member", current_user: dict
     
     await db.users.insert_one(user_doc)
     
-    # Send welcome notification with credentials
+    # Send welcome notification with credentials using template system
     if background_tasks:
-        # WhatsApp message
+        template_vars = {
+            "name": user.name,
+            "member_id": member_id,
+            "email": user.email,
+            "password": user.password
+        }
+        
+        # WhatsApp message using template
         if user.phone_number:
             full_phone = f"{user.country_code}{user.phone_number.lstrip('0')}"
-            whatsapp_msg = f"""🏋️ Welcome to F3 Fitness Gym!
-
-Hello {user.name},
-
-Your account has been created successfully!
-
-📋 Your Login Details:
-Member ID: {member_id}
-Email: {user.email}
-Password: {user.password}
-
-Login at: https://f3fitness.in/login
-
-Transform Your Body, Transform Your Life! 💪"""
+            whatsapp_template = await get_template("new_user_credentials", "whatsapp")
+            whatsapp_msg = replace_template_vars(whatsapp_template.get("content", ""), template_vars)
             background_tasks.add_task(send_whatsapp, full_phone, whatsapp_msg)
         
-        # Email notification
-        email_body = f"""
-        <div style="font-family: Arial; max-width: 600px; margin: 0 auto; background: #09090b; color: #fff; padding: 40px;">
-            <img src="https://customer-assets.emergentagent.com/job_f3-fitness-gym/artifacts/0x0pk4uv_Untitled%20%28500%20x%20300%20px%29%20%282%29.png" style="width: 150px; margin-bottom: 20px;" />
-            <h1 style="color: #06b6d4;">Welcome to F3 Fitness Gym!</h1>
-            <p>Hello {user.name},</p>
-            <p>Your account has been created successfully. Here are your login credentials:</p>
-            <div style="background: #18181b; padding: 20px; margin: 20px 0; border-radius: 8px;">
-                <p style="margin: 5px 0;"><strong>Member ID:</strong> <span style="color: #06b6d4;">{member_id}</span></p>
-                <p style="margin: 5px 0;"><strong>Email:</strong> {user.email}</p>
-                <p style="margin: 5px 0;"><strong>Password:</strong> <code style="color: #f97316;">{user.password}</code></p>
-            </div>
-            <p style="color: #71717a;">We recommend changing your password after your first login.</p>
-            <a href="https://f3fitness.in/login" style="display: inline-block; background: #06b6d4; color: #000; padding: 12px 24px; text-decoration: none; font-weight: bold; margin-top: 10px; border-radius: 4px;">Login Now</a>
-            <hr style="border: none; border-top: 1px solid #27272a; margin: 30px 0;" />
-            <p style="color: #71717a; font-size: 14px;">Transform Your Body, Transform Your Life! 💪</p>
-        </div>
-        """
-        background_tasks.add_task(send_email, user.email, "Welcome to F3 Fitness Gym - Your Login Details", email_body)
+        # Email notification using template
+        email_template = await get_template("new_user_credentials", "email")
+        subject = replace_template_vars(email_template.get("subject", "Welcome to F3 Fitness Gym"), template_vars)
+        content = replace_template_vars(email_template.get("content", ""), template_vars)
+        email_body = wrap_email_in_template(content, subject)
+        background_tasks.add_task(send_email, user.email, subject, email_body)
         
         # Log activity
         await log_activity(current_user["id"], "create_member", f"Created new {role}: {user.name} ({member_id})")
