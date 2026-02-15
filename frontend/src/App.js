@@ -22,6 +22,7 @@ import { AdminProfile, MemberProfile, TrainerProfile } from './pages/Admin/Profi
 import { WhatsAppBroadcast, EmailBroadcast } from './pages/Admin/Broadcast';
 import { EmailTemplatesSettings } from './pages/Admin/EmailTemplates';
 import { WhatsAppTemplatesSettings } from './pages/Admin/WhatsAppTemplates';
+import { WhatsAppLogsSettings } from './pages/Admin/WhatsAppLogs';
 
 // Member Pages
 import { MemberDashboard, MemberPlans } from './pages/Member/Dashboard';
