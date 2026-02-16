@@ -340,6 +340,7 @@ export const WhatsAppLogsSettings = () => {
         </Card>
       )}
     </div>
+    </DashboardLayout>
   );
 };
 
