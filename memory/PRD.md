@@ -33,6 +33,11 @@ Build a complete gym management webapp for "F3 Fitness Gym" from Jaipur with:
 
 ## What's Been Implemented (February 2026)
 
+### Bug Fixes - Session 13 (February 16, 2026)
+- ✅ **WhatsApp Logs Time Display Fixed** - Time was showing incorrect due to double timezone conversion; now parses ISO strings directly without Date object conversion
+- ✅ **Forgot Password via Phone Number** - Confirmed working; users can enter phone number (10 digits) in the "Email or Phone" field to receive WhatsApp OTP
+- ✅ **PDF Invoice Logo Fixed** - Logo now hardcoded as base64 in `logo_base64.py` using reportlab for PDF generation (replaced weasyprint which had system library issues)
+
 ### Admin Member Management - Session 5
 - ✅ **Plan & Expiry Display** - Members list now shows active plan name and expiry date
 - ✅ **Avatar Thumbnails** - Profile photos displayed, with default male/female icons for those without
