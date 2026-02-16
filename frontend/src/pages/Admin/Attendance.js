@@ -483,9 +483,18 @@ export const AttendanceHistory = () => {
                             year: 'numeric'
                           })}
                         </span>
+                        {record.marked_by === 'self' ? (
+                          <Badge variant="outline" className="text-xs bg-green-500/10 text-green-500 border-green-500/30">
+                            Self
+                          </Badge>
+                        ) : record.marked_by === 'admin' ? (
+                          <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-500 border-blue-500/30">
+                            Admin
+                          </Badge>
+                        ) : null}
                       </div>
-                      <span className="text-muted-foreground">
-                        {record.check_in_time?.split('T')[1]?.substring(0, 5) || '--:--'}
+                      <span className="text-primary font-mono">
+                        {formatTime12hr(record.check_in_time)}
                       </span>
                     </div>
                   ))}
