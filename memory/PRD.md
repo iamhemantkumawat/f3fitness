@@ -33,6 +33,14 @@ Build a complete gym management webapp for "F3 Fitness Gym" from Jaipur with:
 
 ## What's Been Implemented (February 2026)
 
+### New Features & Bug Fixes - Session 14 (February 16, 2026)
+- ✅ **Receptionist Account Type** - New role that only has "Mark Attendance" access, designed for reception desk iPad/kiosk
+- ✅ **Role Selection in Create Member** - Admin can now select Member, Trainer, Receptionist, or Admin when creating new accounts
+- ✅ **Light Theme UI Fixes** - Fixed trainer edit dialog and attendance search dropdown colors for light mode
+- ✅ **Invoice Due Amount** - Invoices now show "Balance Due" in red if there's pending payment
+- ✅ **WhatsApp Logs Sidebar** - Page now shows sidebar menu (using DashboardLayout)
+- ✅ **Auth Session Persistence Fix** - Improved error handling to prevent logout on network errors, only clears on 401/403
+
 ### Bug Fixes - Session 13 (February 16, 2026)
 - ✅ **WhatsApp Logs Time Display Fixed** - Time was showing incorrect due to double timezone conversion; now parses ISO strings directly without Date object conversion
 - ✅ **Forgot Password via Phone Number** - Confirmed working; users can enter phone number (10 digits) in the "Email or Phone" field to receive WhatsApp OTP
