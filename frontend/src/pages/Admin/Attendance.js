@@ -426,7 +426,7 @@ export const AttendanceHistory = () => {
             onChange={(e) => handleSearch(e.target.value)}
           />
           {searchResults.length > 0 && (
-            <div className="absolute z-10 w-full mt-2 bg-zinc-900 border border-border rounded-lg overflow-hidden">
+            <div className="absolute z-10 w-full mt-2 bg-card border border-border rounded-lg overflow-hidden">
               {searchResults.map((user) => (
                 <button
                   key={user.id}
