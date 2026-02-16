@@ -1172,6 +1172,25 @@ export const CreateMember = () => {
                   </select>
                 </div>
                 <div>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Account Role</Label>
+                  <select
+                    data-testid="input-role"
+                    className="input-dark mt-2 w-full h-10 px-3 rounded-md bg-muted/50 border border-border"
+                    value={formData.role}
+                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  >
+                    <option value="member">Member</option>
+                    <option value="trainer">Trainer</option>
+                    <option value="receptionist">Receptionist (Attendance Only)</option>
+                    <option value="admin">Admin (Full Access)</option>
+                  </select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formData.role === 'receptionist' ? 'Can only mark attendance - for reception desk' : 
+                     formData.role === 'admin' ? 'Full admin access to all features' :
+                     formData.role === 'trainer' ? 'Access to trainer dashboard and clients' : 'Regular gym member'}
+                  </p>
+                </div>
+                <div>
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">Date of Birth</Label>
                   <Input
                     data-testid="input-dob"
