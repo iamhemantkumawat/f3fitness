@@ -2313,8 +2313,13 @@ async def get_membership_payments(membership_id: str, current_user: dict = Depen
 
 @api_router.get("/invoices/{payment_id}/pdf")
 async def get_invoice_pdf(payment_id: str, current_user: dict = Depends(get_current_user)):
-    """Generate and download PDF invoice"""
-    from weasyprint import HTML, CSS
+    """Generate and download PDF invoice using reportlab"""
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import inch, mm
+    from reportlab.lib.colors import HexColor
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
     
     payment = await db.payments.find_one({"id": payment_id}, {"_id": 0})
     if not payment:
@@ -2345,74 +2350,72 @@ async def get_invoice_pdf(payment_id: str, current_user: dict = Depends(get_curr
     else:
         payment_date_formatted = "N/A"
     
-    # Build HTML for PDF - optimized for single page
-    html_content = f'''<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<style>
-@page {{ size: A4; margin: 15mm; }}
-* {{ margin: 0; padding: 0; box-sizing: border-box; }}
-body {{ font-family: Arial, sans-serif; font-size: 11px; line-height: 1.4; color: #333; }}
-.container {{ max-width: 100%; }}
-.header {{ background: linear-gradient(135deg, #0ea5b7, #0b7285); padding: 20px; text-align: center; color: white; border-radius: 8px 8px 0 0; }}
-.header h1 {{ font-size: 20px; font-weight: 700; letter-spacing: 1px; margin-bottom: 3px; }}
-.header p {{ font-size: 10px; opacity: 0.9; }}
-.receipt-badge {{ background: rgba(255,255,255,0.2); display: inline-block; padding: 6px 16px; border-radius: 15px; margin-top: 10px; font-weight: 600; font-size: 11px; }}
-.content {{ padding: 20px; }}
-.info-grid {{ display: flex; justify-content: space-between; gap: 15px; margin-bottom: 15px; }}
-.info-box {{ flex: 1; background: #f8fafc; padding: 12px; border-radius: 6px; border-left: 3px solid #0ea5b7; }}
-.info-box h3 {{ font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 8px; }}
-.info-box p {{ font-size: 11px; color: #334155; margin: 2px 0; }}
-.info-box .highlight {{ color: #0ea5b7; font-weight: 600; }}
-table {{ width: 100%; border-collapse: collapse; margin: 15px 0; }}
-th {{ background: #0ea5b7; color: white; padding: 10px; text-align: left; font-size: 10px; text-transform: uppercase; }}
-td {{ padding: 10px; border-bottom: 1px solid #e5e7eb; font-size: 11px; color: #334155; }}
-.total-row td {{ background: #f0f9ff; font-weight: 700; font-size: 13px; color: #0b7285; }}
-.thank-you {{ text-align: center; padding: 15px; background: linear-gradient(135deg, #f0f9ff, #e0f2fe); border-radius: 6px; margin: 15px 0; }}
-.thank-you p {{ color: #0b7285; font-size: 11px; }}
-.thank-you .motto {{ font-weight: 600; margin-top: 3px; }}
-.footer {{ background: #f8fafc; padding: 15px; border-top: 1px solid #e5e7eb; text-align: center; border-radius: 0 0 8px 8px; }}
-.footer-title {{ font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 5px; }}
-.footer-address {{ font-size: 9px; color: #64748b; line-height: 1.5; margin-bottom: 8px; }}
-.footer-contact {{ font-size: 9px; color: #64748b; }}
-.footer-hours {{ font-size: 8px; color: #94a3b8; margin-top: 5px; }}
-</style>
-</head>
-<body>
-<div class="container">
-  <div class="header">
-    <img src="data:image/png;base64,{F3_LOGO_BASE64}" alt="F3 Fitness Logo" style="max-width: 120px; margin-bottom: 10px; filter: invert(1);" />
-    <h1>F3 FITNESS HEALTH CLUB</h1>
-    <p>Your Fitness Journey Partner</p>
-    <div class="receipt-badge">Receipt: {receipt_no}</div>
-  </div>
-  
-  <div class="content">
-    <div class="info-grid">
-      <div class="info-box">
-        <h3>Billed To</h3>
-        <p><strong>{user.get("name", "N/A") if user else "N/A"}</strong></p>
-        <p>Member ID: <span class="highlight">{user.get("member_id", "N/A") if user else "N/A"}</span></p>
-        <p>{user.get("phone_number", "") if user else ""}</p>
-        <p>{user.get("email", "") if user else ""}</p>
-      </div>
-      <div class="info-box" style="text-align: right;">
-        <h3>Invoice Details</h3>
-        <p><strong>Invoice #:</strong> <span class="highlight">{receipt_no}</span></p>
-        <p><strong>Date:</strong> {payment_date_formatted}</p>
-        <p><strong>Payment Mode:</strong> {payment.get("payment_method", "Cash").title()}</p>
-      </div>
-    </div>
+    # Create PDF buffer
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=20*mm, leftMargin=20*mm, topMargin=20*mm, bottomMargin=20*mm)
     
-    <table>
-      <thead>
-        <tr>
-          <th>Description</th>
-          <th style="text-align: right;">Amount</th>
-        </tr>
-      </thead>
-      <tbody>'''
+    # Define colors
+    primary_color = HexColor('#0ea5b7')
+    dark_color = HexColor('#0b7285')
+    gray_color = HexColor('#64748b')
+    light_bg = HexColor('#f8fafc')
+    
+    # Styles
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle('Title', parent=styles['Heading1'], fontSize=20, textColor=primary_color, alignment=TA_CENTER, spaceAfter=5)
+    subtitle_style = ParagraphStyle('Subtitle', parent=styles['Normal'], fontSize=10, textColor=gray_color, alignment=TA_CENTER)
+    heading_style = ParagraphStyle('Heading', parent=styles['Heading2'], fontSize=12, textColor=dark_color, spaceAfter=10)
+    normal_style = ParagraphStyle('Normal', parent=styles['Normal'], fontSize=10, textColor=HexColor('#334155'))
+    bold_style = ParagraphStyle('Bold', parent=styles['Normal'], fontSize=10, textColor=HexColor('#334155'), fontName='Helvetica-Bold')
+    
+    elements = []
+    
+    # Add logo from base64
+    try:
+        import base64
+        logo_data = base64.b64decode(F3_LOGO_BASE64)
+        logo_buffer = BytesIO(logo_data)
+        logo_img = RLImage(logo_buffer, width=120, height=72)
+        elements.append(logo_img)
+    except Exception as e:
+        logger.error(f"Error adding logo: {e}")
+    
+    # Header
+    elements.append(Spacer(1, 10))
+    elements.append(Paragraph("F3 FITNESS HEALTH CLUB", title_style))
+    elements.append(Paragraph("Your Fitness Journey Partner", subtitle_style))
+    elements.append(Spacer(1, 5))
+    elements.append(Paragraph(f"<b>Receipt: {receipt_no}</b>", ParagraphStyle('Receipt', parent=styles['Normal'], fontSize=12, textColor=primary_color, alignment=TA_CENTER)))
+    elements.append(Spacer(1, 20))
+    
+    # Info section
+    user_name = user.get("name", "N/A") if user else "N/A"
+    user_member_id = user.get("member_id", "N/A") if user else "N/A"
+    user_phone = user.get("phone_number", "") if user else ""
+    user_email = user.get("email", "") if user else ""
+    
+    info_data = [
+        [Paragraph("<b>BILLED TO</b>", ParagraphStyle('H', fontSize=9, textColor=gray_color)), 
+         Paragraph("<b>INVOICE DETAILS</b>", ParagraphStyle('H', fontSize=9, textColor=gray_color, alignment=TA_RIGHT))],
+        [Paragraph(f"<b>{user_name}</b>", bold_style), 
+         Paragraph(f"<b>Invoice #:</b> {receipt_no}", ParagraphStyle('R', fontSize=10, alignment=TA_RIGHT))],
+        [Paragraph(f"Member ID: {user_member_id}", normal_style), 
+         Paragraph(f"<b>Date:</b> {payment_date_formatted}", ParagraphStyle('R', fontSize=10, alignment=TA_RIGHT))],
+        [Paragraph(f"{user_phone}", normal_style), 
+         Paragraph(f"<b>Payment Mode:</b> {payment.get('payment_method', 'Cash').title()}", ParagraphStyle('R', fontSize=10, alignment=TA_RIGHT))],
+        [Paragraph(f"{user_email}", normal_style), ""],
+    ]
+    info_table = Table(info_data, colWidths=[250, 250])
+    info_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('TOPPADDING', (0, 0), (-1, -1), 3),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+    ]))
+    elements.append(info_table)
+    elements.append(Spacer(1, 20))
+    
+    # Invoice items table
+    header_style = ParagraphStyle('Header', fontSize=10, textColor=HexColor('#FFFFFF'), fontName='Helvetica-Bold')
     
     if membership and plan:
         start_date = membership.get("start_date", "")[:10] if membership.get("start_date") else ""
@@ -2420,67 +2423,68 @@ td {{ padding: 10px; border-bottom: 1px solid #e5e7eb; font-size: 11px; color: #
         original_price = membership.get("original_price", 0)
         discount = membership.get("discount_amount", 0)
         
-        html_content += f'''
-        <tr>
-          <td>
-            <strong>{plan.get("name", "Membership Plan")}</strong><br>
-            <small style="color: #64748b;">{start_date} to {end_date} ({plan.get("duration_days", "")} days)</small>
-          </td>
-          <td style="text-align: right;">₹{original_price:,.0f}</td>
-        </tr>'''
+        table_data = [
+            [Paragraph("Description", header_style), Paragraph("Amount", header_style)],
+            [Paragraph(f"<b>{plan.get('name', 'Membership Plan')}</b><br/><font size=8 color='#64748b'>{start_date} to {end_date} ({plan.get('duration_days', '')} days)</font>", normal_style),
+             Paragraph(f"Rs. {original_price:,.0f}", ParagraphStyle('R', fontSize=10, alignment=TA_RIGHT))],
+        ]
         
         if discount > 0:
-            html_content += f'''
-        <tr>
-          <td style="color: #10b981;">Discount Applied</td>
-          <td style="text-align: right; color: #10b981;">-₹{discount:,.0f}</td>
-        </tr>'''
+            table_data.append([
+                Paragraph("<font color='#10b981'>Discount Applied</font>", normal_style),
+                Paragraph(f"<font color='#10b981'>-Rs. {discount:,.0f}</font>", ParagraphStyle('R', fontSize=10, alignment=TA_RIGHT))
+            ])
     else:
-        html_content += f'''
-        <tr>
-          <td>{payment.get("notes", "Gym Payment")}</td>
-          <td style="text-align: right;">₹{payment.get("amount_paid", 0):,.0f}</td>
-        </tr>'''
+        table_data = [
+            [Paragraph("Description", header_style), Paragraph("Amount", header_style)],
+            [Paragraph(payment.get("notes", "Gym Payment"), normal_style),
+             Paragraph(f"Rs. {payment.get('amount_paid', 0):,.0f}", ParagraphStyle('R', fontSize=10, alignment=TA_RIGHT))],
+        ]
     
-    html_content += f'''
-        <tr class="total-row">
-          <td>Amount Paid</td>
-          <td style="text-align: right;">₹{payment.get("amount_paid", 0):,.0f}</td>
-        </tr>
-      </tbody>
-    </table>
+    # Total row
+    table_data.append([
+        Paragraph("<b>Amount Paid</b>", ParagraphStyle('B', fontSize=12, fontName='Helvetica-Bold', textColor=dark_color)),
+        Paragraph(f"<b>Rs. {payment.get('amount_paid', 0):,.0f}</b>", ParagraphStyle('R', fontSize=12, fontName='Helvetica-Bold', textColor=dark_color, alignment=TA_RIGHT))
+    ])
     
-    <div class="thank-you">
-      <p>Thank you for being a valued member of F3 Fitness Health Club!</p>
-      <p class="motto">Transform Your Body, Transform Your Life!</p>
-    </div>
-  </div>
-  
-  <div class="footer">
-    <div class="footer-title">F3 FITNESS HEALTH CLUB</div>
-    <div class="footer-address">
-      4th Avenue Plot No 4R-B, Mode, near Mandir Marg,<br>
-      Sector 4, Vidyadhar Nagar, Jaipur, Rajasthan 302039
-    </div>
-    <div class="footer-contact">
-      Phone: 072300 52193 | Email: info@f3fitness.in
-    </div>
-    <div class="footer-hours">
-      Mon-Sat: 5:00 AM - 10:00 PM | Sun: 6:00 AM - 12:00 PM | Instagram: @f3fitnessclub
-    </div>
-  </div>
-</div>
-</body>
-</html>'''
+    items_table = Table(table_data, colWidths=[350, 150])
+    items_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), primary_color),
+        ('TEXTCOLOR', (0, 0), (-1, 0), HexColor('#FFFFFF')),
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+        ('TOPPADDING', (0, 0), (-1, 0), 10),
+        ('BACKGROUND', (0, -1), (-1, -1), HexColor('#f0f9ff')),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
+        ('TOPPADDING', (0, 1), (-1, -1), 8),
+        ('GRID', (0, 0), (-1, -1), 0.5, HexColor('#e5e7eb')),
+    ]))
+    elements.append(items_table)
+    elements.append(Spacer(1, 30))
     
-    # Generate PDF
-    html = HTML(string=html_content)
-    pdf_bytes = html.write_pdf()
+    # Thank you message
+    thanks_style = ParagraphStyle('Thanks', fontSize=11, textColor=dark_color, alignment=TA_CENTER)
+    elements.append(Paragraph("Thank you for being a valued member of F3 Fitness Health Club!", thanks_style))
+    elements.append(Paragraph("<b>Transform Your Body, Transform Your Life!</b>", ParagraphStyle('Motto', fontSize=10, textColor=primary_color, alignment=TA_CENTER, spaceAfter=30)))
+    
+    # Footer
+    footer_style = ParagraphStyle('Footer', fontSize=9, textColor=gray_color, alignment=TA_CENTER)
+    elements.append(Spacer(1, 20))
+    elements.append(Paragraph("<b>F3 FITNESS HEALTH CLUB</b>", ParagraphStyle('FTitle', fontSize=11, textColor=HexColor('#334155'), alignment=TA_CENTER)))
+    elements.append(Paragraph("4th Avenue Plot No 4R-B, Mode, near Mandir Marg, Sector 4, Vidyadhar Nagar, Jaipur, Rajasthan 302039", footer_style))
+    elements.append(Paragraph("Phone: 072300 52193 | Email: info@f3fitness.in", footer_style))
+    elements.append(Paragraph("Mon-Sat: 5:00 AM - 10:00 PM | Sun: 6:00 AM - 12:00 PM | Instagram: @f3fitnessclub", ParagraphStyle('Hours', fontSize=8, textColor=HexColor('#94a3b8'), alignment=TA_CENTER)))
+    
+    # Build PDF
+    doc.build(elements)
     
     # Return as downloadable file
+    buffer.seek(0)
     filename = f"F3_Invoice_{receipt_no}.pdf"
     return StreamingResponse(
-        BytesIO(pdf_bytes),
+        buffer,
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )
