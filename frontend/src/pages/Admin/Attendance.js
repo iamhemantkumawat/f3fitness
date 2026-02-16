@@ -6,10 +6,25 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/ca
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
+import { Badge } from '../../components/ui/badge';
 import { 
   Search, UserCheck, UserX, CheckCircle, Calendar, Clock, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+// Helper to format time in 12-hour AM/PM format
+const formatTime12hr = (isoString) => {
+  if (!isoString) return '--:--';
+  const parts = isoString.match(/T(\d{2}):(\d{2})/);
+  if (parts) {
+    const hour = parseInt(parts[1]);
+    const minute = parts[2];
+    const hour12 = hour % 12 || 12;
+    const ampm = hour < 12 ? 'AM' : 'PM';
+    return `${hour12}:${minute} ${ampm}`;
+  }
+  return '--:--';
+};
 
 export const MarkAttendance = () => {
   const [searchQuery, setSearchQuery] = useState('');
