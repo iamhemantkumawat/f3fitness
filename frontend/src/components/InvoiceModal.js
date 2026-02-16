@@ -182,6 +182,12 @@ export const InvoiceModal = ({ isOpen, onClose, paymentId }) => {
                   <td>Amount Paid</td>
                   <td style="text-align: right;">₹${(invoice.invoice?.amount_paid || 0).toLocaleString('en-IN')}</td>
                 </tr>
+                ${invoice.membership && invoice.membership.amount_due > 0 ? `
+                <tr style="background: #fef2f2;">
+                  <td style="color: #dc2626; font-weight: 700;">Balance Due</td>
+                  <td style="text-align: right; color: #dc2626; font-weight: 700; font-size: 14px;">₹${(invoice.membership.amount_due || 0).toLocaleString('en-IN')}</td>
+                </tr>
+                ` : ''}
               </tbody>
             </table>
             
