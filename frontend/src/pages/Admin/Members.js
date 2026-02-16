@@ -1060,7 +1060,8 @@ export const CreateMember = () => {
     address: '',
     city: '',
     zip_code: '',
-    emergency_phone: ''
+    emergency_phone: '',
+    role: 'member'  // Default role
   });
 
   const generatePassword = () => {
