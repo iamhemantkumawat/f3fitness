@@ -118,7 +118,7 @@ export const MarkAttendance = () => {
                   
                   {/* Search Dropdown */}
                   {showDropdown && searchResults.length > 0 && (
-                    <div className="absolute z-20 w-full mt-2 bg-zinc-900 border border-zinc-700 rounded-lg overflow-hidden shadow-xl">
+                    <div className="absolute z-20 w-full mt-2 bg-card border border-border rounded-lg overflow-hidden shadow-xl">
                       {searchResults.map((user) => (
                         <button
                           key={user.id}
@@ -128,9 +128,9 @@ export const MarkAttendance = () => {
                         >
                           <div>
                             <p className="font-medium text-foreground">{user.name}</p>
-                            <p className="text-sm text-muted-foreground">{user.phone} • {user.email}</p>
+                            <p className="text-sm text-muted-foreground">{user.phone_number} • {user.email}</p>
                           </div>
-                          <span className="font-mono text-cyan-400 text-sm">{user.member_id}</span>
+                          <span className="font-mono text-primary text-sm">{user.member_id}</span>
                         </button>
                       ))}
                     </div>

@@ -885,7 +885,7 @@ export const TrainersList = () => {
 
       {/* Edit Trainer Dialog */}
       <Dialog open={editMode} onOpenChange={setEditMode}>
-        <DialogContent className="bg-zinc-900 border-border max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-card border-border max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">Edit Trainer</DialogTitle>
           </DialogHeader>
