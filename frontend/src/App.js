@@ -187,6 +187,10 @@ function AppRoutes() {
       <Route path="/dashboard/trainer/clients" element={<ProtectedRoute allowedRoles={['trainer']}><TrainerClients /></ProtectedRoute>} />
       <Route path="/dashboard/trainer/profile" element={<ProtectedRoute allowedRoles={['trainer']}><TrainerProfile /></ProtectedRoute>} />
 
+      {/* Receptionist Routes - under /dashboard/receptionist */}
+      <Route path="/dashboard/receptionist" element={<ProtectedRoute allowedRoles={['receptionist']}><ReceptionistDashboard /></ProtectedRoute>} />
+      <Route path="/dashboard/receptionist/profile" element={<ProtectedRoute allowedRoles={['receptionist']}><MemberProfile /></ProtectedRoute>} />
+
       {/* Legacy routes redirect to new structure */}
       <Route path="/admin/*" element={<Navigate to="/dashboard/admin" replace />} />
       <Route path="/member/*" element={<Navigate to="/dashboard/member" replace />} />
