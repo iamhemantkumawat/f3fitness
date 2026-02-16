@@ -219,10 +219,21 @@ export const MarkAttendance = () => {
                     <div key={att.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                       <div>
                         <p className="font-medium text-foreground">{att.user_name}</p>
-                        <p className="text-sm text-cyan-400 font-mono">{att.member_id}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm text-cyan-400 font-mono">{att.member_id}</p>
+                          {att.marked_by === 'self' ? (
+                            <Badge variant="outline" className="text-xs bg-green-500/10 text-green-500 border-green-500/30">
+                              Self
+                            </Badge>
+                          ) : att.marked_by === 'admin' ? (
+                            <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-500 border-blue-500/30">
+                              Admin
+                            </Badge>
+                          ) : null}
+                        </div>
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        {att.check_in_time?.split('T')[1]?.substring(0, 5) || '--:--'}
+                      <p className="text-sm text-primary font-mono">
+                        {formatTime12hr(att.check_in_time)}
                       </p>
                     </div>
                   ))}
