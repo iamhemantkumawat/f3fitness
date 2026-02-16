@@ -2238,10 +2238,16 @@ async def get_invoice(payment_id: str, current_user: dict = Depends(get_current_
     # Get membership details if linked
     membership = None
     plan = None
+    amount_due = 0
+    total_paid = 0
     if payment.get("membership_id"):
         membership = await db.memberships.find_one({"id": payment["membership_id"]}, {"_id": 0})
         if membership:
             plan = await db.plans.find_one({"id": membership["plan_id"]}, {"_id": 0})
+            # Get all payments for this membership to calculate due
+            all_payments = await db.payments.find({"membership_id": payment["membership_id"]}, {"_id": 0, "amount_paid": 1}).to_list(100)
+            total_paid = sum(p.get("amount_paid", 0) for p in all_payments)
+            amount_due = membership.get("final_price", 0) - total_paid
     
     # Get gym settings
     settings = await db.settings.find_one({"id": "1"}, {"_id": 0})
@@ -2268,7 +2274,9 @@ async def get_invoice(payment_id: str, current_user: dict = Depends(get_current_
             "end_date": membership.get("end_date") if membership else None,
             "original_price": membership.get("original_price") if membership else None,
             "discount": membership.get("discount_amount") if membership else 0,
-            "final_price": membership.get("final_price") if membership else None
+            "final_price": membership.get("final_price") if membership else None,
+            "total_paid": total_paid,
+            "amount_due": amount_due
         } if membership else None,
         "gym": {
             "name": settings.get("gym_name", "F3 Fitness Gym") if settings else "F3 Fitness Gym",
