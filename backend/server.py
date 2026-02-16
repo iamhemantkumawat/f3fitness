@@ -2730,7 +2730,7 @@ async def get_today_attendance(current_user: dict = Depends(get_admin_user)):
     return {"present": present, "absent": absent, "present_count": len(present), "absent_count": len(absent)}
 
 @api_router.post("/attendance", response_model=AttendanceResponse)
-async def mark_attendance(attendance: AttendanceCreate, background_tasks: BackgroundTasks, current_user: dict = Depends(get_admin_user)):
+async def mark_attendance(attendance: AttendanceCreate, background_tasks: BackgroundTasks, current_user: dict = Depends(get_admin_or_receptionist)):
     search_term = attendance.member_id.strip()
     
     # Search by member_id, id, email, phone, or name
