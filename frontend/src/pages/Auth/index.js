@@ -30,6 +30,9 @@ export const Login = () => {
       case 'trainer':
         navigate('/dashboard/trainer');
         break;
+      case 'receptionist':
+        navigate('/dashboard/receptionist');
+        break;
       default:
         navigate('/dashboard/member');
     }
