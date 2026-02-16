@@ -293,7 +293,8 @@ export const DashboardLayout = ({ children, role }) => {
   const menuItems = {
     admin: adminMenuItems,
     member: memberMenuItems,
-    trainer: trainerMenuItems
+    trainer: trainerMenuItems,
+    receptionist: receptionistMenuItems
   }[role] || memberMenuItems;
 
   return (
