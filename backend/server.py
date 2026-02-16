@@ -2694,10 +2694,12 @@ async def get_attendance(
     attendance = await db.attendance.find(query, {"_id": 0}).sort("check_in_time", -1).to_list(10000)
     
     for a in attendance:
-        user = await db.users.find_one({"id": a["user_id"]}, {"_id": 0, "name": 1, "member_id": 1})
+        user = await db.users.find_one({"id": a["user_id"]}, {"_id": 0, "name": 1, "member_id": 1, "profile_photo_url": 1, "gender": 1})
         if user:
             a["user_name"] = user["name"]
             a["member_id"] = user["member_id"]
+            a["profile_photo_url"] = user.get("profile_photo_url")
+            a["gender"] = user.get("gender")
     
     return attendance
 
