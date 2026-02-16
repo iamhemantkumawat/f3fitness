@@ -326,6 +326,12 @@ export const InvoiceModal = ({ isOpen, onClose, paymentId }) => {
                     <td className="p-3 font-bold text-foreground">Amount Paid</td>
                     <td className="p-3 text-right font-bold text-primary text-lg">{formatCurrency(invoice.invoice?.amount_paid)}</td>
                   </tr>
+                  {invoice.membership && invoice.membership.amount_due > 0 && (
+                    <tr className="bg-red-500/10">
+                      <td className="p-3 font-bold text-red-500">Balance Due</td>
+                      <td className="p-3 text-right font-bold text-red-500 text-lg">{formatCurrency(invoice.membership.amount_due)}</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
