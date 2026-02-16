@@ -2683,7 +2683,7 @@ async def get_attendance(
     query = {}
     if user_id:
         query["user_id"] = user_id
-    elif current_user["role"] != "admin":
+    elif current_user["role"] not in ["admin", "receptionist"]:
         query["user_id"] = current_user["id"]
     
     if date:
