@@ -264,6 +264,8 @@ class AttendanceResponse(BaseModel):
     user_name: Optional[str] = None
     member_id: Optional[str] = None
     check_in_time: str
+    marked_by: Optional[str] = None  # 'self', 'admin', 'receptionist'
+    marked_by_name: Optional[str] = None
 
 # Holiday Models
 class HolidayBase(BaseModel):
