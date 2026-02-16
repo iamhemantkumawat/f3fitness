@@ -111,6 +111,11 @@ const trainerMenuItems = [
   { label: 'My Profile', icon: User, path: '/dashboard/trainer/profile' }
 ];
 
+const receptionistMenuItems = [
+  { label: 'Mark Attendance', icon: UserCheck, path: '/dashboard/receptionist' },
+  { label: 'My Profile', icon: User, path: '/dashboard/receptionist/profile' }
+];
+
 const SidebarItem = ({ item, isActive, isChild = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const hasChildren = item.children && item.children.length > 0;
