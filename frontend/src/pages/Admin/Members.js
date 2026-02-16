@@ -1077,8 +1077,13 @@ export const CreateMember = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await usersAPI.create(formData, role);
-      toast.success(`${role === 'trainer' ? 'Trainer' : 'Member'} created! Welcome message sent via Email & WhatsApp.`);
+      // Use formData.role if set, otherwise use the prop role
+      const userRole = formData.role || role;
+      await usersAPI.create({ ...formData, role: userRole }, userRole);
+      const roleLabel = userRole === 'trainer' ? 'Trainer' : 
+                        userRole === 'admin' ? 'Admin' : 
+                        userRole === 'receptionist' ? 'Receptionist' : 'Member';
+      toast.success(`${roleLabel} created! Welcome message sent via Email & WhatsApp.`);
       navigate('/dashboard/admin/members');
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to create user');
