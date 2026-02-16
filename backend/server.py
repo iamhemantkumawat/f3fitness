@@ -2769,10 +2769,20 @@ async def mark_attendance(attendance: AttendanceCreate, background_tasks: Backgr
     attendance_id = str(uuid.uuid4())
     now = get_ist_now().isoformat()
     
+    # Determine who marked the attendance
+    if current_user["role"] == "admin":
+        marked_by = "admin"
+    elif current_user["role"] == "receptionist":
+        marked_by = "self"  # Receptionist is for self check-in kiosk
+    else:
+        marked_by = "self"
+    
     attendance_doc = {
         "id": attendance_id,
         "user_id": user["id"],
-        "check_in_time": now
+        "check_in_time": now,
+        "marked_by": marked_by,
+        "marked_by_name": current_user["name"] if marked_by == "admin" else None
     }
     
     await db.attendance.insert_one(attendance_doc)
