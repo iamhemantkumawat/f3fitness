@@ -1448,8 +1448,12 @@ async def get_me(current_user: dict = Depends(get_current_user)):
 async def get_users(
     role: Optional[str] = None,
     search: Optional[str] = None,
-    current_user: dict = Depends(get_admin_user)
+    current_user: dict = Depends(get_admin_or_receptionist)
 ):
+    # Receptionist can only search for members
+    if current_user["role"] == "receptionist":
+        role = "member"
+    
     query = {}
     if role:
         query["role"] = role
