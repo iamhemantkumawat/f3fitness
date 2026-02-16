@@ -61,6 +61,8 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
         return <Navigate to="/dashboard/admin" replace />;
       case 'trainer':
         return <Navigate to="/dashboard/trainer" replace />;
+      case 'receptionist':
+        return <Navigate to="/dashboard/receptionist" replace />;
       default:
         return <Navigate to="/dashboard/member" replace />;
     }
