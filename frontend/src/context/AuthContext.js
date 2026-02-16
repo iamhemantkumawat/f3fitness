@@ -50,14 +50,32 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initAuth = async () => {
       const storedToken = getStoredToken();
+      const storedUser = getStoredUser();
+      
       if (storedToken) {
+        // Set user immediately from storage for faster UI
+        if (storedUser) {
+          setUser(storedUser);
+          setToken(storedToken);
+        }
+        
         try {
+          // Validate token with backend
           const response = await authAPI.getMe();
           setUser(response.data);
           setToken(storedToken);
+          // Update stored user with fresh data
+          const storage = localStorage.getItem('rememberMe') ? localStorage : sessionStorage;
+          storage.setItem('user', JSON.stringify(response.data));
         } catch (error) {
-          clearStoredAuth();
-          setToken(null);
+          // Only clear auth on 401/403 (invalid/expired token)
+          // Keep user logged in for network errors (could be temporary)
+          if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+            clearStoredAuth();
+            setToken(null);
+            setUser(null);
+          }
+          // For other errors (network issues), keep the stored session
         }
       }
       setLoading(false);
