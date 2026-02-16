@@ -33,6 +33,9 @@ import { MemberHistory } from './pages/Member/MemberHistory';
 // Trainer Pages
 import { TrainerDashboard, TrainerClients } from './pages/Trainer/Dashboard';
 
+// Receptionist Pages
+import { ReceptionistDashboard } from './pages/Receptionist/Dashboard';
+
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading, token } = useAuth();
