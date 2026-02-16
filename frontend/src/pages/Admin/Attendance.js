@@ -338,9 +338,20 @@ export const TodayAttendance = () => {
                       <p className="text-sm text-cyan-400 font-mono">{item.member_id}</p>
                     </div>
                     {view === 'present' && (
-                      <p className="text-sm text-muted-foreground">
-                        {item.check_in_time?.split('T')[1]?.substring(0, 5) || '--:--'}
-                      </p>
+                      <div className="text-right">
+                        <p className="text-sm text-primary font-mono">
+                          {formatTime12hr(item.check_in_time)}
+                        </p>
+                        {item.marked_by === 'self' ? (
+                          <Badge variant="outline" className="text-xs bg-green-500/10 text-green-500 border-green-500/30">
+                            Self
+                          </Badge>
+                        ) : item.marked_by === 'admin' ? (
+                          <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-500 border-blue-500/30">
+                            Admin
+                          </Badge>
+                        ) : null}
+                      </div>
                     )}
                   </div>
                 ))}
