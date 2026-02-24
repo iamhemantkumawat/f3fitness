@@ -26,6 +26,8 @@ import {
   MessageSquare,
   Activity,
   Send
+  ,
+  PhoneForwarded
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import {
@@ -67,6 +69,15 @@ const adminMenuItems = [
       { label: 'Mark Attendance', path: '/dashboard/admin/attendance' },
       { label: 'Today\'s Report', path: '/dashboard/admin/attendance/today' },
       { label: 'Attendance History', path: '/dashboard/admin/attendance/history' }
+    ]
+  },
+  {
+    label: 'Task Management',
+    icon: PhoneForwarded,
+    children: [
+      { label: 'Renewal Leads', path: '/dashboard/admin/tasks/renewals' },
+      { label: 'Absent Leads', path: '/dashboard/admin/tasks/absent' },
+      { label: 'Inactive Users', path: '/dashboard/admin/tasks/inactive' }
     ]
   },
   {

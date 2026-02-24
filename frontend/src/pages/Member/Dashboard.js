@@ -253,6 +253,7 @@ export const MemberDashboard = () => {
 export const MemberPlans = () => {
   const { user } = useAuth();
   const [plans, setPlans] = useState([]);
+  const [activeMembership, setActiveMembership] = useState(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(null);
 
@@ -262,8 +263,12 @@ export const MemberPlans = () => {
 
   const fetchPlans = async () => {
     try {
-      const response = await plansAPI.getAll(true);
-      setPlans(response.data);
+      const [plansRes, membershipRes] = await Promise.all([
+        plansAPI.getAll(true),
+        membershipsAPI.getActive(user.id)
+      ]);
+      setPlans(plansRes.data || []);
+      setActiveMembership(membershipRes.data || null);
     } catch (error) {
       toast.error('Failed to load plans');
     } finally {
@@ -288,6 +293,11 @@ export const MemberPlans = () => {
     toast.info('Online payment integration coming soon!');
   };
 
+  const daysRemaining = activeMembership ? getDaysRemaining(activeMembership.end_date) : null;
+  const isAboutToExpire = activeMembership && daysRemaining >= 0 && daysRemaining <= 6;
+  const showActivePlan = !!activeMembership;
+  const showAvailablePlans = !activeMembership || isAboutToExpire;
+
   return (
     <DashboardLayout role="member">
       <div className="space-y-6 animate-fade-in" data-testid="member-plans">
@@ -298,8 +308,103 @@ export const MemberPlans = () => {
           <p className="text-muted-foreground">Choose a plan that fits your fitness goals</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {loading ? (
+        {showActivePlan && !loading && (
+          <Card className="highlight-card">
+            <CardHeader className="border-b border-border">
+              <CardTitle className="flex items-center justify-between text-lg uppercase tracking-wide" style={{ fontFamily: 'Barlow Condensed' }}>
+                <span className="flex items-center gap-2">
+                  <CreditCard size={18} className="text-cyan-400" />
+                  Active Plan
+                </span>
+                <span className={`text-xs font-bold uppercase tracking-wider px-2 py-1 rounded-full ${
+                  isAboutToExpire
+                    ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                    : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                }`}>
+                  {isAboutToExpire ? `${daysRemaining}d left` : 'Active'}
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="space-y-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground">Current Membership</p>
+                    <p className="text-2xl font-bold text-foreground">{activeMembership.plan_name}</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {isAboutToExpire
+                        ? `Expires soon in ${daysRemaining} day${daysRemaining === 1 ? '' : 's'}`
+                        : 'Your membership is active and running'}
+                    </p>
+                  </div>
+                  <Dumbbell size={44} className={`${isAboutToExpire ? 'text-amber-400/30' : 'text-cyan-400/30'} shrink-0`} />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 bg-muted/40 rounded-lg border border-border">
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground">Start Date</p>
+                    <p className="font-semibold text-foreground mt-1">{formatDate(activeMembership.start_date)}</p>
+                  </div>
+                  <div className="p-4 bg-muted/40 rounded-lg border border-border">
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground">Expiry Date</p>
+                    <p className={`font-semibold mt-1 ${isAboutToExpire ? 'text-amber-400' : 'text-foreground'}`}>
+                      {formatDate(activeMembership.end_date)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className={`p-4 rounded-lg ${isAboutToExpire ? 'bg-amber-500/10 border border-amber-500/30' : 'bg-muted/40 border border-border'}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm text-muted-foreground">Days Remaining</p>
+                    <p className={`text-2xl font-bold ${isAboutToExpire ? 'text-amber-400' : 'text-cyan-400'}`}>
+                      {daysRemaining}
+                    </p>
+                  </div>
+                  <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className={`h-full ${isAboutToExpire ? 'bg-gradient-to-r from-amber-500 to-orange-500' : 'bg-gradient-to-r from-cyan-500 to-blue-500'}`}
+                      style={{ width: `${Math.max(4, Math.min(100, ((daysRemaining || 0) / 30) * 100))}%` }}
+                    />
+                  </div>
+                  {(activeMembership.amount_paid != null || activeMembership.amount_due != null) && (
+                    <div className="grid grid-cols-2 gap-3 mt-4">
+                      <div>
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Paid</p>
+                        <p className="font-semibold text-foreground">{formatCurrency(activeMembership.amount_paid || 0)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Due</p>
+                        <p className={`font-semibold ${(activeMembership.amount_due || 0) > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                          {formatCurrency(activeMembership.amount_due || 0)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {isAboutToExpire && (
+                  <div className="p-3 rounded-lg border border-amber-500/30 bg-amber-500/10 text-sm text-amber-200">
+                    Your membership is about to expire. You can renew by choosing a plan below.
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {showAvailablePlans && (
+          <>
+            <div>
+              <h2 className="text-xl font-bold text-foreground uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
+                Available Plans
+              </h2>
+              <p className="text-muted-foreground text-sm">
+                {isAboutToExpire ? 'Renew or extend your membership by selecting a plan.' : 'Choose a plan that fits your fitness goals.'}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {loading ? (
             [...Array(4)].map((_, i) => (
               <Card key={i} className="glass-card animate-pulse">
                 <CardContent className="p-6">
@@ -307,46 +412,56 @@ export const MemberPlans = () => {
                 </CardContent>
               </Card>
             ))
-          ) : (
-            plans.map((plan, index) => (
-              <Card 
-                key={plan.id} 
-                className={`glass-card hover:border-cyan-500/30 transition-all ${
-                  index === 1 ? 'ring-2 ring-cyan-500/50' : ''
-                }`}
-              >
-                <CardContent className="p-6">
-                  {index === 1 && (
-                    <span className="inline-block bg-cyan-500 text-black text-xs font-bold uppercase px-2 py-1 rounded mb-4">
-                      Popular
-                    </span>
-                  )}
-                  <h3 className="text-xl font-bold text-foreground mb-2">{plan.name}</h3>
-                  <p className="text-muted-foreground mb-4">{plan.duration_days} days</p>
-                  <p className="text-4xl font-bold text-cyan-400 mb-6">{formatCurrency(plan.price)}</p>
-                  
-                  <div className="space-y-3">
-                    <Button
-                      className="btn-primary w-full"
-                      onClick={() => handlePayOnline(plan)}
-                      data-testid={`pay-online-${plan.id}`}
-                    >
-                      Pay Online
-                    </Button>
-                    <Button
-                      className="btn-secondary w-full"
-                      onClick={() => handlePayAtCounter(plan.id)}
-                      disabled={processing === plan.id}
-                      data-testid={`pay-counter-${plan.id}`}
-                    >
-                      {processing === plan.id ? 'Submitting...' : 'Pay at Counter'}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
+              ) : (
+                plans.map((plan, index) => (
+                  <Card 
+                    key={plan.id} 
+                    className={`glass-card hover:border-cyan-500/30 transition-all ${
+                      index === 1 ? 'ring-2 ring-cyan-500/50' : ''
+                    }`}
+                  >
+                    <CardContent className="p-6">
+                      {index === 1 && (
+                        <span className="inline-block bg-cyan-500 text-black text-xs font-bold uppercase px-2 py-1 rounded mb-4">
+                          Popular
+                        </span>
+                      )}
+                      <h3 className="text-xl font-bold text-foreground mb-2">{plan.name}</h3>
+                      <p className="text-muted-foreground mb-4">{plan.duration_days} days</p>
+                      <p className="text-4xl font-bold text-cyan-400 mb-6">{formatCurrency(plan.price)}</p>
+                      
+                      <div className="space-y-3">
+                        <Button
+                          className="btn-primary w-full"
+                          onClick={() => handlePayOnline(plan)}
+                          data-testid={`pay-online-${plan.id}`}
+                        >
+                          Pay Online
+                        </Button>
+                        <Button
+                          className="btn-secondary w-full"
+                          onClick={() => handlePayAtCounter(plan.id)}
+                          disabled={processing === plan.id}
+                          data-testid={`pay-counter-${plan.id}`}
+                        >
+                          {processing === plan.id ? 'Submitting...' : 'Pay at Counter'}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </>
+        )}
+
+        {!loading && !showAvailablePlans && showActivePlan && (
+          <Card className="glass-card">
+            <CardContent className="p-6 text-sm text-muted-foreground">
+              Your membership is active. Available plans will appear here when your plan is about to expire.
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="glass-card">
           <CardContent className="p-6">

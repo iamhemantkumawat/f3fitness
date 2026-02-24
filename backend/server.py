@@ -337,6 +337,7 @@ class WhatsAppSettings(BaseModel):
     admin_whatsapp_test_numbers: Optional[str] = ""  # comma separated
     attendance_confirmation_whatsapp_enabled: bool = True
     attendance_confirmation_email_enabled: bool = True
+    absent_warning_whatsapp_enabled: bool = True
 
 class SettingsResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -358,6 +359,7 @@ class SettingsResponse(BaseModel):
     admin_whatsapp_test_numbers: Optional[str] = None
     attendance_confirmation_whatsapp_enabled: Optional[bool] = True
     attendance_confirmation_email_enabled: Optional[bool] = True
+    absent_warning_whatsapp_enabled: Optional[bool] = True
 
 # Template Models
 class TemplateUpdate(BaseModel):
@@ -386,6 +388,18 @@ class AttendanceConfirmationWhatsAppToggle(BaseModel):
 
 class AttendanceConfirmationEmailToggle(BaseModel):
     enabled: bool = True
+
+class AbsentWarningWhatsAppToggle(BaseModel):
+    enabled: bool = True
+
+# Lead Task Management Models
+class LeadTaskUpdateRequest(BaseModel):
+    called_status: str  # answered | not_answered
+    remarks: Optional[str] = None
+    recall_date: Optional[str] = None  # YYYY-MM-DD
+    renewal_when: Optional[str] = None
+    gym_visit_when: Optional[str] = None
+    mark_done: bool = True
 
 # Health Tracking Models
 class HealthLogCreate(BaseModel):
@@ -940,7 +954,8 @@ async def get_template(template_type: str, channel: str) -> dict:
   <strong>Date:</strong> {{payment_date}}
 </div>
 <p>If you cannot open the attachment, use this secure link:</p>
-<p><a href="{{invoice_pdf_url}}">{{invoice_pdf_url}}</a></p>
+<center><a href="{{invoice_pdf_url}}" class="button">View Invoice PDF</a></center>
+<p style="font-size:12px; color:#777777;">If the button does not work, copy this link into your browser:<br>{{invoice_pdf_url}}</p>
 <p>Thank you for being a valued member of F3 Fitness! 💪</p>"""
         },
         ("invoice_sent", "whatsapp"): {
@@ -1386,10 +1401,16 @@ async def send_notification(user: dict, template_type: str, variables: dict, bac
     if template_type == "attendance":
         settings = await db.settings.find_one(
             {"id": "1"},
-            {"_id": 0, "attendance_confirmation_whatsapp_enabled": 1, "attendance_confirmation_email_enabled": 1}
+            {"_id": 0, "attendance_confirmation_whatsapp_enabled": 1, "attendance_confirmation_email_enabled": 1, "absent_warning_whatsapp_enabled": 1}
         ) or {}
         send_whatsapp_allowed = settings.get("attendance_confirmation_whatsapp_enabled", True)
         send_email_allowed = settings.get("attendance_confirmation_email_enabled", True)
+    elif template_type == "absent_warning":
+        settings = await db.settings.find_one(
+            {"id": "1"},
+            {"_id": 0, "absent_warning_whatsapp_enabled": 1}
+        ) or {}
+        send_whatsapp_allowed = settings.get("absent_warning_whatsapp_enabled", True)
 
     # Send email - wrap in professional template
     if send_email_allowed and user.get("email") and email_template.get("content"):
@@ -3693,6 +3714,229 @@ async def get_regular_absentees(days: int = 7, current_user: dict = Depends(get_
     
     return absentees
 
+# ==================== TASK MANAGEMENT (LEADS) ROUTES ====================
+
+def _parse_iso_date_only(value: Optional[str]):
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(str(value)[:10]).date()
+    except Exception:
+        return None
+
+def _current_freeze_info_for_membership(membership: Optional[dict]):
+    if not membership:
+        return None
+    today = get_ist_now().date()
+    for freeze in (membership.get("freeze_history") or []):
+        start = _parse_iso_date_only(freeze.get("freeze_start_date"))
+        end = _parse_iso_date_only(freeze.get("freeze_end_date"))
+        if start and end and start <= today <= end:
+            return {
+                **freeze,
+                "remaining_freeze_days": (end - today).days + 1
+            }
+    return None
+
+async def _build_member_membership_map():
+    users = await db.users.find(
+        {"role": "member"},
+        {"_id": 0, "id": 1, "name": 1, "member_id": 1, "phone_number": 1, "country_code": 1, "email": 1, "is_disabled": 1}
+    ).to_list(10000)
+    user_map = {u["id"]: u for u in users}
+    memberships = await db.memberships.find({"status": "active"}, {"_id": 0}).to_list(10000)
+    membership_map = {m["user_id"]: m for m in memberships}
+    return user_map, membership_map
+
+async def _get_saved_task_map(lead_type: str):
+    docs = await db.lead_tasks.find({"lead_type": lead_type}, {"_id": 0}).to_list(10000)
+    return {d["user_id"]: d for d in docs}
+
+def _merge_task_meta(row: dict, task_doc: Optional[dict]):
+    task_doc = task_doc or {}
+    row["task"] = {
+        "id": task_doc.get("id"),
+        "called_status": task_doc.get("called_status"),
+        "remarks": task_doc.get("remarks"),
+        "recall_date": task_doc.get("recall_date"),
+        "renewal_when": task_doc.get("renewal_when"),
+        "gym_visit_when": task_doc.get("gym_visit_when"),
+        "is_done": bool(task_doc.get("is_done", False)),
+        "updated_at": task_doc.get("updated_at"),
+        "completed_at": task_doc.get("completed_at")
+    }
+    return row
+
+@api_router.get("/tasks/leads/{lead_type}")
+async def get_task_leads(lead_type: str, current_user: dict = Depends(get_admin_user)):
+    """Lead task lists for admin calling workflow: renewal, absent, inactive"""
+    allowed = {"renewals", "absent", "inactive"}
+    if lead_type not in allowed:
+        raise HTTPException(status_code=400, detail="Invalid lead type")
+
+    today = get_ist_now().date()
+    user_map, membership_map = await _build_member_membership_map()
+    task_map = await _get_saved_task_map(lead_type)
+    rows = []
+
+    if lead_type == "renewals":
+        for user_id, membership in membership_map.items():
+            user = user_map.get(user_id)
+            if not user or user.get("is_disabled"):
+                continue
+            freeze = _current_freeze_info_for_membership(membership)
+            if freeze:
+                continue
+            end_date = _parse_iso_date_only(membership.get("end_date"))
+            if not end_date:
+                continue
+            days_left = (end_date - today).days
+            # Renewal leads = expired or expiring in next 6 days
+            if days_left > 6:
+                continue
+            row = {
+                "lead_type": lead_type,
+                "user_id": user["id"],
+                "name": user.get("name"),
+                "member_id": user.get("member_id"),
+                "phone_number": user.get("phone_number"),
+                "country_code": user.get("country_code", "+91"),
+                "email": user.get("email"),
+                "plan_name": membership.get("plan_name"),
+                "membership_id": membership.get("id"),
+                "membership_end_date": membership.get("end_date"),
+                "days_left": days_left,
+                "lead_status": "expired" if days_left < 0 else ("expiring_today" if days_left == 0 else "expiring_soon")
+            }
+            rows.append(_merge_task_meta(row, task_map.get(user["id"])))
+        rows.sort(key=lambda r: (r.get("days_left", 9999), (r.get("name") or "").lower()))
+
+    elif lead_type == "inactive":
+        active_user_ids = set(membership_map.keys())
+        for user in user_map.values():
+            if user.get("is_disabled"):
+                continue
+            if user["id"] in active_user_ids:
+                continue
+            row = {
+                "lead_type": lead_type,
+                "user_id": user["id"],
+                "name": user.get("name"),
+                "member_id": user.get("member_id"),
+                "phone_number": user.get("phone_number"),
+                "country_code": user.get("country_code", "+91"),
+                "email": user.get("email"),
+                "lead_status": "no_active_plan"
+            }
+            rows.append(_merge_task_meta(row, task_map.get(user["id"])))
+        rows.sort(key=lambda r: ((r.get("name") or "").lower()))
+
+    elif lead_type == "absent":
+        cutoff_days = 3
+        active_memberships = [m for m in membership_map.values()]
+        for membership in active_memberships:
+            user = user_map.get(membership.get("user_id"))
+            if not user or user.get("is_disabled"):
+                continue
+            if _current_freeze_info_for_membership(membership):
+                continue
+            last_attendance = await db.attendance.find_one(
+                {"user_id": user["id"]},
+                {"_id": 0, "check_in_time": 1},
+                sort=[("check_in_time", -1)]
+            )
+            days_absent = None
+            last_attendance_iso = None
+            if last_attendance and last_attendance.get("check_in_time"):
+                last_attendance_iso = last_attendance["check_in_time"]
+                last_date = _parse_iso_date_only(last_attendance_iso)
+                if last_date:
+                    days_absent = (today - last_date).days
+            else:
+                days_absent = 9999  # never attended
+
+            if days_absent is None or days_absent < cutoff_days:
+                continue
+
+            row = {
+                "lead_type": lead_type,
+                "user_id": user["id"],
+                "name": user.get("name"),
+                "member_id": user.get("member_id"),
+                "phone_number": user.get("phone_number"),
+                "country_code": user.get("country_code", "+91"),
+                "email": user.get("email"),
+                "plan_name": membership.get("plan_name"),
+                "membership_end_date": membership.get("end_date"),
+                "days_absent": "Never attended" if days_absent == 9999 else days_absent,
+                "last_attendance": last_attendance_iso,
+                "lead_status": "absent"
+            }
+            rows.append(_merge_task_meta(row, task_map.get(user["id"])))
+        rows.sort(key=lambda r: (-(999999 if r.get("days_absent") == "Never attended" else int(r.get("days_absent") or 0)), (r.get("name") or "").lower()))
+
+    return {
+        "lead_type": lead_type,
+        "count": len(rows),
+        "instruction": {
+            "renewals": "Call members whose plans are expired or expiring soon. Ask when they will renew and when they will come to gym, then mark task done.",
+            "absent": "Call absent members and ask why they are not coming. Add remarks and schedule recall if needed, then mark task done.",
+            "inactive": "Call members without an active plan. Ask if they want to restart and set recall date if needed, then mark task done."
+        }[lead_type],
+        "items": rows
+    }
+
+@api_router.post("/tasks/leads/{lead_type}/{user_id}")
+async def update_task_lead(
+    lead_type: str,
+    user_id: str,
+    req: LeadTaskUpdateRequest,
+    current_user: dict = Depends(get_admin_user)
+):
+    allowed = {"renewals", "absent", "inactive"}
+    if lead_type not in allowed:
+        raise HTTPException(status_code=400, detail="Invalid lead type")
+    if req.called_status not in {"answered", "not_answered"}:
+        raise HTTPException(status_code=400, detail="called_status must be answered or not_answered")
+    if req.recall_date and not _parse_iso_date_only(req.recall_date):
+        raise HTTPException(status_code=400, detail="Invalid recall_date")
+
+    user = await db.users.find_one({"id": user_id, "role": "member"}, {"_id": 0, "id": 1, "name": 1, "member_id": 1})
+    if not user:
+        raise HTTPException(status_code=404, detail="Member not found")
+
+    now_iso = get_ist_now().isoformat()
+    task_id = f"{lead_type}:{user_id}"
+    update_doc = {
+        "id": task_id,
+        "lead_type": lead_type,
+        "user_id": user_id,
+        "called_status": req.called_status,
+        "remarks": (req.remarks or "").strip() or None,
+        "recall_date": req.recall_date,
+        "renewal_when": (req.renewal_when or "").strip() or None,
+        "gym_visit_when": (req.gym_visit_when or "").strip() or None,
+        "is_done": bool(req.mark_done),
+        "updated_at": now_iso,
+        "updated_by_admin_id": current_user["id"],
+        "updated_by_admin_name": current_user.get("name")
+    }
+    if req.mark_done:
+        update_doc["completed_at"] = now_iso
+
+    await db.lead_tasks.update_one(
+        {"lead_type": lead_type, "user_id": user_id},
+        {"$set": update_doc, "$setOnInsert": {"created_at": now_iso}},
+        upsert=True
+    )
+
+    await log_activity(
+        current_user["id"],
+        "task_lead_updated",
+        f"{lead_type} task updated for {user.get('name') or user.get('member_id')}: {req.called_status}"
+    )
+    return {"message": "Task updated", "task": update_doc}
+
 # ==================== HOLIDAYS ROUTES ====================
 
 @api_router.get("/holidays", response_model=List[HolidayResponse])
@@ -3848,6 +4092,21 @@ async def update_attendance_confirmation_email_toggle(
     return {
         "message": "Attendance confirmation email setting updated",
         "attendance_confirmation_email_enabled": bool(req.enabled)
+    }
+
+@api_router.put("/settings/notifications/absent-warning-whatsapp")
+async def update_absent_warning_whatsapp_toggle(
+    req: AbsentWarningWhatsAppToggle,
+    current_user: dict = Depends(get_admin_user)
+):
+    await db.settings.update_one(
+        {"id": "1"},
+        {"$set": {"absent_warning_whatsapp_enabled": bool(req.enabled)}},
+        upsert=True
+    )
+    return {
+        "message": "Absence warning WhatsApp setting updated",
+        "absent_warning_whatsapp_enabled": bool(req.enabled)
     }
 
 @api_router.post("/settings/whatsapp/test")
@@ -4775,6 +5034,7 @@ async def upload_plan_pdf(file: UploadFile = File(...), current_user: dict = Dep
 class BroadcastRequest(BaseModel):
     message: str
     target_audience: str = "all"  # all, active, inactive
+    selected_user_ids: Optional[List[str]] = None
 
 @api_router.post("/broadcast/whatsapp")
 async def broadcast_whatsapp(
@@ -4784,7 +5044,9 @@ async def broadcast_whatsapp(
 ):
     """Send WhatsApp broadcast to all members"""
     query = {"role": "member"}
-    if request.target_audience == "active":
+    if request.selected_user_ids:
+        query["id"] = {"$in": [uid for uid in request.selected_user_ids if uid]}
+    elif request.target_audience == "active":
         # Get users with active membership
         active_memberships = await db.memberships.find({"status": "active"}, {"_id": 0, "user_id": 1}).to_list(10000)
         active_user_ids = [m["user_id"] for m in active_memberships]

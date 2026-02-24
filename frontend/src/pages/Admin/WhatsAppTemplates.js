@@ -47,6 +47,8 @@ export const WhatsAppTemplatesSettings = () => {
   const [testWhatsAppNumber, setTestWhatsAppNumber] = useState('+91');
   const [attendanceConfirmationEnabled, setAttendanceConfirmationEnabled] = useState(true);
   const [savingAttendanceToggle, setSavingAttendanceToggle] = useState(false);
+  const [absentWarningEnabled, setAbsentWarningEnabled] = useState(true);
+  const [savingAbsentWarningToggle, setSavingAbsentWarningToggle] = useState(false);
 
   useEffect(() => {
     fetchTemplates();
@@ -80,6 +82,9 @@ export const WhatsAppTemplatesSettings = () => {
       setAttendanceConfirmationEnabled(
         response.data?.attendance_confirmation_whatsapp_enabled !== false
       );
+      setAbsentWarningEnabled(
+        response.data?.absent_warning_whatsapp_enabled !== false
+      );
     } catch (error) {
       // non-blocking
     }
@@ -97,6 +102,21 @@ export const WhatsAppTemplatesSettings = () => {
       toast.error(error.response?.data?.detail || 'Failed to update attendance confirmation setting');
     } finally {
       setSavingAttendanceToggle(false);
+    }
+  };
+
+  const handleAbsentWarningToggleChange = async (checked) => {
+    const prev = absentWarningEnabled;
+    setAbsentWarningEnabled(checked);
+    setSavingAbsentWarningToggle(true);
+    try {
+      await settingsAPI.updateAbsentWarningWhatsAppToggle(checked);
+      toast.success(`Absence warning WhatsApp ${checked ? 'enabled' : 'disabled'}`);
+    } catch (error) {
+      setAbsentWarningEnabled(prev);
+      toast.error(error.response?.data?.detail || 'Failed to update absence warning setting');
+    } finally {
+      setSavingAbsentWarningToggle(false);
     }
   };
 
@@ -264,6 +284,28 @@ export const WhatsAppTemplatesSettings = () => {
                         checked={attendanceConfirmationEnabled}
                         onCheckedChange={handleAttendanceToggleChange}
                         disabled={savingAttendanceToggle}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+              {activeTemplate === 'absent_warning' && (
+                <div className="rounded-lg border border-border p-4 bg-muted/20">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="font-medium text-sm">Absence Warning WhatsApp</p>
+                      <p className="text-xs text-muted-foreground">
+                        Turn off to stop absence warning WhatsApp messages while keeping the template saved.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-xs font-medium ${absentWarningEnabled ? 'text-green-500' : 'text-zinc-500'}`}>
+                        {absentWarningEnabled ? 'ON' : 'OFF'}
+                      </span>
+                      <Switch
+                        checked={absentWarningEnabled}
+                        onCheckedChange={handleAbsentWarningToggleChange}
+                        disabled={savingAbsentWarningToggle}
                       />
                     </div>
                   </div>

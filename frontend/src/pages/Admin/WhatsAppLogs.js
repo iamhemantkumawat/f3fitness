@@ -65,21 +65,17 @@ export const WhatsAppLogsSettings = () => {
 
   const formatDate = (dateStr) => {
     if (!dateStr) return 'N/A';
-    // The timestamp is already stored in IST, so parse it directly without timezone conversion
-    // Create date and format it without any timezone adjustment
     const date = new Date(dateStr);
-    // Since the stored time is IST and JavaScript treats it as UTC, we need to display it as-is
-    // Get the components directly from the ISO string
-    const parts = dateStr.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
-    if (parts) {
-      const [, year, month, day, hour, minute] = parts;
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      const monthName = months[parseInt(month) - 1];
-      const hour12 = parseInt(hour) % 12 || 12;
-      const ampm = parseInt(hour) < 12 ? 'am' : 'pm';
-      return `${parseInt(day)} ${monthName} ${year}, ${hour12}:${minute} ${ampm}`;
-    }
-    return dateStr;
+    if (Number.isNaN(date.getTime())) return String(dateStr);
+    return date.toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
   };
 
   const getStatusBadge = (status) => {

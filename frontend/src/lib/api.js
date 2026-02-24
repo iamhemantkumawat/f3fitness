@@ -150,6 +150,8 @@ export const settingsAPI = {
     api.put('/settings/notifications/attendance-confirmation-whatsapp', { enabled }),
   updateAttendanceConfirmationEmailToggle: (enabled) =>
     api.put('/settings/notifications/attendance-confirmation-email', { enabled }),
+  updateAbsentWarningWhatsAppToggle: (enabled) =>
+    api.put('/settings/notifications/absent-warning-whatsapp', { enabled }),
   testWhatsApp: (number) => api.post(`/settings/whatsapp/test?to_number=${number}`),
   getFast2SMSWabaTemplates: () => api.get('/settings/whatsapp/fast2sms/waba-templates')
 };
@@ -197,6 +199,12 @@ export const seedAPI = {
 export const broadcastAPI = {
   sendWhatsApp: (data) => api.post('/broadcast/whatsapp', data),
   sendEmail: (data) => api.post(`/broadcast/email?subject=${encodeURIComponent(data.subject)}`, { message: data.message, target_audience: data.target_audience })
+};
+
+// Task Management APIs
+export const tasksAPI = {
+  getLeads: (leadType) => api.get(`/tasks/leads/${leadType}`),
+  updateLeadTask: (leadType, userId, data) => api.post(`/tasks/leads/${leadType}/${userId}`, data)
 };
 
 // Templates APIs

@@ -1024,6 +1024,22 @@ export const ActivityLogsSettings = () => {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ action: '' });
 
+  const formatISTDateTime = (value) => {
+    if (!value) return 'N/A';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return String(value);
+    return d.toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
+  };
+
   useEffect(() => {
     fetchLogs();
   }, [filters]);
@@ -1091,7 +1107,7 @@ export const ActivityLogsSettings = () => {
                     {logs.map((log) => (
                       <tr key={log.id} className="border-b border-border/50 hover:bg-muted/30">
                         <td className="py-3 px-4 text-sm text-muted-foreground">
-                          {new Date(log.timestamp).toLocaleString('en-IN')}
+                          {formatISTDateTime(log.timestamp)}
                         </td>
                         <td className="py-3 px-4">
                           <div>

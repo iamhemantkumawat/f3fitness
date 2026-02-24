@@ -24,6 +24,7 @@ import { EmailTemplatesSettings } from './pages/Admin/EmailTemplates';
 import { WhatsAppTemplatesSettings } from './pages/Admin/WhatsAppTemplates';
 import { WhatsAppLogsSettings } from './pages/Admin/WhatsAppLogs';
 import { EmailLogsSettings } from './pages/Admin/EmailLogs';
+import { RenewalLeadsPage, AbsentLeadsPage, InactiveUsersTasksPage } from './pages/Admin/TaskManagement';
 
 // Member Pages
 import { MemberDashboard, MemberPlans } from './pages/Member/Dashboard';
@@ -163,6 +164,9 @@ function AppRoutes() {
       <Route path="/dashboard/admin/attendance" element={<ProtectedRoute allowedRoles={['admin']}><MarkAttendance /></ProtectedRoute>} />
       <Route path="/dashboard/admin/attendance/today" element={<ProtectedRoute allowedRoles={['admin']}><TodayAttendance /></ProtectedRoute>} />
       <Route path="/dashboard/admin/attendance/history" element={<ProtectedRoute allowedRoles={['admin']}><AttendanceHistory /></ProtectedRoute>} />
+      <Route path="/dashboard/admin/tasks/renewals" element={<ProtectedRoute allowedRoles={['admin']}><RenewalLeadsPage /></ProtectedRoute>} />
+      <Route path="/dashboard/admin/tasks/absent" element={<ProtectedRoute allowedRoles={['admin']}><AbsentLeadsPage /></ProtectedRoute>} />
+      <Route path="/dashboard/admin/tasks/inactive" element={<ProtectedRoute allowedRoles={['admin']}><InactiveUsersTasksPage /></ProtectedRoute>} />
       <Route path="/dashboard/admin/settings/plans" element={<ProtectedRoute allowedRoles={['admin']}><PlansSettings /></ProtectedRoute>} />
       <Route path="/dashboard/admin/settings/announcements" element={<ProtectedRoute allowedRoles={['admin']}><AnnouncementsSettings /></ProtectedRoute>} />
       <Route path="/dashboard/admin/settings/holidays" element={<ProtectedRoute allowedRoles={['admin']}><HolidaysSettings /></ProtectedRoute>} />

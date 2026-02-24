@@ -212,12 +212,12 @@ export const AddPayment = () => {
                 </div>
                 
                 {searchResults.length > 0 && (
-                  <div className="mt-2 bg-zinc-900 border border-border rounded-lg overflow-hidden">
+                  <div className="mt-2 bg-card border border-border rounded-lg overflow-hidden shadow-sm">
                     {searchResults.map((user) => (
                       <button
                         key={user.id}
                         type="button"
-                        className="w-full p-3 text-left hover:bg-muted flex items-center justify-between"
+                        className="w-full p-3 text-left hover:bg-muted/70 flex items-center justify-between transition-colors"
                         onClick={() => {
                           setSelectedUser(user);
                           setSearchQuery(user.name);
