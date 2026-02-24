@@ -1026,6 +1026,27 @@ export const ActivityLogsSettings = () => {
 
   const formatISTDateTime = (value) => {
     if (!value) return 'N/A';
+    // Legacy activity logs were stored with IST clock but UTC offset (+00:00).
+    // For those rows, render the timestamp "as written" to avoid +5:30 double shift.
+    if (typeof value === 'string') {
+      const m = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
+      if (m) {
+        const [, y, mo, d, hh, mm, ss = '00'] = m;
+        const dt = new Date(Number(y), Number(mo) - 1, Number(d), Number(hh), Number(mm), Number(ss));
+        if (!Number.isNaN(dt.getTime())) {
+          return dt.toLocaleString('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+          });
+        }
+      }
+    }
     const d = new Date(value);
     if (Number.isNaN(d.getTime())) return String(value);
     return d.toLocaleString('en-IN', {

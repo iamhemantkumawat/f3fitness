@@ -640,7 +640,8 @@ async def generate_member_id() -> str:
 
 def get_ist_now():
     """Get current time in IST"""
-    return datetime.now(timezone.utc) + timedelta(hours=5, minutes=30)
+    ist_tz = timezone(timedelta(hours=5, minutes=30))
+    return datetime.now(ist_tz)
 
 def get_ist_today_start():
     """Get today's start in IST (midnight)"""
