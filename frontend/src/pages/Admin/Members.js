@@ -32,14 +32,34 @@ export const MembersList = () => {
   const [membershipData, setMembershipData] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: 'member_id', direction: 'asc' });
-  const [statusFilter, setStatusFilter] = useState('all'); // all, active, inactive, disabled
+  const [statusFilter, setStatusFilter] = useState('all'); // all, active, inactive, disabled, expired, expiring_soon, frozen
   
   // Dialogs
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [showFreezeDialog, setShowFreezeDialog] = useState(false);
+  const [showEditFreezeDialog, setShowEditFreezeDialog] = useState(false);
+  const [showEndFreezeDialog, setShowEndFreezeDialog] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [freezeForm, setFreezeForm] = useState({
+    freeze_start_date: '',
+    freeze_end_date: '',
+    freeze_fee: '0',
+    payment_method: 'cash',
+    notes: ''
+  });
+  const [editFreezeForm, setEditFreezeForm] = useState({
+    freeze_start_date: '',
+    freeze_end_date: '',
+    freeze_fee: '0',
+    payment_method: 'cash',
+    notes: ''
+  });
+  const [endFreezeForm, setEndFreezeForm] = useState({
+    end_date: ''
+  });
   
   const navigate = useNavigate();
 
@@ -51,7 +71,8 @@ export const MembersList = () => {
     try {
       setLoading(true);
       const params = { role: 'member', search: searchQuery };
-      if (statusFilter !== 'all') {
+      // Backend supports only basic status filters. Freeze/expiry filters are applied client-side below.
+      if (statusFilter !== 'all' && ['active', 'inactive', 'disabled'].includes(statusFilter)) {
         params.status = statusFilter;
       }
       const response = await usersAPI.getAllWithMembership(params);
@@ -68,9 +89,112 @@ export const MembersList = () => {
     fetchMembers(e.target.value);
   };
 
+  const getTodayStart = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  };
+
+  const getLocalDateInputValue = () => {
+    return formatDateInputValue(new Date());
+  };
+
+  const formatDateInputValue = (dateObj) => {
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const parseDateOnly = (value) => {
+    if (!value) return null;
+    const raw = String(value).slice(0, 10);
+    const [y, m, d] = raw.split('-').map(Number);
+    if (!y || !m || !d) return null;
+    const dt = new Date(y, m - 1, d);
+    dt.setHours(0, 0, 0, 0);
+    return Number.isNaN(dt.getTime()) ? null : dt;
+  };
+
+  const getCurrentFreezeInfo = (membership) => {
+    if (!membership) return null;
+    const today = getTodayStart();
+    const freezeHistory = Array.isArray(membership.freeze_history) ? membership.freeze_history : [];
+
+    for (const freeze of freezeHistory) {
+      if (!freeze?.freeze_start_date || !freeze?.freeze_end_date) continue;
+      const freezeStart = parseDateOnly(freeze.freeze_start_date);
+      const freezeEnd = parseDateOnly(freeze.freeze_end_date);
+
+      if (freezeStart && freezeEnd && today >= freezeStart && today <= freezeEnd) {
+        const remainingDays = Math.floor((freezeEnd - today) / (1000 * 60 * 60 * 24)) + 1;
+        return { ...freeze, remainingDays };
+      }
+    }
+
+    return null;
+  };
+
+  const getUpcomingFreezeInfo = (membership) => {
+    if (!membership) return null;
+    const today = getTodayStart();
+    const freezeHistory = Array.isArray(membership.freeze_history) ? membership.freeze_history : [];
+
+    let nearestUpcoming = null;
+    for (const freeze of freezeHistory) {
+      if (!freeze?.freeze_start_date || !freeze?.freeze_end_date) continue;
+      const freezeStart = parseDateOnly(freeze.freeze_start_date);
+      const freezeEnd = parseDateOnly(freeze.freeze_end_date);
+
+      if (!freezeStart || !freezeEnd) continue;
+      if (freezeStart <= today) continue;
+
+      const startsInDays = Math.floor((freezeStart - today) / (1000 * 60 * 60 * 24));
+      const candidate = { ...freeze, startsInDays };
+      if (!nearestUpcoming || freezeStart < parseDateOnly(nearestUpcoming.freeze_start_date)) {
+        nearestUpcoming = candidate;
+      }
+    }
+
+    return nearestUpcoming;
+  };
+
+  const getMembershipDaysLeft = (membership) => {
+    if (!membership?.end_date) return null;
+    const today = getTodayStart();
+    const endDate = parseDateOnly(membership.end_date);
+    if (!endDate) return null;
+    return Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+  };
+
+  const matchesStatusFilter = (member) => {
+    if (statusFilter === 'all') return true;
+    if (statusFilter === 'disabled') return !!member.is_disabled;
+    if (member.is_disabled) return false;
+
+    const membership = member.active_membership;
+    const isFrozen = !!getCurrentFreezeInfo(membership);
+    const daysLeft = getMembershipDaysLeft(membership);
+
+    switch (statusFilter) {
+      case 'active':
+        return !!membership && !isFrozen && typeof daysLeft === 'number' && daysLeft > 7;
+      case 'inactive':
+        return !membership;
+      case 'expired':
+        return !!membership && !isFrozen && typeof daysLeft === 'number' && daysLeft < 0;
+      case 'expiring_soon':
+        return !!membership && !isFrozen && typeof daysLeft === 'number' && daysLeft >= 0 && daysLeft <= 6;
+      case 'frozen':
+        return !!membership && isFrozen;
+      default:
+        return true;
+    }
+  };
+
   // Sorting logic
   const sortedMembers = useMemo(() => {
-    const sorted = [...members];
+    const sorted = members.filter(matchesStatusFilter);
     sorted.sort((a, b) => {
       let aVal, bVal;
       
@@ -105,7 +229,7 @@ export const MembersList = () => {
       return 0;
     });
     return sorted;
-  }, [members, sortConfig]);
+  }, [members, sortConfig, statusFilter]);
 
   const handleSort = (key) => {
     setSortConfig(prev => ({
@@ -200,6 +324,228 @@ export const MembersList = () => {
     }
   };
 
+  const openFreezeDialog = () => {
+    const today = getLocalDateInputValue();
+    setFreezeForm({
+      freeze_start_date: today,
+      freeze_end_date: today,
+      freeze_fee: '0',
+      payment_method: 'cash',
+      notes: 'Out of city / long leave'
+    });
+    setShowFreezeDialog(true);
+  };
+
+  const getFreezePreview = () => {
+    const original = selectedMember?.active_membership?.end_date;
+    if (!original) return { originalExpiry: null, frozenDays: 0, newExpiry: null };
+
+    const originalExpiry = new Date(original);
+    const start = freezeForm.freeze_start_date ? new Date(freezeForm.freeze_start_date) : null;
+    const end = freezeForm.freeze_end_date ? new Date(freezeForm.freeze_end_date) : null;
+
+    let frozenDays = 0;
+    if (start && end && !Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime()) && end >= start) {
+      frozenDays = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+    }
+
+    const newExpiry = new Date(originalExpiry);
+    if (frozenDays > 0) newExpiry.setDate(newExpiry.getDate() + frozenDays);
+
+    return { originalExpiry, frozenDays, newExpiry };
+  };
+
+  const getDaysBetweenInclusive = (startStr, endStr) => {
+    if (!startStr || !endStr) return 0;
+    const start = parseDateOnly(startStr);
+    const end = parseDateOnly(endStr);
+    if (!start || !end || end < start) return 0;
+    return Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+  };
+
+  const getEditFreezePreview = () => {
+    const membership = selectedMember?.active_membership;
+    const currentFreeze = getCurrentFreezeInfo(membership);
+    if (!membership?.end_date || !currentFreeze) return { originalExpiry: null, freezeDays: 0, newExpiry: null };
+
+    const currentMembershipEnd = new Date(membership.end_date);
+    const oldDays = currentFreeze.freeze_days || getDaysBetweenInclusive(currentFreeze.freeze_start_date, currentFreeze.freeze_end_date);
+    const newDays = getDaysBetweenInclusive(editFreezeForm.freeze_start_date, editFreezeForm.freeze_end_date);
+
+    const newExpiry = new Date(currentMembershipEnd);
+    newExpiry.setDate(newExpiry.getDate() + (newDays - oldDays));
+    return { originalExpiry: currentMembershipEnd, freezeDays: newDays, newExpiry };
+  };
+
+  const getEndFreezePreview = () => {
+    const membership = selectedMember?.active_membership;
+    const currentFreeze = getCurrentFreezeInfo(membership);
+    if (!membership?.end_date || !currentFreeze) return { currentExpiry: null, reducedDays: 0, newExpiry: null, finalFreezeDays: 0 };
+
+    const currentExpiry = new Date(membership.end_date);
+    const currentFreezeDays = currentFreeze.freeze_days || getDaysBetweenInclusive(currentFreeze.freeze_start_date, currentFreeze.freeze_end_date);
+    if (!endFreezeForm.end_date) return { currentExpiry, reducedDays: 0, newExpiry: currentExpiry, finalFreezeDays: 0 };
+
+    const unfreezeDate = parseDateOnly(endFreezeForm.end_date);
+    if (!unfreezeDate) return { currentExpiry, reducedDays: 0, newExpiry: currentExpiry, finalFreezeDays: 0 };
+    const finalFreezeEnd = new Date(unfreezeDate);
+    finalFreezeEnd.setDate(finalFreezeEnd.getDate() - 1);
+
+    const newFreezeDays = getDaysBetweenInclusive(currentFreeze.freeze_start_date, formatDateInputValue(finalFreezeEnd));
+
+    const reducedDays = Math.max(0, currentFreezeDays - newFreezeDays);
+    const newExpiry = new Date(currentExpiry);
+    newExpiry.setDate(newExpiry.getDate() - reducedDays);
+    return { currentExpiry, reducedDays, newExpiry, finalFreezeDays: newFreezeDays };
+  };
+
+  const handleFreezeMembership = async () => {
+    const membership = selectedMember?.active_membership;
+    if (!membership?.id) return toast.error('No active membership found');
+
+    const preview = getFreezePreview();
+    if (!freezeForm.freeze_start_date || !freezeForm.freeze_end_date) {
+      return toast.error('Please select freeze start and end dates');
+    }
+    if (preview.frozenDays <= 0) {
+      return toast.error('Freeze end date must be on or after start date');
+    }
+
+    setActionLoading(true);
+    try {
+      const res = await membershipsAPI.freeze(membership.id, {
+        freeze_start_date: freezeForm.freeze_start_date,
+        freeze_end_date: freezeForm.freeze_end_date,
+        freeze_fee: parseFloat(freezeForm.freeze_fee) || 0,
+        payment_method: freezeForm.payment_method,
+        notes: freezeForm.notes || null
+      });
+
+      const updatedMembership = res.data?.membership || membership;
+      setSelectedMember(prev => prev ? { ...prev, active_membership: updatedMembership } : prev);
+      setMembershipData(updatedMembership);
+      setShowFreezeDialog(false);
+      fetchMembers(search);
+      toast.success(`Membership frozen. New expiry: ${res.data?.new_end_date || formatDate(updatedMembership.end_date)}`);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to freeze membership');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleEditCurrentFreeze = async () => {
+    const membership = selectedMember?.active_membership;
+    const currentFreeze = getCurrentFreezeInfo(membership);
+    if (!membership?.id || !currentFreeze?.id) return toast.error('No active freeze found');
+    setEditFreezeForm({
+      freeze_start_date: currentFreeze.freeze_start_date || '',
+      freeze_end_date: currentFreeze.freeze_end_date || '',
+      freeze_fee: String(currentFreeze.freeze_fee ?? 0),
+      payment_method: currentFreeze.payment_method || 'cash',
+      notes: currentFreeze.notes || ''
+    });
+    setShowEditFreezeDialog(true);
+  };
+
+  const handleSubmitEditFreeze = async () => {
+    const membership = selectedMember?.active_membership;
+    const currentFreeze = getCurrentFreezeInfo(membership);
+    if (!membership?.id || !currentFreeze?.id) return toast.error('No active freeze found');
+    const preview = getEditFreezePreview();
+    if (!editFreezeForm.freeze_start_date || !editFreezeForm.freeze_end_date || preview.freezeDays <= 0) {
+      return toast.error('Please select a valid freeze start and end date');
+    }
+
+    setActionLoading(true);
+    try {
+      const res = await membershipsAPI.editFreeze(membership.id, currentFreeze.id, {
+        freeze_start_date: editFreezeForm.freeze_start_date,
+        freeze_end_date: editFreezeForm.freeze_end_date,
+        freeze_fee: parseFloat(editFreezeForm.freeze_fee) || 0,
+        payment_method: editFreezeForm.payment_method,
+        notes: editFreezeForm.notes || null
+      });
+      const updatedMembership = res.data?.membership || membership;
+      setSelectedMember(prev => prev ? { ...prev, active_membership: updatedMembership } : prev);
+      setMembershipData(updatedMembership);
+      setShowEditFreezeDialog(false);
+      fetchMembers(search);
+      toast.success(`Freeze updated. New expiry: ${res.data?.new_end_date || formatDate(updatedMembership.end_date)}`);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to edit freeze');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleEndCurrentFreeze = async () => {
+    const membership = selectedMember?.active_membership;
+    const currentFreeze = getCurrentFreezeInfo(membership);
+    if (!membership?.id || !currentFreeze?.id) return toast.error('No active freeze found');
+
+    const today = getLocalDateInputValue();
+    if (!window.confirm(`End freeze now and make member active from ${today}?`)) return;
+
+    setActionLoading(true);
+    try {
+      const res = await membershipsAPI.endFreeze(membership.id, currentFreeze.id, { end_date: today });
+      const updatedMembership = res.data?.membership || membership;
+      setSelectedMember(prev => prev ? { ...prev, active_membership: updatedMembership } : prev);
+      setMembershipData(updatedMembership);
+      setShowEndFreezeDialog(false);
+      fetchMembers(search);
+      toast.success(`Freeze ended. Member active from today. New expiry: ${res.data?.new_end_date || formatDate(updatedMembership.end_date)}`);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to end freeze');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCancelUpcomingFreeze = async () => {
+    const membership = selectedMember?.active_membership;
+    const upcomingFreeze = getUpcomingFreezeInfo(membership);
+    if (!membership?.id || !upcomingFreeze?.id) return toast.error('No upcoming freeze found');
+    if (!window.confirm(`Cancel upcoming freeze (${formatDate(upcomingFreeze.freeze_start_date)} - ${formatDate(upcomingFreeze.freeze_end_date)})?`)) return;
+
+    setActionLoading(true);
+    try {
+      const res = await membershipsAPI.cancelFreeze(membership.id, upcomingFreeze.id);
+      const updatedMembership = res.data?.membership || membership;
+      setSelectedMember(prev => prev ? { ...prev, active_membership: updatedMembership } : prev);
+      setMembershipData(updatedMembership);
+      fetchMembers(search);
+      toast.success(`Upcoming freeze cancelled. New expiry: ${res.data?.new_end_date || formatDate(updatedMembership.end_date)}`);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to cancel freeze');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleSubmitEndFreeze = async () => {
+    const membership = selectedMember?.active_membership;
+    const currentFreeze = getCurrentFreezeInfo(membership);
+    if (!membership?.id || !currentFreeze?.id) return toast.error('No active freeze found');
+    if (!endFreezeForm.end_date) return toast.error('Please choose unfreeze date');
+
+    setActionLoading(true);
+    try {
+      const res = await membershipsAPI.endFreeze(membership.id, currentFreeze.id, { end_date: endFreezeForm.end_date });
+      const updatedMembership = res.data?.membership || membership;
+      setSelectedMember(prev => prev ? { ...prev, active_membership: updatedMembership } : prev);
+      setMembershipData(updatedMembership);
+      setShowEndFreezeDialog(false);
+      fetchMembers(search);
+      toast.success(`Freeze ended early. New expiry: ${res.data?.new_end_date || formatDate(updatedMembership.end_date)}`);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to end freeze');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleResetPassword = async () => {
     if (!newPassword || newPassword.length < 6) {
       toast.error('Password must be at least 6 characters');
@@ -228,9 +574,15 @@ export const MembersList = () => {
   const getMemberStatus = (member) => {
     if (member.is_disabled) return { label: 'Disabled', class: 'bg-red-500/20 text-red-400' };
     if (member.active_membership) {
-      const endDate = new Date(member.active_membership.end_date);
-      const today = new Date();
-      const daysLeft = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+      const currentFreeze = getCurrentFreezeInfo(member.active_membership);
+      if (currentFreeze) {
+        return { label: `Freeze ${currentFreeze.remainingDays}d`, class: 'bg-cyan-500/20 text-cyan-400' };
+      }
+
+      const daysLeft = getMembershipDaysLeft(member.active_membership);
+      if (typeof daysLeft !== 'number') {
+        return { label: 'Active', class: 'bg-emerald-500/20 text-emerald-400' };
+      }
       
       if (daysLeft < 0) return { label: 'Expired', class: 'bg-red-500/20 text-red-400' };
       if (daysLeft <= 7) return { label: `${daysLeft}d left`, class: 'bg-orange-500/20 text-orange-400' };
@@ -238,6 +590,19 @@ export const MembersList = () => {
     }
     return { label: 'No Plan', class: 'bg-zinc-500/20 text-muted-foreground' };
   };
+
+  const freezePreview = getFreezePreview();
+  const currentSelectedFreeze = getCurrentFreezeInfo(selectedMember?.active_membership);
+  const upcomingSelectedFreeze = getUpcomingFreezeInfo(selectedMember?.active_membership);
+  const currentSelectedFreezeStart = parseDateOnly(currentSelectedFreeze?.freeze_start_date);
+  const currentSelectedFreezeEnd = parseDateOnly(currentSelectedFreeze?.freeze_end_date);
+  const currentSelectedFreezeMinUnfreezeDate = currentSelectedFreezeStart ? formatDateInputValue(currentSelectedFreezeStart) : '';
+  const currentSelectedFreezeMaxUnfreezeDate = currentSelectedFreezeEnd
+    ? formatDateInputValue(new Date(currentSelectedFreezeEnd.getFullYear(), currentSelectedFreezeEnd.getMonth(), currentSelectedFreezeEnd.getDate() + 1))
+    : '';
+  const currentSelectedFreezeMaxUnfreezeLabel = currentSelectedFreezeEnd
+    ? formatDate(formatDateInputValue(new Date(currentSelectedFreezeEnd.getFullYear(), currentSelectedFreezeEnd.getMonth(), currentSelectedFreezeEnd.getDate() + 1)))
+    : null;
 
   return (
     <DashboardLayout role="admin">
@@ -292,6 +657,9 @@ export const MembersList = () => {
             <option value="all">All Members</option>
             <option value="active">Active (With Plan)</option>
             <option value="inactive">Inactive (No Plan)</option>
+            <option value="expired">Expired</option>
+            <option value="expiring_soon">About to Expire (6 Days)</option>
+            <option value="frozen">Frozen</option>
             <option value="disabled">Disabled</option>
           </select>
         </div>
@@ -509,21 +877,110 @@ export const MembersList = () => {
                     <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-semibold text-foreground">{selectedMember.active_membership.plan_name}</span>
-                        <span className="badge-active">{selectedMember.active_membership.status}</span>
+                        <span className={(currentSelectedFreeze || upcomingSelectedFreeze) ? 'px-2 py-0.5 text-xs rounded-full bg-cyan-500/20 text-cyan-400' : 'badge-active'}>
+                          {currentSelectedFreeze
+                            ? `Freeze ${currentSelectedFreeze.remainingDays}d`
+                            : upcomingSelectedFreeze
+                              ? `Freeze in ${upcomingSelectedFreeze.startsInDays}d`
+                              : selectedMember.active_membership.status}
+                        </span>
                       </div>
                       <p className="text-sm text-muted-foreground">
                         {formatDate(selectedMember.active_membership.start_date)} - {formatDate(selectedMember.active_membership.end_date)}
                       </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="mt-3 text-orange-400 border-orange-400/30 hover:bg-orange-400/10"
-                        onClick={() => handleRevokeMembership(selectedMember.id)}
-                        data-testid="revoke-membership-btn"
-                      >
-                        <Ban size={14} className="mr-2" />
-                        Revoke Membership
-                      </Button>
+                      {currentSelectedFreeze && (
+                        <div className="mt-2 p-2 rounded-md bg-cyan-500/10 border border-cyan-500/20">
+                          <p className="text-xs text-cyan-300">
+                            Frozen: {formatDate(currentSelectedFreeze.freeze_start_date)} - {formatDate(currentSelectedFreeze.freeze_end_date)}
+                            {' '}({currentSelectedFreeze.freeze_days} days)
+                            {' '}• Remaining: {currentSelectedFreeze.remainingDays}d
+                            {typeof currentSelectedFreeze.freeze_fee === 'number' ? ` • Fee ₹${currentSelectedFreeze.freeze_fee}` : ''}
+                          </p>
+                        </div>
+                      )}
+                      {!currentSelectedFreeze && upcomingSelectedFreeze && (
+                        <div className="mt-2 p-2 rounded-md bg-blue-500/10 border border-blue-500/20">
+                          <p className="text-xs text-blue-300">
+                            Upcoming Freeze: {formatDate(upcomingSelectedFreeze.freeze_start_date)} - {formatDate(upcomingSelectedFreeze.freeze_end_date)}
+                            {' '}({upcomingSelectedFreeze.freeze_days} days)
+                            {' '}• Starts in {upcomingSelectedFreeze.startsInDays}d
+                            {typeof upcomingSelectedFreeze.freeze_fee === 'number' ? ` • Fee ₹${upcomingSelectedFreeze.freeze_fee}` : ''}
+                          </p>
+                        </div>
+                      )}
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {!currentSelectedFreeze && !upcomingSelectedFreeze && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-cyan-400 border-cyan-400/30 hover:bg-cyan-400/10"
+                            onClick={openFreezeDialog}
+                            data-testid="freeze-membership-btn"
+                          >
+                            <Calendar size={14} className="mr-2" />
+                            Freeze Membership
+                          </Button>
+                        )}
+                        {currentSelectedFreeze && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-blue-400 border-blue-400/30 hover:bg-blue-400/10"
+                              onClick={handleEditCurrentFreeze}
+                              disabled={actionLoading}
+                            >
+                              <Edit size={14} className="mr-2" />
+                              Edit Freeze
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-emerald-400 border-emerald-400/30 hover:bg-emerald-400/10"
+                              onClick={handleEndCurrentFreeze}
+                              disabled={actionLoading}
+                            >
+                              <RotateCcw size={14} className="mr-2" />
+                              End Freeze
+                            </Button>
+                          </>
+                        )}
+                        {upcomingSelectedFreeze && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-red-300 border-red-400/30 hover:bg-red-400/10"
+                            onClick={handleCancelUpcomingFreeze}
+                            disabled={actionLoading}
+                          >
+                              <Ban size={14} className="mr-2" />
+                              Cancel Freeze
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-orange-400 border-orange-400/30 hover:bg-orange-400/10"
+                          onClick={() => handleRevokeMembership(selectedMember.id)}
+                          data-testid="revoke-membership-btn"
+                        >
+                          <Ban size={14} className="mr-2" />
+                          Revoke Membership
+                        </Button>
+                      </div>
+                      {Array.isArray(selectedMember.active_membership.freeze_history) && selectedMember.active_membership.freeze_history.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-emerald-500/20 space-y-1">
+                          <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                            Freeze History ({selectedMember.active_membership.freeze_history.length})
+                          </p>
+                          {selectedMember.active_membership.freeze_history.slice().reverse().map((f, idx) => (
+                            <p key={f.id || idx} className="text-xs text-muted-foreground">
+                              {formatDate(f.freeze_start_date)} - {formatDate(f.freeze_end_date)} ({f.freeze_days} days)
+                              {typeof f.freeze_fee === 'number' ? ` • Fee ₹${f.freeze_fee}` : ''}
+                            </p>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="p-4 bg-muted/50 rounded-lg text-center">
@@ -635,6 +1092,268 @@ export const MembersList = () => {
                 disabled={actionLoading}
               >
                 {actionLoading ? 'Deleting...' : `Delete ${selectedIds.length} Member(s)`}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Freeze Membership Dialog */}
+        <Dialog open={showFreezeDialog} onOpenChange={setShowFreezeDialog}>
+          <DialogContent className="bg-card border-border sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-xl">Freeze Membership</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="p-3 rounded-lg border border-border bg-muted/30">
+                <p className="font-medium text-foreground">{selectedMember?.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {selectedMember?.member_id} • {selectedMember?.active_membership?.plan_name}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Freeze Start Date</Label>
+                  <Input
+                    type="date"
+                    className="input-dark mt-2"
+                    value={freezeForm.freeze_start_date}
+                    onChange={(e) => setFreezeForm(prev => ({ ...prev, freeze_start_date: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Freeze End Date</Label>
+                  <Input
+                    type="date"
+                    className="input-dark mt-2"
+                    value={freezeForm.freeze_end_date}
+                    onChange={(e) => setFreezeForm(prev => ({ ...prev, freeze_end_date: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Freeze Fee</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="1"
+                    className="input-dark mt-2"
+                    value={freezeForm.freeze_fee}
+                    onChange={(e) => setFreezeForm(prev => ({ ...prev, freeze_fee: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Payment Method</Label>
+                  <select
+                    className="w-full mt-2 h-10 rounded-md border border-input bg-background px-3 text-sm"
+                    value={freezeForm.payment_method}
+                    onChange={(e) => setFreezeForm(prev => ({ ...prev, payment_method: e.target.value }))}
+                  >
+                    <option value="cash">Cash</option>
+                    <option value="upi">UPI</option>
+                    <option value="card">Card</option>
+                    <option value="bank_transfer">Bank Transfer</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Notes</Label>
+                <Input
+                  className="input-dark mt-2"
+                  placeholder="Out of city / long leave"
+                  value={freezeForm.notes}
+                  onChange={(e) => setFreezeForm(prev => ({ ...prev, notes: e.target.value }))}
+                />
+              </div>
+
+              <div className="p-4 rounded-lg border border-cyan-500/30 bg-cyan-500/5">
+                <p className="text-sm font-semibold text-cyan-400 mb-3">Before Confirming</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Original Expiry</p>
+                    <p className="text-sm font-medium text-foreground">
+                      {freezePreview.originalExpiry ? formatDate(freezePreview.originalExpiry.toISOString()) : '-'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Total Freeze Days</p>
+                    <p className="text-sm font-medium text-foreground">{freezePreview.frozenDays || 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">New Expiry</p>
+                    <p className="text-sm font-medium text-foreground">
+                      {freezePreview.newExpiry ? formatDate(freezePreview.newExpiry.toISOString()) : '-'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setShowFreezeDialog(false)} disabled={actionLoading}>
+                Cancel
+              </Button>
+              <Button className="btn-primary" onClick={handleFreezeMembership} disabled={actionLoading}>
+                {actionLoading ? 'Freezing...' : 'Confirm Freeze'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Freeze Dialog */}
+        <Dialog open={showEditFreezeDialog} onOpenChange={setShowEditFreezeDialog}>
+          <DialogContent className="bg-card border-border sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-xl">Edit Freeze</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="p-3 rounded-lg border border-border bg-muted/30">
+                <p className="font-medium text-foreground">{selectedMember?.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {selectedMember?.member_id} • {selectedMember?.active_membership?.plan_name}
+                </p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Freeze Start Date</Label>
+                  <Input type="date" className="input-dark mt-2" value={editFreezeForm.freeze_start_date}
+                    onChange={(e) => setEditFreezeForm(prev => ({ ...prev, freeze_start_date: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Freeze End Date</Label>
+                  <Input type="date" className="input-dark mt-2" value={editFreezeForm.freeze_end_date}
+                    onChange={(e) => setEditFreezeForm(prev => ({ ...prev, freeze_end_date: e.target.value }))} />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Freeze Fee</Label>
+                  <Input type="number" min="0" step="1" className="input-dark mt-2" value={editFreezeForm.freeze_fee}
+                    onChange={(e) => setEditFreezeForm(prev => ({ ...prev, freeze_fee: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Payment Method</Label>
+                  <select
+                    className="w-full mt-2 h-10 rounded-md border border-input bg-background px-3 text-sm"
+                    value={editFreezeForm.payment_method}
+                    onChange={(e) => setEditFreezeForm(prev => ({ ...prev, payment_method: e.target.value }))}
+                  >
+                    <option value="cash">Cash</option>
+                    <option value="upi">UPI</option>
+                    <option value="card">Card</option>
+                    <option value="bank_transfer">Bank Transfer</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Notes</Label>
+                <Input className="input-dark mt-2" value={editFreezeForm.notes}
+                  onChange={(e) => setEditFreezeForm(prev => ({ ...prev, notes: e.target.value }))} />
+              </div>
+              <div className="p-4 rounded-lg border border-blue-500/30 bg-blue-500/5">
+                <p className="text-sm font-semibold text-blue-300 mb-3">Before Saving</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Current Expiry</p>
+                    <p className="text-sm font-medium text-foreground">
+                      {getEditFreezePreview().originalExpiry ? formatDate(getEditFreezePreview().originalExpiry.toISOString()) : '-'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Total Freeze Days</p>
+                    <p className="text-sm font-medium text-foreground">{getEditFreezePreview().freezeDays || 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">New Expiry</p>
+                    <p className="text-sm font-medium text-foreground">
+                      {getEditFreezePreview().newExpiry ? formatDate(getEditFreezePreview().newExpiry.toISOString()) : '-'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setShowEditFreezeDialog(false)} disabled={actionLoading}>Cancel</Button>
+              <Button className="btn-primary" onClick={handleSubmitEditFreeze} disabled={actionLoading}>
+                {actionLoading ? 'Saving...' : 'Save Freeze Changes'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* End Freeze Dialog */}
+        <Dialog open={showEndFreezeDialog} onOpenChange={setShowEndFreezeDialog}>
+          <DialogContent className="bg-card border-border sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-xl">End Freeze Early</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="p-3 rounded-lg border border-border bg-muted/30">
+                <p className="font-medium text-foreground">{selectedMember?.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {selectedMember?.member_id} • {currentSelectedFreeze ? `Current freeze ends ${formatDate(currentSelectedFreeze.freeze_end_date)}` : 'No active freeze'}
+                </p>
+              </div>
+              <div>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Unfreeze Early Date</Label>
+                <Input
+                  type="date"
+                  className="input-dark mt-2"
+                  value={endFreezeForm.end_date}
+                  min={currentSelectedFreezeMinUnfreezeDate || undefined}
+                  max={currentSelectedFreezeMaxUnfreezeDate || undefined}
+                  onChange={(e) => setEndFreezeForm({ end_date: e.target.value })}
+                />
+                <div className="mt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="text-emerald-400 border-emerald-400/30 hover:bg-emerald-400/10"
+                    onClick={() => setEndFreezeForm({ end_date: getLocalDateInputValue() })}
+                  >
+                    Unfreeze Now / Today
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Choose the date when member becomes active again (today = unfreeze immediately).
+                  {currentSelectedFreeze && (
+                    <> Allowed range: {formatDate(currentSelectedFreeze.freeze_start_date)} to {currentSelectedFreezeMaxUnfreezeLabel}.</>
+                  )}
+                </p>
+              </div>
+              <div className="p-4 rounded-lg border border-emerald-500/30 bg-emerald-500/5">
+                <p className="text-sm font-semibold text-emerald-300 mb-3">Before Confirming Unfreeze</p>
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Current Expiry</p>
+                    <p className="text-sm font-medium text-foreground">
+                      {getEndFreezePreview().currentExpiry ? formatDate(getEndFreezePreview().currentExpiry.toISOString()) : '-'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Final Freeze Days</p>
+                    <p className="text-sm font-medium text-foreground">{getEndFreezePreview().finalFreezeDays || 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Days Reduced</p>
+                    <p className="text-sm font-medium text-foreground">{getEndFreezePreview().reducedDays || 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">New Expiry</p>
+                    <p className="text-sm font-medium text-foreground">
+                      {getEndFreezePreview().newExpiry ? formatDate(getEndFreezePreview().newExpiry.toISOString()) : '-'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setShowEndFreezeDialog(false)} disabled={actionLoading}>Cancel</Button>
+              <Button className="btn-primary" onClick={handleSubmitEndFreeze} disabled={actionLoading}>
+                {actionLoading ? 'Unfreezing...' : 'Unfreeze Early'}
               </Button>
             </DialogFooter>
           </DialogContent>

@@ -7,6 +7,7 @@ from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
+import re
 from pathlib import Path
 from pydantic import BaseModel, Field, EmailStr, ConfigDict
 from typing import List, Optional, Literal
@@ -217,6 +218,23 @@ class MembershipResponse(BaseModel):
     amount_due: float = 0
     created_at: str
 
+class MembershipFreezeRequest(BaseModel):
+    freeze_start_date: str  # YYYY-MM-DD
+    freeze_end_date: str    # YYYY-MM-DD
+    freeze_fee: float = 0
+    payment_method: str = "cash"
+    notes: Optional[str] = None
+
+class MembershipFreezeEditRequest(BaseModel):
+    freeze_start_date: str  # YYYY-MM-DD
+    freeze_end_date: str    # YYYY-MM-DD
+    freeze_fee: Optional[float] = None
+    payment_method: Optional[str] = None
+    notes: Optional[str] = None
+
+class MembershipFreezeEndRequest(BaseModel):
+    end_date: Optional[str] = None  # YYYY-MM-DD, unfreeze effective date (member active on this date), defaults to today
+
 # Payment Models
 class PaymentCreate(BaseModel):
     user_id: str
@@ -300,13 +318,23 @@ class SMTPSettings(BaseModel):
     smtp_pass: str
     smtp_secure: bool = True
     sender_email: str
+    admin_test_email: Optional[str] = ""
 
 class WhatsAppSettings(BaseModel):
-    twilio_account_sid: str
-    twilio_auth_token: str
-    twilio_whatsapp_number: str
+    whatsapp_provider: str = "twilio"  # twilio | fast2sms
+    twilio_account_sid: Optional[str] = ""
+    twilio_auth_token: Optional[str] = ""
+    twilio_whatsapp_number: Optional[str] = ""
     use_sandbox: bool = True
     sandbox_url: Optional[str] = None
+    fast2sms_api_key: Optional[str] = ""
+    fast2sms_base_url: Optional[str] = "https://www.fast2sms.com"
+    fast2sms_waba_number: Optional[str] = ""  # optional sender / business number if required by account
+    fast2sms_phone_number_id: Optional[str] = ""
+    fast2sms_use_template_api: bool = False
+    admin_whatsapp_test_numbers: Optional[str] = ""  # comma separated
+    attendance_confirmation_whatsapp_enabled: bool = True
+    attendance_confirmation_email_enabled: bool = True
 
 class SettingsResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -316,9 +344,18 @@ class SettingsResponse(BaseModel):
     smtp_user: Optional[str] = None
     smtp_secure: Optional[bool] = True
     sender_email: Optional[str] = None
+    admin_test_email: Optional[str] = None
+    whatsapp_provider: Optional[str] = "twilio"
     twilio_account_sid: Optional[str] = None
     twilio_whatsapp_number: Optional[str] = None
     use_sandbox: Optional[bool] = True
+    fast2sms_base_url: Optional[str] = "https://www.fast2sms.com"
+    fast2sms_waba_number: Optional[str] = None
+    fast2sms_phone_number_id: Optional[str] = None
+    fast2sms_use_template_api: Optional[bool] = False
+    admin_whatsapp_test_numbers: Optional[str] = None
+    attendance_confirmation_whatsapp_enabled: Optional[bool] = True
+    attendance_confirmation_email_enabled: Optional[bool] = True
 
 # Template Models
 class TemplateUpdate(BaseModel):
@@ -334,6 +371,19 @@ class TemplateResponse(BaseModel):
     channel: str
     subject: Optional[str] = None
     content: str
+
+class TemplateTestSendRequest(BaseModel):
+    template_type: str
+    channel: str  # email | whatsapp
+    recipient: str
+    subject: Optional[str] = None
+    content: Optional[str] = None
+
+class AttendanceConfirmationWhatsAppToggle(BaseModel):
+    enabled: bool = True
+
+class AttendanceConfirmationEmailToggle(BaseModel):
+    enabled: bool = True
 
 # Health Tracking Models
 class HealthLogCreate(BaseModel):
@@ -801,6 +851,50 @@ async def get_template(template_type: str, channel: str) -> dict:
         ("renewal_reminder", "whatsapp"): {
             "content": "⏰ Hi {{name}},\n\nYour F3 Fitness membership expires on *{{expiry_date}}* ({{days_left}} days left).\n\nRenew now to keep your fitness journey going! 💪\n\n- F3 Fitness"
         },
+        ("freeze_started", "email"): {
+            "subject": "Membership Freeze Confirmed ❄️",
+            "content": """<h2>Membership Freeze Confirmed ❄️</h2>
+<p>Hi <strong>{{name}}</strong>,</p>
+<p>Your membership freeze request has been applied successfully.</p>
+<div class="highlight-box">
+  <strong>Freeze Period:</strong> {{freeze_start_date}} to {{freeze_end_date}}<br>
+  <strong>Total Freeze Days:</strong> {{freeze_days}}<br>
+  <strong>New Membership Expiry:</strong> {{new_expiry_date}}<br>
+  <strong>Freeze Fee:</strong> Rs.{{freeze_fee}}
+</div>
+<p>You can resume your workouts after the freeze period ends.</p>"""
+        },
+        ("freeze_started", "whatsapp"): {
+            "content": "❄️ Hi {{name}}, your membership has been frozen.\n\nFreeze: {{freeze_start_date}} to {{freeze_end_date}}\nDays: {{freeze_days}}\nNew Expiry: {{new_expiry_date}}\nFee: Rs.{{freeze_fee}}\n\n- F3 Fitness"
+        },
+        ("freeze_ended", "email"): {
+            "subject": "Membership Freeze Ended ✅",
+            "content": """<h2>Freeze Ended ✅</h2>
+<p>Hi <strong>{{name}}</strong>,</p>
+<p>Your membership freeze has been ended {{end_mode}}.</p>
+<div class="highlight-box">
+  <strong>Freeze End Date:</strong> {{freeze_end_date}}<br>
+  <strong>Current Membership Expiry:</strong> {{new_expiry_date}}
+</div>
+<p>Welcome back to your fitness routine! 💪</p>"""
+        },
+        ("freeze_ended", "whatsapp"): {
+            "content": "✅ Hi {{name}}, your membership freeze has been ended {{end_mode}}.\n\nFreeze ends on: {{freeze_end_date}}\nCurrent Expiry: {{new_expiry_date}}\n\nWelcome back! 💪\n- F3 Fitness"
+        },
+        ("freeze_ending_tomorrow", "email"): {
+            "subject": "Freeze Ends Tomorrow ⏰",
+            "content": """<h2>Freeze Ending Tomorrow ⏰</h2>
+<p>Hi <strong>{{name}}</strong>,</p>
+<p>Your membership freeze is ending tomorrow.</p>
+<div class="highlight-box">
+  <strong>Freeze End Date:</strong> {{freeze_end_date}}<br>
+  <strong>Membership Expiry:</strong> {{new_expiry_date}}
+</div>
+<p>We look forward to seeing you back at F3 Fitness! 💪</p>"""
+        },
+        ("freeze_ending_tomorrow", "whatsapp"): {
+            "content": "⏰ Hi {{name}}, your membership freeze ends tomorrow ({{freeze_end_date}}).\n\nCurrent Expiry: {{new_expiry_date}}\nSee you at F3 Fitness! 💪"
+        },
         ("membership_activated", "email"): {
             "subject": "Membership Activated! 🎉",
             "content": """<h2>Membership Activated! 🎉</h2>
@@ -900,8 +994,31 @@ def replace_template_vars(template: str, variables: dict) -> str:
 async def send_email(to_email: str, subject: str, body: str):
     """Send email using configured SMTP settings"""
     settings = await db.settings.find_one({"id": "1"}, {"_id": 0})
+    body_html = body or ""
+    # Best-effort OTP extraction for reception fallback (supports common 4-8 digit OTP formats)
+    otp_detected = None
+    otp_match = re.search(r'(?i)otp[^0-9]{0,20}([0-9]{4,8})', body_html)
+    if not otp_match:
+        otp_match = re.search(r'(?<!\d)([0-9]{4,8})(?!\d)', body_html)
+    if otp_match:
+        otp_detected = otp_match.group(1)
+    log_data = {
+        "id": str(uuid.uuid4()),
+        "to_email": to_email,
+        "subject": (subject or "")[:200],
+        "body_preview": (body_html.replace("\n", " ").replace("\r", " ")[:300] + "...") if len(body_html) > 300 else body_html,
+        # Store HTML for click-to-preview in Email Logs. Truncate to keep log docs bounded.
+        "body_html": (body_html[:50000] + "\n<!-- truncated -->") if len(body_html) > 50000 else body_html,
+        "otp_detected": otp_detected,
+        "status": "pending",
+        "error": None,
+        "timestamp": get_ist_now().isoformat()
+    }
     if not settings or not settings.get("smtp_host"):
         logger.warning("SMTP not configured")
+        log_data["status"] = "failed"
+        log_data["error"] = "SMTP not configured"
+        await db.email_logs.insert_one(log_data)
         return False
     
     try:
@@ -947,113 +1064,256 @@ async def send_email(to_email: str, subject: str, body: str):
                 password=settings["smtp_pass"],
                 start_tls=smtp_secure
             )
+        log_data["status"] = "sent"
+        await db.email_logs.insert_one(log_data)
         return True
     except Exception as e:
         logger.error(f"Email send failed: {e}")
+        log_data["status"] = "failed"
+        log_data["error"] = str(e)
+        await db.email_logs.insert_one(log_data)
+        return False
+
+def _normalize_phone_e164(number: str) -> str:
+    clean = (number or "").replace(' ', '').replace('-', '').replace('(', '').replace(')', '').replace('\u202a', '').replace('\u202c', '')
+    if not clean.startswith('+'):
+        clean = '+' + clean.lstrip('+')
+    return clean
+
+async def _log_whatsapp(log_data: dict, log_to_db: bool = True):
+    if log_to_db:
+        await db.whatsapp_logs.insert_one(log_data)
+
+async def _send_whatsapp_twilio(settings: dict, to_number_clean: str, message: str, log_data: dict, log_to_db: bool = True):
+    if not settings.get("twilio_account_sid"):
+        log_data["status"] = "failed"
+        log_data["error"] = "Twilio Account SID not configured"
+        await _log_whatsapp(log_data, log_to_db)
+        return False
+    if not settings.get("twilio_auth_token"):
+        log_data["status"] = "failed"
+        log_data["error"] = "Twilio Auth Token not configured"
+        await _log_whatsapp(log_data, log_to_db)
+        return False
+    if not settings.get("twilio_whatsapp_number"):
+        log_data["status"] = "failed"
+        log_data["error"] = "Twilio WhatsApp number not configured"
+        await _log_whatsapp(log_data, log_to_db)
+        return False
+
+    try:
+        if settings.get("use_sandbox") and settings.get("sandbox_url"):
+            async with httpx.AsyncClient(timeout=20) as client:
+                response = await client.post(
+                    settings["sandbox_url"],
+                    data={"To": f"whatsapp:{to_number_clean}", "Body": message}
+                )
+            if response.status_code == 200:
+                log_data["status"] = "sent"
+                log_data["message_sid"] = "sandbox"
+            else:
+                log_data["status"] = "failed"
+                log_data["error"] = f"Sandbox returned status {response.status_code}"
+            await _log_whatsapp(log_data, log_to_db)
+            return response.status_code == 200
+
+        from twilio.rest import Client
+        twilio_client = Client(settings["twilio_account_sid"], settings["twilio_auth_token"])
+        from_number = _normalize_phone_e164(settings["twilio_whatsapp_number"])
+        msg = twilio_client.messages.create(
+            from_=f'whatsapp:{from_number}',
+            body=message,
+            to=f'whatsapp:{to_number_clean}'
+        )
+        log_data["status"] = "sent"
+        log_data["message_sid"] = getattr(msg, "sid", None)
+        await _log_whatsapp(log_data, log_to_db)
+        return True
+    except Exception as e:
+        log_data["status"] = "failed"
+        log_data["error"] = str(e)
+        await _log_whatsapp(log_data, log_to_db)
+        logger.error(f"Twilio WhatsApp send failed: {e}")
+        return False
+
+async def _send_whatsapp_fast2sms(settings: dict, to_number_clean: str, message: str, log_data: dict, log_to_db: bool = True):
+    api_key = settings.get("fast2sms_api_key")
+    if not api_key:
+        log_data["status"] = "failed"
+        log_data["error"] = "Fast2SMS API key not configured"
+        await _log_whatsapp(log_data, log_to_db)
+        return False
+
+    base_url = (settings.get("fast2sms_base_url") or "https://www.fast2sms.com").rstrip("/")
+    endpoint = f"{base_url}/dev/whatsapp-session"
+    display_number = str(settings.get("fast2sms_waba_number") or "").strip()
+    phone_number_id = str(settings.get("fast2sms_phone_number_id") or "").strip()
+
+    async def _resolve_waba_sender():
+        nonlocal display_number, phone_number_id
+        if display_number and phone_number_id:
+            return
+        try:
+            async with httpx.AsyncClient(timeout=20) as client:
+                response = await client.get(
+                    f"{base_url}/dev/dlt_manager/whatsapp",
+                    headers={"authorization": api_key},
+                    params={"authorization": api_key}
+                )
+            if response.status_code >= 400:
+                return
+            data = response.json() if response.headers.get("content-type", "").startswith("application/json") else None
+            if not isinstance(data, list):
+                return
+
+            def _digits(v):
+                return "".join(ch for ch in str(v or "") if ch.isdigit())
+
+            matched = None
+            if display_number:
+                want = _digits(display_number)
+                for row in data:
+                    if _digits(row.get("number")) == want:
+                        matched = row
+                        break
+            if not matched:
+                for row in data:
+                    if str(row.get("connection_status", "")).upper() == "CONNECTED":
+                        matched = row
+                        break
+            if not matched and data:
+                matched = data[0]
+
+            if matched:
+                display_number = display_number or str(matched.get("number") or "")
+                phone_number_id = phone_number_id or str(matched.get("phone_number_id") or "")
+                log_data["fast2sms_sender_auto_resolved"] = {
+                    "display_number": display_number,
+                    "phone_number_id": phone_number_id
+                }
+        except Exception:
+            return
+
+    await _resolve_waba_sender()
+
+    base_payload = {
+        "to": to_number_clean,
+        "text": message,
+        "type": "text"
+    }
+    display_number_digits = "".join(ch for ch in display_number if ch.isdigit()) if display_number else ""
+
+    headers = {"authorization": api_key}
+
+    async def _attempt_send(client: httpx.AsyncClient):
+        attempts = []
+        to_variants = [to_number_clean, to_number_clean.lstrip("+")]
+        sender_variants = []
+        if phone_number_id:
+            sender_variants.append({"phone_number_id": phone_number_id})
+        if display_number:
+            sender_variants.append({"display_number": display_number})
+        if display_number_digits and display_number_digits != display_number:
+            sender_variants.append({"display_number": display_number_digits})
+        if phone_number_id and display_number:
+            sender_variants.append({"phone_number_id": phone_number_id, "display_number": display_number})
+        if phone_number_id and display_number_digits:
+            sender_variants.append({"phone_number_id": phone_number_id, "display_number": display_number_digits})
+        if not sender_variants:
+            sender_variants.append({})
+
+        # de-duplicate sender payloads
+        dedup = []
+        seen = set()
+        for sv in sender_variants:
+          key = tuple(sorted(sv.items()))
+          if key not in seen:
+            seen.add(key)
+            dedup.append(sv)
+        sender_variants = dedup
+
+        for sender_fields in sender_variants:
+            for to_value in to_variants:
+                attempts.append(("json", {**base_payload, **sender_fields, "to": to_value}))
+                attempts.append(("form", {**base_payload, **sender_fields, "to": to_value}))
+
+        last_response = None
+        tried = []
+        for kind, body in attempts:
+            req_headers = dict(headers)
+            if kind == "json":
+                req_headers["Content-Type"] = "application/json"
+                resp = await client.post(endpoint, headers=req_headers, json=body)
+            else:
+                resp = await client.post(endpoint, headers=req_headers, data=body)
+            tried.append({"kind": kind, "keys": sorted(list(body.keys()))})
+            last_response = resp
+            if 200 <= resp.status_code < 300:
+                log_data["provider_attempts"] = tried
+                return resp
+
+            # Retry on 400/415 with alternate payloads; stop early on auth failures.
+            if resp.status_code in (401, 403):
+                log_data["provider_attempts"] = tried
+                return resp
+
+        log_data["provider_attempts"] = tried
+        return last_response
+
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await _attempt_send(client)
+        body_text = response.text[:500] if response.text else ""
+        try:
+            body_json = response.json()
+        except Exception:
+            body_json = None
+
+        # Fast2SMS returns provider-specific JSON. Treat HTTP 2xx + no obvious failure flags as success.
+        is_success = 200 <= response.status_code < 300
+        if body_json and isinstance(body_json, dict):
+            if body_json.get("return") is False or str(body_json.get("status", "")).lower() in {"fail", "failed", "error"}:
+                is_success = False
+            log_data["provider_response"] = body_json
+        elif body_text:
+            log_data["provider_response_text"] = body_text
+
+        if is_success:
+            log_data["status"] = "sent"
+            log_data["message_sid"] = (body_json or {}).get("request_id") or (body_json or {}).get("message_id") or "fast2sms"
+        else:
+            log_data["status"] = "failed"
+            log_data["error"] = f"Fast2SMS returned status {response.status_code}: {body_text or body_json}"
+        await _log_whatsapp(log_data, log_to_db)
+        return is_success
+    except Exception as e:
+        log_data["status"] = "failed"
+        log_data["error"] = str(e)
+        await _log_whatsapp(log_data, log_to_db)
+        logger.error(f"Fast2SMS WhatsApp send failed: {e}")
         return False
 
 async def send_whatsapp(to_number: str, message: str, log_to_db: bool = True):
-    """Send WhatsApp message using Twilio"""
-    settings = await db.settings.find_one({"id": "1"}, {"_id": 0})
-    
-    # Initialize log data
+    """Send WhatsApp message using configured provider (Twilio or Fast2SMS)."""
+    settings = await db.settings.find_one({"id": "1"}, {"_id": 0}) or {}
+    provider = (settings.get("whatsapp_provider") or "twilio").lower()
+    to_number_clean = _normalize_phone_e164(to_number)
+
     log_data = {
         "id": str(uuid.uuid4()),
-        "to_number": to_number,
+        "to_number": to_number_clean,
         "message": message[:200] + "..." if len(message) > 200 else message,
         "status": "pending",
         "error": None,
         "message_sid": None,
+        "provider": provider,
         "timestamp": get_ist_now().isoformat()
     }
-    
-    if not settings or not settings.get("twilio_account_sid"):
-        logger.warning("WhatsApp not configured - missing twilio_account_sid")
-        log_data["status"] = "failed"
-        log_data["error"] = "Twilio Account SID not configured"
-        if log_to_db:
-            await db.whatsapp_logs.insert_one(log_data)
-        return False
-    
-    if not settings.get("twilio_auth_token"):
-        logger.warning("WhatsApp not configured - missing twilio_auth_token")
-        log_data["status"] = "failed"
-        log_data["error"] = "Twilio Auth Token not configured"
-        if log_to_db:
-            await db.whatsapp_logs.insert_one(log_data)
-        return False
-    
-    if not settings.get("twilio_whatsapp_number"):
-        logger.warning("WhatsApp not configured - missing twilio_whatsapp_number")
-        log_data["status"] = "failed"
-        log_data["error"] = "WhatsApp number not configured"
-        if log_to_db:
-            await db.whatsapp_logs.insert_one(log_data)
-        return False
-    
-    # Clean phone number - remove spaces, dashes, and ensure E.164 format
-    to_number_clean = to_number.replace(' ', '').replace('-', '').replace('(', '').replace(')', '').replace('\u202a', '').replace('\u202c', '')
-    
-    # Ensure number starts with +
-    if not to_number_clean.startswith('+'):
-        to_number_clean = '+' + to_number_clean.lstrip('+')
-    
-    log_data["to_number"] = to_number_clean
-    
-    try:
-        if settings.get("use_sandbox") and settings.get("sandbox_url"):
-            # Use Twilio Sandbox via HTTP
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    settings["sandbox_url"],
-                    data={
-                        "To": f"whatsapp:{to_number_clean}",
-                        "Body": message
-                    }
-                )
-                logger.info(f"Sandbox response: {response.status_code}")
-                if response.status_code == 200:
-                    log_data["status"] = "sent"
-                    log_data["message_sid"] = "sandbox"
-                else:
-                    log_data["status"] = "failed"
-                    log_data["error"] = f"Sandbox returned status {response.status_code}"
-                if log_to_db:
-                    await db.whatsapp_logs.insert_one(log_data)
-                return response.status_code == 200
-        else:
-            # Use Twilio API directly
-            from twilio.rest import Client
-            twilio_client = Client(settings["twilio_account_sid"], settings["twilio_auth_token"])
-            
-            # Clean the from number as well - remove invisible Unicode characters
-            from_number = settings["twilio_whatsapp_number"].replace(' ', '').replace('-', '').replace('\u202a', '').replace('\u202c', '')
-            if not from_number.startswith('+'):
-                from_number = '+' + from_number
-            
-            logger.info(f"Sending WhatsApp from {from_number} to {to_number_clean}")
-            
-            msg = twilio_client.messages.create(
-                from_=f'whatsapp:{from_number}',
-                body=message,
-                to=f'whatsapp:{to_number_clean}'
-            )
-            logger.info(f"WhatsApp message sent: {msg.sid}")
-            log_data["status"] = "sent"
-            log_data["message_sid"] = msg.sid
-            if log_to_db:
-                await db.whatsapp_logs.insert_one(log_data)
-            return True
-    except Exception as e:
-        error_msg = str(e)
-        logger.error(f"WhatsApp send failed: {error_msg}")
-        import traceback
-        logger.error(f"WhatsApp traceback: {traceback.format_exc()}")
-        log_data["status"] = "failed"
-        log_data["error"] = error_msg
-        if log_to_db:
-            await db.whatsapp_logs.insert_one(log_data)
-        return False
+
+    if provider == "fast2sms":
+        return await _send_whatsapp_fast2sms(settings, to_number_clean, message, log_data, log_to_db)
+
+    return await _send_whatsapp_twilio(settings, to_number_clean, message, log_data, log_to_db)
 
 async def send_notification(user: dict, template_type: str, variables: dict, background_tasks: BackgroundTasks = None):
     """Send notification via both email and WhatsApp"""
@@ -1064,8 +1324,18 @@ async def send_notification(user: dict, template_type: str, variables: dict, bac
     email_template = await get_template(template_type, "email")
     whatsapp_template = await get_template(template_type, "whatsapp")
     
+    send_email_allowed = True
+    send_whatsapp_allowed = True
+    if template_type == "attendance":
+        settings = await db.settings.find_one(
+            {"id": "1"},
+            {"_id": 0, "attendance_confirmation_whatsapp_enabled": 1, "attendance_confirmation_email_enabled": 1}
+        ) or {}
+        send_whatsapp_allowed = settings.get("attendance_confirmation_whatsapp_enabled", True)
+        send_email_allowed = settings.get("attendance_confirmation_email_enabled", True)
+
     # Send email - wrap in professional template
-    if user.get("email") and email_template.get("content"):
+    if send_email_allowed and user.get("email") and email_template.get("content"):
         subject = replace_template_vars(email_template.get("subject", "F3 Fitness Notification"), vars_with_user)
         content = replace_template_vars(email_template["content"], vars_with_user)
         # Wrap content in professional template
@@ -1075,8 +1345,8 @@ async def send_notification(user: dict, template_type: str, variables: dict, bac
         else:
             await send_email(user["email"], subject, body)
     
-    # Send WhatsApp
-    if user.get("phone_number") and whatsapp_template.get("content"):
+    # Send WhatsApp (attendance confirmations can be disabled independently to save cost)
+    if send_whatsapp_allowed and user.get("phone_number") and whatsapp_template.get("content"):
         phone = user.get("country_code", "+91") + user["phone_number"].lstrip("0")
         message = replace_template_vars(whatsapp_template["content"], vars_with_user)
         if background_tasks:
@@ -1141,6 +1411,41 @@ async def send_birthday_wishes():
     except Exception as e:
         logger.error(f"Error in birthday wishes: {e}")
 
+async def send_freeze_ending_tomorrow_reminders():
+    """Send reminders for active freezes ending tomorrow."""
+    logger.info("Running freeze ending tomorrow reminder task...")
+    try:
+        now = get_ist_now()
+        tomorrow = (now + timedelta(days=1)).date()
+
+        memberships = await db.memberships.find({"status": "active"}, {"_id": 0}).to_list(5000)
+        sent_count = 0
+        for membership in memberships:
+            freeze_history = membership.get("freeze_history", []) or []
+            for freeze in freeze_history:
+                try:
+                    freeze_start = datetime.fromisoformat(freeze.get("freeze_start_date", "")[:10]).date()
+                    freeze_end = datetime.fromisoformat(freeze.get("freeze_end_date", "")[:10]).date()
+                except Exception:
+                    continue
+                # only current/active freeze windows and ends tomorrow
+                if not (freeze_start <= now.date() <= freeze_end):
+                    continue
+                if freeze_end != tomorrow:
+                    continue
+                user = await db.users.find_one({"id": membership["user_id"]}, {"_id": 0})
+                if not user:
+                    continue
+                await send_notification(user, "freeze_ending_tomorrow", {
+                    "freeze_end_date": freeze_end.strftime("%d %b %Y"),
+                    "new_expiry_date": datetime.fromisoformat(membership["end_date"]).strftime("%d %b %Y")
+                })
+                sent_count += 1
+                break
+        logger.info(f"Sent {sent_count} freeze ending tomorrow reminders")
+    except Exception as e:
+        logger.error(f"Error in freeze ending tomorrow reminders: {e}")
+
 async def scheduler_loop():
     """Background scheduler that runs daily tasks"""
     while True:
@@ -1150,6 +1455,7 @@ async def scheduler_loop():
             if now.hour == 9 and now.minute < 5:
                 await send_expiry_reminders()
                 await send_birthday_wishes()
+                await send_freeze_ending_tomorrow_reminders()
             await asyncio.sleep(300)  # Check every 5 minutes
         except Exception as e:
             logger.error(f"Scheduler error: {e}")
@@ -1641,7 +1947,10 @@ async def get_users_with_membership(
                 "status": membership.get("status"),
                 "final_price": final_price,
                 "amount_paid": amount_paid,
-                "amount_due": amount_due
+                "amount_due": amount_due,
+                "freeze_history": membership.get("freeze_history", []),
+                "total_frozen_days": membership.get("total_frozen_days", 0),
+                "total_freeze_fee": membership.get("total_freeze_fee", 0),
             }
         else:
             user_data["active_membership"] = None
@@ -2101,6 +2410,375 @@ async def cancel_membership(membership_id: str, current_user: dict = Depends(get
         raise HTTPException(status_code=404, detail="Membership not found")
     return {"message": "Membership cancelled"}
 
+@api_router.post("/memberships/{membership_id}/freeze")
+async def freeze_membership(
+    membership_id: str,
+    req: MembershipFreezeRequest,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(get_admin_user)
+):
+    """Freeze an active membership for a date range and extend expiry accordingly."""
+    membership = await db.memberships.find_one({"id": membership_id}, {"_id": 0})
+    if not membership:
+        raise HTTPException(status_code=404, detail="Membership not found")
+    if membership.get("status") != "active":
+        raise HTTPException(status_code=400, detail="Only active memberships can be frozen")
+
+    try:
+        freeze_start = datetime.fromisoformat(req.freeze_start_date[:10]).date()
+        freeze_end = datetime.fromisoformat(req.freeze_end_date[:10]).date()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid freeze dates. Use YYYY-MM-DD format")
+
+    if freeze_end < freeze_start:
+        raise HTTPException(status_code=400, detail="Freeze end date cannot be before start date")
+
+    membership_start = datetime.fromisoformat(membership["start_date"]).date()
+    membership_end_dt = datetime.fromisoformat(membership["end_date"])
+    membership_end = membership_end_dt.date()
+
+    if freeze_start < membership_start:
+        raise HTTPException(status_code=400, detail="Freeze cannot start before membership start date")
+    if freeze_start > membership_end:
+        raise HTTPException(status_code=400, detail="Freeze start date must be within the current membership period")
+
+    freeze_days = (freeze_end - freeze_start).days + 1
+    if freeze_days <= 0:
+        raise HTTPException(status_code=400, detail="Invalid freeze duration")
+
+    # Prevent overlapping freeze ranges for the same membership
+    for existing in membership.get("freeze_history", []):
+        try:
+            existing_start = datetime.fromisoformat(existing["freeze_start_date"][:10]).date()
+            existing_end = datetime.fromisoformat(existing["freeze_end_date"][:10]).date()
+            overlaps = not (freeze_end < existing_start or freeze_start > existing_end)
+            if overlaps:
+                raise HTTPException(status_code=400, detail="Freeze period overlaps an existing freeze range")
+        except HTTPException:
+            raise
+        except Exception:
+            # Ignore malformed legacy freeze entries
+            pass
+
+    extended_end_dt = membership_end_dt + timedelta(days=freeze_days)
+    now_iso = get_ist_now().isoformat()
+
+    freeze_entry = {
+        "id": str(uuid.uuid4()),
+        "freeze_start_date": freeze_start.isoformat(),
+        "freeze_end_date": freeze_end.isoformat(),
+        "freeze_days": freeze_days,
+        "freeze_fee": req.freeze_fee,
+        "payment_method": req.payment_method,
+        "notes": req.notes,
+        "frozen_at": now_iso,
+        "frozen_by_admin_id": current_user["id"]
+    }
+
+    update_doc = {
+        "$set": {
+            "end_date": extended_end_dt.isoformat(),
+            "updated_at": now_iso
+        },
+        "$push": {"freeze_history": freeze_entry},
+        "$inc": {
+            "total_frozen_days": freeze_days,
+            "total_freeze_fee": req.freeze_fee
+        }
+    }
+    await db.memberships.update_one({"id": membership_id}, update_doc)
+
+    # Optional freeze fee payment record
+    if req.freeze_fee and req.freeze_fee > 0:
+        payment_id = str(uuid.uuid4())
+        receipt_no = f"F3-FRZ-{datetime.now().strftime('%Y%m%d')}-{payment_id[:8].upper()}"
+        await db.payments.insert_one({
+            "id": payment_id,
+            "receipt_no": receipt_no,
+            "membership_id": membership_id,
+            "user_id": membership["user_id"],
+            "amount_paid": req.freeze_fee,
+            "payment_date": now_iso,
+            "payment_method": req.payment_method,
+            "notes": req.notes or f"Membership freeze fee ({freeze_days} days)",
+            "recorded_by_admin_id": current_user["id"]
+        })
+
+    await log_activity(
+        current_user["id"],
+        "membership_frozen",
+        f"Froze membership {membership_id} for {freeze_days} days (fee: {req.freeze_fee})",
+        metadata={
+            "membership_id": membership_id,
+            "freeze_days": freeze_days,
+            "freeze_start_date": freeze_start.isoformat(),
+            "freeze_end_date": freeze_end.isoformat(),
+            "freeze_fee": req.freeze_fee,
+        }
+    )
+
+    updated = await db.memberships.find_one({"id": membership_id}, {"_id": 0})
+    user = await db.users.find_one({"id": membership["user_id"]}, {"_id": 0})
+    if updated:
+        plan = await db.plans.find_one({"id": updated.get("plan_id")}, {"_id": 0, "name": 1})
+        if plan:
+            updated["plan_name"] = plan.get("name")
+    if user:
+        await send_notification(user, "freeze_started", {
+            "freeze_start_date": freeze_start.strftime("%d %b %Y"),
+            "freeze_end_date": freeze_end.strftime("%d %b %Y"),
+            "freeze_days": freeze_days,
+            "new_expiry_date": extended_end_dt.strftime("%d %b %Y"),
+            "freeze_fee": req.freeze_fee
+        }, background_tasks)
+    return {
+        "message": "Membership frozen successfully",
+        "membership": updated,
+        "freeze": freeze_entry,
+        "new_end_date": extended_end_dt.date().isoformat()
+    }
+
+@api_router.put("/memberships/{membership_id}/freeze/{freeze_id}")
+async def edit_membership_freeze(
+    membership_id: str,
+    freeze_id: str,
+    req: MembershipFreezeEditRequest,
+    current_user: dict = Depends(get_admin_user)
+):
+    membership = await db.memberships.find_one({"id": membership_id}, {"_id": 0})
+    if not membership:
+        raise HTTPException(status_code=404, detail="Membership not found")
+
+    freeze_history = membership.get("freeze_history", [])
+    freeze_idx = next((i for i, f in enumerate(freeze_history) if f.get("id") == freeze_id), None)
+    if freeze_idx is None:
+        raise HTTPException(status_code=404, detail="Freeze record not found")
+
+    try:
+        new_start = datetime.fromisoformat(req.freeze_start_date[:10]).date()
+        new_end = datetime.fromisoformat(req.freeze_end_date[:10]).date()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid freeze dates. Use YYYY-MM-DD")
+    if new_end < new_start:
+        raise HTTPException(status_code=400, detail="Freeze end date cannot be before start date")
+
+    membership_start = datetime.fromisoformat(membership["start_date"]).date()
+    if new_start < membership_start:
+        raise HTTPException(status_code=400, detail="Freeze cannot start before membership start date")
+
+    freeze_entry = freeze_history[freeze_idx]
+    old_start = datetime.fromisoformat(freeze_entry["freeze_start_date"][:10]).date()
+    old_end = datetime.fromisoformat(freeze_entry["freeze_end_date"][:10]).date()
+    old_days = int(freeze_entry.get("freeze_days") or ((old_end - old_start).days + 1))
+    old_fee = float(freeze_entry.get("freeze_fee") or 0)
+    new_days = (new_end - new_start).days + 1
+
+    # overlap check with all other freeze entries
+    for i, f in enumerate(freeze_history):
+        if i == freeze_idx:
+            continue
+        try:
+            fs = datetime.fromisoformat(f["freeze_start_date"][:10]).date()
+            fe = datetime.fromisoformat(f["freeze_end_date"][:10]).date()
+            overlaps = not (new_end < fs or new_start > fe)
+            if overlaps:
+                raise HTTPException(status_code=400, detail="Freeze period overlaps an existing freeze range")
+        except HTTPException:
+            raise
+        except Exception:
+            pass
+
+    delta_days = new_days - old_days
+    membership_end_dt = datetime.fromisoformat(membership["end_date"]) + timedelta(days=delta_days)
+
+    freeze_entry["freeze_start_date"] = new_start.isoformat()
+    freeze_entry["freeze_end_date"] = new_end.isoformat()
+    freeze_entry["freeze_days"] = new_days
+    if req.freeze_fee is not None:
+        freeze_entry["freeze_fee"] = req.freeze_fee
+    if req.payment_method is not None:
+        freeze_entry["payment_method"] = req.payment_method
+    if req.notes is not None:
+        freeze_entry["notes"] = req.notes
+    freeze_entry["updated_at"] = get_ist_now().isoformat()
+    freeze_entry["updated_by_admin_id"] = current_user["id"]
+
+    total_frozen_days = max(0, (membership.get("total_frozen_days", 0) or 0) + delta_days)
+    fee_delta = (float(freeze_entry.get("freeze_fee") or 0) - old_fee)
+    total_freeze_fee = max(0, float(membership.get("total_freeze_fee", 0) or 0) + fee_delta)
+    now_iso = get_ist_now().isoformat()
+    await db.memberships.update_one(
+        {"id": membership_id},
+        {"$set": {
+            "freeze_history": freeze_history,
+            "total_frozen_days": total_frozen_days,
+            "total_freeze_fee": total_freeze_fee,
+            "end_date": membership_end_dt.isoformat(),
+            "updated_at": now_iso
+        }}
+    )
+
+    await log_activity(
+        current_user["id"],
+        "membership_freeze_edited",
+        f"Edited freeze {freeze_id} on membership {membership_id} ({old_days} -> {new_days} days)",
+        metadata={"membership_id": membership_id, "freeze_id": freeze_id}
+    )
+
+    updated = await db.memberships.find_one({"id": membership_id}, {"_id": 0})
+    return {
+        "message": "Freeze updated successfully",
+        "membership": updated,
+        "freeze": freeze_entry,
+        "new_end_date": membership_end_dt.date().isoformat()
+    }
+
+@api_router.post("/memberships/{membership_id}/freeze/{freeze_id}/end")
+async def end_membership_freeze_early(
+    membership_id: str,
+    freeze_id: str,
+    req: MembershipFreezeEndRequest,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(get_admin_user)
+):
+    membership = await db.memberships.find_one({"id": membership_id}, {"_id": 0})
+    if not membership:
+        raise HTTPException(status_code=404, detail="Membership not found")
+
+    freeze_history = membership.get("freeze_history", [])
+    freeze_idx = next((i for i, f in enumerate(freeze_history) if f.get("id") == freeze_id), None)
+    if freeze_idx is None:
+        raise HTTPException(status_code=404, detail="Freeze record not found")
+
+    freeze_entry = freeze_history[freeze_idx]
+    freeze_start = datetime.fromisoformat(freeze_entry["freeze_start_date"][:10]).date()
+    freeze_end = datetime.fromisoformat(freeze_entry["freeze_end_date"][:10]).date()
+    unfreeze_date = get_ist_now().date() if not req.end_date else datetime.fromisoformat(req.end_date[:10]).date()
+
+    # UI sends the date member should become active again.
+    # Therefore the final frozen date is one day before unfreeze_date.
+    if unfreeze_date < freeze_start:
+        raise HTTPException(status_code=400, detail="Unfreeze date cannot be before freeze start date")
+    if unfreeze_date > (freeze_end + timedelta(days=1)):
+        raise HTTPException(status_code=400, detail="Unfreeze date must be on or before one day after current freeze end date")
+
+    old_days = int(freeze_entry.get("freeze_days") or ((freeze_end - freeze_start).days + 1))
+    final_freeze_end = unfreeze_date - timedelta(days=1)
+    new_days = 0 if final_freeze_end < freeze_start else (final_freeze_end - freeze_start).days + 1
+    delta_remove = old_days - new_days
+
+    if delta_remove <= 0:
+        return {
+            "message": "Freeze end date unchanged",
+            "membership": membership,
+            "freeze": freeze_entry,
+            "new_end_date": datetime.fromisoformat(membership["end_date"]).date().isoformat(),
+            "unfreeze_date": unfreeze_date.isoformat()
+        }
+
+    membership_end_dt = datetime.fromisoformat(membership["end_date"]) - timedelta(days=delta_remove)
+    freeze_entry["original_freeze_end_date"] = freeze_entry.get("original_freeze_end_date", freeze_end.isoformat())
+
+    if new_days <= 0:
+        freeze_history.pop(freeze_idx)
+    else:
+        freeze_entry["freeze_end_date"] = final_freeze_end.isoformat()
+        freeze_entry["freeze_days"] = new_days
+        freeze_entry["ended_early_at"] = get_ist_now().isoformat()
+        freeze_entry["ended_early_by_admin_id"] = current_user["id"]
+
+    total_frozen_days = max(0, (membership.get("total_frozen_days", 0) or 0) - delta_remove)
+    now_iso = get_ist_now().isoformat()
+    await db.memberships.update_one(
+        {"id": membership_id},
+        {"$set": {
+            "freeze_history": freeze_history,
+            "total_frozen_days": total_frozen_days,
+            "end_date": membership_end_dt.isoformat(),
+            "updated_at": now_iso
+        }}
+    )
+
+    await log_activity(
+        current_user["id"],
+        "membership_freeze_ended_early",
+        f"Ended freeze {freeze_id} early on membership {membership_id} (reduced {delta_remove} days)",
+        metadata={"membership_id": membership_id, "freeze_id": freeze_id, "reduced_days": delta_remove}
+    )
+
+    updated = await db.memberships.find_one({"id": membership_id}, {"_id": 0})
+    user = await db.users.find_one({"id": membership["user_id"]}, {"_id": 0})
+    if user:
+        await send_notification(user, "freeze_ended", {
+            "freeze_end_date": unfreeze_date.strftime("%d %b %Y"),
+            "new_expiry_date": membership_end_dt.strftime("%d %b %Y"),
+            "end_mode": "early"
+        }, background_tasks)
+    return {
+        "message": "Freeze ended early successfully",
+        "membership": updated,
+        "freeze": freeze_entry,
+        "new_end_date": membership_end_dt.date().isoformat(),
+        "unfreeze_date": unfreeze_date.isoformat()
+    }
+
+@api_router.post("/memberships/{membership_id}/freeze/{freeze_id}/cancel")
+async def cancel_upcoming_membership_freeze(
+    membership_id: str,
+    freeze_id: str,
+    current_user: dict = Depends(get_admin_user)
+):
+    membership = await db.memberships.find_one({"id": membership_id}, {"_id": 0})
+    if not membership:
+        raise HTTPException(status_code=404, detail="Membership not found")
+
+    freeze_history = membership.get("freeze_history", []) or []
+    freeze_idx = next((i for i, f in enumerate(freeze_history) if f.get("id") == freeze_id), None)
+    if freeze_idx is None:
+        raise HTTPException(status_code=404, detail="Freeze record not found")
+
+    freeze_entry = freeze_history[freeze_idx]
+    freeze_start = datetime.fromisoformat(freeze_entry["freeze_start_date"][:10]).date()
+    freeze_end = datetime.fromisoformat(freeze_entry["freeze_end_date"][:10]).date()
+    today = get_ist_now().date()
+
+    if freeze_start <= today:
+        raise HTTPException(status_code=400, detail="Only upcoming freezes can be cancelled. Use End Freeze for active freeze")
+
+    freeze_days = int(freeze_entry.get("freeze_days") or ((freeze_end - freeze_start).days + 1))
+    if freeze_days < 0:
+        freeze_days = 0
+
+    membership_end_dt = datetime.fromisoformat(membership["end_date"]) - timedelta(days=freeze_days)
+    freeze_history.pop(freeze_idx)
+
+    total_frozen_days = max(0, (membership.get("total_frozen_days", 0) or 0) - freeze_days)
+    now_iso = get_ist_now().isoformat()
+    await db.memberships.update_one(
+        {"id": membership_id},
+        {"$set": {
+            "freeze_history": freeze_history,
+            "total_frozen_days": total_frozen_days,
+            "end_date": membership_end_dt.isoformat(),
+            "updated_at": now_iso
+        }}
+    )
+
+    await log_activity(
+        current_user["id"],
+        "membership_freeze_cancelled",
+        f"Cancelled upcoming freeze {freeze_id} on membership {membership_id} ({freeze_days} days)",
+        metadata={"membership_id": membership_id, "freeze_id": freeze_id, "cancelled_days": freeze_days}
+    )
+
+    updated = await db.memberships.find_one({"id": membership_id}, {"_id": 0})
+    return {
+        "message": "Upcoming freeze cancelled successfully",
+        "membership": updated,
+        "cancelled_freeze": freeze_entry,
+        "new_end_date": membership_end_dt.date().isoformat()
+    }
+
 # ==================== PAYMENTS ROUTES ====================
 
 @api_router.get("/payments", response_model=List[PaymentResponse])
@@ -2510,6 +3188,66 @@ async def get_invoice_pdf(payment_id: str, current_user: dict = Depends(get_curr
 
 # ==================== WHATSAPP LOGS ROUTES ====================
 
+@api_router.get("/email-logs")
+async def get_email_logs(
+    status: Optional[str] = None,
+    limit: int = 100,
+    skip: int = 0,
+    current_user: dict = Depends(get_admin_user)
+):
+    """Get email delivery logs with filtering"""
+    query = {}
+    if status:
+        query["status"] = status
+
+    logs = await db.email_logs.find(query, {"_id": 0}).sort("timestamp", -1).skip(skip).limit(limit).to_list(limit)
+
+    total = await db.email_logs.count_documents({})
+    sent = await db.email_logs.count_documents({"status": "sent"})
+    failed = await db.email_logs.count_documents({"status": "failed"})
+    pending = await db.email_logs.count_documents({"status": "pending"})
+
+    return {
+        "logs": logs,
+        "stats": {"total": total, "sent": sent, "failed": failed, "pending": pending},
+        "pagination": {"skip": skip, "limit": limit, "total": total}
+    }
+
+@api_router.delete("/email-logs")
+async def clear_email_logs(current_user: dict = Depends(get_admin_user)):
+    result = await db.email_logs.delete_many({})
+    return {"message": f"Deleted {result.deleted_count} log entries"}
+
+@api_router.get("/email-logs/stats")
+async def get_email_stats(current_user: dict = Depends(get_admin_user)):
+    total = await db.email_logs.count_documents({})
+    sent = await db.email_logs.count_documents({"status": "sent"})
+    failed = await db.email_logs.count_documents({"status": "failed"})
+
+    recent_failures = await db.email_logs.find(
+        {"status": "failed"},
+        {"_id": 0}
+    ).sort("timestamp", -1).limit(10).to_list(10)
+
+    today_start = get_ist_today_start().isoformat()
+    today_sent = await db.email_logs.count_documents({
+        "status": "sent",
+        "timestamp": {"$gte": today_start}
+    })
+    today_failed = await db.email_logs.count_documents({
+        "status": "failed",
+        "timestamp": {"$gte": today_start}
+    })
+
+    return {
+        "total": total,
+        "sent": sent,
+        "failed": failed,
+        "success_rate": round((sent / total * 100), 2) if total > 0 else 0,
+        "today": {"sent": today_sent, "failed": today_failed},
+        "recent_failures": recent_failures
+    }
+
 @api_router.get("/whatsapp-logs")
 async def get_whatsapp_logs(
     status: Optional[str] = None,
@@ -2838,8 +3576,9 @@ async def get_regular_absentees(days: int = 7, current_user: dict = Depends(get_
             # Absent for more than X days
             user = await db.users.find_one({"id": user_id}, {"_id": 0, "id": 1, "name": 1, "member_id": 1, "phone_number": 1})
             if user:
-                last_date = datetime.fromisoformat(last_attendance["check_in_time"][:10])
-                days_absent = (get_ist_now() - last_date).days
+                # Compare date-to-date to avoid mixing timezone-aware and naive datetimes.
+                last_date = datetime.fromisoformat(last_attendance["check_in_time"][:10]).date()
+                days_absent = (get_ist_now().date() - last_date).days
                 user["days_absent"] = days_absent
                 user["last_attendance"] = last_attendance["check_in_time"]
                 absentees.append(user)
@@ -2918,7 +3657,10 @@ async def delete_announcement(announcement_id: str, current_user: dict = Depends
 
 @api_router.get("/settings", response_model=SettingsResponse)
 async def get_settings(current_user: dict = Depends(get_admin_user)):
-    settings = await db.settings.find_one({"id": "1"}, {"_id": 0, "smtp_pass": 0, "twilio_auth_token": 0})
+    settings = await db.settings.find_one(
+        {"id": "1"},
+        {"_id": 0, "smtp_pass": 0, "twilio_auth_token": 0, "fast2sms_api_key": 0}
+    )
     if not settings:
         return SettingsResponse()
     return settings
@@ -2926,6 +3668,8 @@ async def get_settings(current_user: dict = Depends(get_admin_user)):
 @api_router.put("/settings/smtp")
 async def update_smtp_settings(settings: SMTPSettings, current_user: dict = Depends(get_admin_user)):
     update_data = settings.model_dump()
+    if update_data.get("smtp_pass") == "":
+        update_data.pop("smtp_pass", None)
     
     await db.settings.update_one(
         {"id": "1"},
@@ -2950,6 +3694,15 @@ async def test_smtp(to_email: str, current_user: dict = Depends(get_admin_user))
 @api_router.put("/settings/whatsapp")
 async def update_whatsapp_settings(settings: WhatsAppSettings, current_user: dict = Depends(get_admin_user)):
     update_data = settings.model_dump()
+    provider = (update_data.get("whatsapp_provider") or "twilio").lower()
+    update_data["whatsapp_provider"] = provider if provider in {"twilio", "fast2sms"} else "twilio"
+    # Preserve stored secrets when form submits blank password/api key values.
+    if update_data.get("twilio_auth_token") == "":
+        update_data.pop("twilio_auth_token", None)
+    if update_data.get("fast2sms_api_key") == "":
+        update_data.pop("fast2sms_api_key", None)
+    if update_data.get("fast2sms_phone_number_id") == "":
+        update_data["fast2sms_phone_number_id"] = ""
     
     await db.settings.update_one(
         {"id": "1"},
@@ -2959,21 +3712,51 @@ async def update_whatsapp_settings(settings: WhatsAppSettings, current_user: dic
     
     return {"message": "WhatsApp settings updated"}
 
+@api_router.put("/settings/notifications/attendance-confirmation-whatsapp")
+async def update_attendance_confirmation_whatsapp_toggle(
+    req: AttendanceConfirmationWhatsAppToggle,
+    current_user: dict = Depends(get_admin_user)
+):
+    await db.settings.update_one(
+        {"id": "1"},
+        {"$set": {"attendance_confirmation_whatsapp_enabled": bool(req.enabled)}},
+        upsert=True
+    )
+    return {
+        "message": "Attendance confirmation WhatsApp setting updated",
+        "attendance_confirmation_whatsapp_enabled": bool(req.enabled)
+    }
+
+@api_router.put("/settings/notifications/attendance-confirmation-email")
+async def update_attendance_confirmation_email_toggle(
+    req: AttendanceConfirmationEmailToggle,
+    current_user: dict = Depends(get_admin_user)
+):
+    await db.settings.update_one(
+        {"id": "1"},
+        {"$set": {"attendance_confirmation_email_enabled": bool(req.enabled)}},
+        upsert=True
+    )
+    return {
+        "message": "Attendance confirmation email setting updated",
+        "attendance_confirmation_email_enabled": bool(req.enabled)
+    }
+
 @api_router.post("/settings/whatsapp/test")
 async def test_whatsapp(to_number: str, current_user: dict = Depends(get_admin_user)):
-    # Get settings to check configuration
-    settings = await db.settings.find_one({"id": "1"}, {"_id": 0})
-    if not settings or not settings.get("twilio_account_sid"):
-        raise HTTPException(status_code=400, detail="WhatsApp/Twilio not configured. Please add your Twilio credentials first.")
-    if not settings.get("twilio_auth_token"):
-        raise HTTPException(status_code=400, detail="Twilio Auth Token is missing.")
-    if not settings.get("twilio_whatsapp_number"):
-        raise HTTPException(status_code=400, detail="Twilio WhatsApp number is missing.")
-    
-    # Clean the from number for logging
-    from_number = settings["twilio_whatsapp_number"].replace(' ', '').replace('-', '').replace('\u202a', '').replace('\u202c', '')
-    if not from_number.startswith('+'):
-        from_number = '+' + from_number
+    settings = await db.settings.find_one({"id": "1"}, {"_id": 0}) or {}
+    provider = (settings.get("whatsapp_provider") or "twilio").lower()
+
+    if provider == "fast2sms":
+        if not settings.get("fast2sms_api_key"):
+            raise HTTPException(status_code=400, detail="Fast2SMS API key is missing.")
+    else:
+        if not settings.get("twilio_account_sid"):
+            raise HTTPException(status_code=400, detail="Twilio Account SID is missing.")
+        if not settings.get("twilio_auth_token"):
+            raise HTTPException(status_code=400, detail="Twilio Auth Token is missing.")
+        if not settings.get("twilio_whatsapp_number"):
+            raise HTTPException(status_code=400, detail="Twilio WhatsApp number is missing.")
     
     try:
         success = await send_whatsapp(to_number, "🏋️ Hello from F3 Fitness Gym! WhatsApp integration is working. 💪")
@@ -2981,7 +3764,8 @@ async def test_whatsapp(to_number: str, current_user: dict = Depends(get_admin_u
             return {
                 "message": "Test message sent successfully", 
                 "success": True,
-                "from_number": from_number,
+                "provider": provider,
+                "from_number": (_normalize_phone_e164(settings.get("twilio_whatsapp_number", "")) if provider == "twilio" else settings.get("fast2sms_waba_number")),
                 "to_number": to_number
             }
         else:
@@ -2998,6 +3782,35 @@ async def test_whatsapp(to_number: str, current_user: dict = Depends(get_admin_u
         logger.error(f"WhatsApp test exception: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error sending message: {str(e)}")
 
+@api_router.get("/settings/whatsapp/fast2sms/waba-templates")
+async def get_fast2sms_waba_templates(current_user: dict = Depends(get_admin_user)):
+    settings = await db.settings.find_one({"id": "1"}, {"_id": 0}) or {}
+    api_key = settings.get("fast2sms_api_key")
+    if not api_key:
+        raise HTTPException(status_code=400, detail="Fast2SMS API key is missing.")
+
+    base_url = (settings.get("fast2sms_base_url") or "https://www.fast2sms.com").rstrip("/")
+    url = f"{base_url}/dev/dlt_manager/whatsapp"
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            response = await client.get(
+                url,
+                headers={"authorization": api_key},
+                params={"authorization": api_key}
+            )
+        try:
+            payload = response.json()
+        except Exception:
+            payload = {"raw": response.text}
+        if response.status_code >= 400:
+            raise HTTPException(status_code=response.status_code, detail=str(payload))
+        return {"success": True, "provider": "fast2sms", "data": payload}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Fast2SMS template fetch failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch Fast2SMS WABA templates: {e}")
+
 # ==================== TEMPLATE ROUTES ====================
 
 @api_router.get("/templates", response_model=List[TemplateResponse])
@@ -3009,6 +3822,7 @@ async def get_templates(current_user: dict = Depends(get_admin_user)):
         "welcome", "otp", "password_reset", "attendance", "absent_warning", 
         "birthday", "holiday", "plan_shared", "renewal_reminder", 
         "membership_activated", "payment_received", "announcement",
+        "freeze_started", "freeze_ended", "freeze_ending_tomorrow",
         "new_user_credentials", "test_email"
     ]
     channels = ["email", "whatsapp"]
@@ -3058,6 +3872,70 @@ async def reset_template(template_type: str, channel: str, current_user: dict = 
         return {"message": "Template reset to default"}
     else:
         return {"message": "Template already at default"}
+
+@api_router.post("/templates/test-send")
+async def test_send_template(req: TemplateTestSendRequest, current_user: dict = Depends(get_admin_user)):
+    channel = (req.channel or "").lower().strip()
+    if channel not in {"email", "whatsapp"}:
+        raise HTTPException(status_code=400, detail="Invalid channel")
+    recipient = (req.recipient or "").strip()
+    if not recipient:
+        settings = await db.settings.find_one({"id": "1"}, {"_id": 0}) or {}
+        if channel == "email":
+            recipient = (settings.get("admin_test_email") or "").strip()
+        else:
+            numbers_raw = (settings.get("admin_whatsapp_test_numbers") or "").strip()
+            recipient = next((n.strip() for n in numbers_raw.split(",") if n.strip()), "")
+    if not recipient:
+        raise HTTPException(status_code=400, detail="Recipient is required (or configure admin test contact in Settings)")
+
+    saved_template = await get_template(req.template_type, channel)
+    content = req.content if req.content is not None else saved_template.get("content", "")
+    subject = req.subject if req.subject is not None else saved_template.get("subject", f"F3 Fitness - {req.template_type}")
+
+    sample_vars = {
+        "name": "Rahul Sharma",
+        "member_id": "F3-0042",
+        "otp": "123456",
+        "reset_link": "https://example.com/reset-password",
+        "plan_name": "Quarterly",
+        "start_date": "01 Jan 2026",
+        "end_date": "31 Mar 2026",
+        "expiry_date": "31 Mar 2026",
+        "days_left": "6",
+        "days": "7",
+        "amount": "2500",
+        "payment_mode": "UPI",
+        "receipt_no": "RCP-2026-001",
+        "holiday_date": "26 Jan 2026",
+        "holiday_reason": "Republic Day",
+        "announcement_title": "New Equipment Arrived",
+        "announcement_content": "Check out new treadmills and machines.",
+        "plan_type": "Workout",
+        "plan_title": "Fat Loss Plan",
+        "freeze_start_date": "23 Feb 2026",
+        "freeze_end_date": "24 Feb 2026",
+        "freeze_days": "2",
+        "freeze_fee": "300",
+        "new_expiry_date": "17 Mar 2026",
+        "end_mode": "early"
+    }
+
+    if channel == "email":
+        rendered_subject = replace_template_vars(subject or "F3 Fitness Notification", sample_vars)
+        rendered_content = replace_template_vars(content or "", sample_vars)
+        body = wrap_email_in_template(rendered_content, rendered_subject)
+        success = await send_email(recipient, rendered_subject, body)
+    else:
+        rendered_message = replace_template_vars(content or "", sample_vars)
+        success = await send_whatsapp(recipient, rendered_message)
+
+    if not success:
+        latest_log = await db.whatsapp_logs.find_one(sort=[("timestamp", -1)]) if channel == "whatsapp" else None
+        detail = latest_log.get("error") if latest_log else None
+        raise HTTPException(status_code=500, detail=detail or f"Failed to send test {channel}")
+
+    return {"message": f"Test {channel} sent successfully", "recipient": recipient}
 
 # ==================== ACTIVITY LOGS ROUTES ====================
 

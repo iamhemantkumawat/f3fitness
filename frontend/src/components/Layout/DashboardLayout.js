@@ -86,11 +86,18 @@ const adminMenuItems = [
       { label: 'Holidays', path: '/dashboard/admin/settings/holidays' },
       { label: 'SMTP Settings', path: '/dashboard/admin/settings/smtp' },
       { label: 'WhatsApp Settings', path: '/dashboard/admin/settings/whatsapp' },
-      { label: 'WhatsApp Logs', path: '/dashboard/admin/settings/whatsapp-logs' },
       { label: 'Email Templates', path: '/dashboard/admin/settings/email-templates' },
       { label: 'WhatsApp Templates', path: '/dashboard/admin/settings/whatsapp-templates' },
-      { label: 'Payment Gateway', path: '/dashboard/admin/settings/payment-gateway' },
-      { label: 'Activity Logs', path: '/dashboard/admin/settings/activity-logs' }
+      { label: 'Payment Gateway', path: '/dashboard/admin/settings/payment-gateway' }
+    ]
+  },
+  {
+    label: 'Logs',
+    icon: Clock,
+    children: [
+      { label: 'Activity Logs', path: '/dashboard/admin/settings/activity-logs' },
+      { label: 'WhatsApp Logs', path: '/dashboard/admin/settings/whatsapp-logs' },
+      { label: 'Email Logs', path: '/dashboard/admin/settings/email-logs' }
     ]
   },
   { label: 'My Profile', icon: User, path: '/dashboard/admin/profile' }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '../../components/Layout/DashboardLayout';
-import { usersAPI } from '../../lib/api';
+import { usersAPI, membershipsAPI } from '../../lib/api';
 import { formatCurrency } from '../../lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -38,6 +38,41 @@ export const UserHistory = () => {
   const handleViewInvoice = (paymentId) => {
     setSelectedPaymentId(paymentId);
     setShowInvoice(true);
+  };
+
+  const handleFreezeMembership = async (membership) => {
+    if (!membership?.id) return;
+
+    const defaultStart = new Date().toISOString().split('T')[0];
+    const freezeStartDate = window.prompt('Freeze start date (YYYY-MM-DD)', defaultStart);
+    if (!freezeStartDate) return;
+
+    const freezeEndDate = window.prompt('Freeze end date (YYYY-MM-DD)', freezeStartDate);
+    if (!freezeEndDate) return;
+
+    const feeInput = window.prompt('Freeze fee amount (optional)', '0');
+    if (feeInput === null) return;
+    const freezeFee = parseFloat(feeInput) || 0;
+
+    const notes = window.prompt(
+      'Reason / notes (optional)',
+      'Membership freeze due to travel/long leave'
+    );
+
+    try {
+      const res = await membershipsAPI.freeze(membership.id, {
+        freeze_start_date: freezeStartDate,
+        freeze_end_date: freezeEndDate,
+        freeze_fee: freezeFee,
+        payment_method: 'cash',
+        notes: notes || null
+      });
+
+      toast.success(`Membership frozen. New expiry: ${res.data?.new_end_date || 'updated'}`);
+      fetchHistory();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to freeze membership');
+    }
   };
 
   const formatDate = (dateStr) => {
@@ -186,8 +221,32 @@ export const UserHistory = () => {
                         <p className="text-xs text-muted-foreground">
                           Paid: {formatCurrency(m.amount_paid || 0)} | Due: {formatCurrency(m.amount_due || 0)}
                         </p>
+                        {m.status === 'active' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-2"
+                            onClick={() => handleFreezeMembership(m)}
+                          >
+                            Freeze
+                          </Button>
+                        )}
                       </div>
                     </div>
+                    {Array.isArray(m.freeze_history) && m.freeze_history.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-border/60 space-y-1">
+                        <p className="text-xs font-semibold text-muted-foreground">
+                          Freeze History ({m.freeze_history.length}) • Total frozen: {m.total_frozen_days || 0} days
+                        </p>
+                        {m.freeze_history.map((f, fIdx) => (
+                          <p key={f.id || fIdx} className="text-xs text-muted-foreground">
+                            {formatDate(f.freeze_start_date)} → {formatDate(f.freeze_end_date)} ({f.freeze_days} days)
+                            {typeof f.freeze_fee === 'number' ? ` • Fee: ${formatCurrency(f.freeze_fee)}` : ''}
+                            {f.notes ? ` • ${f.notes}` : ''}
+                          </p>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

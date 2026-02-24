@@ -5,15 +5,20 @@ import { Button } from '../../components/ui/button';
 import { Textarea } from '../../components/ui/textarea';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import { templatesAPI } from '../../lib/api';
-import { Mail, Save, RotateCcw, Info, Eye, EyeOff } from 'lucide-react';
+import { Switch } from '../../components/ui/switch';
+import { templatesAPI, settingsAPI } from '../../lib/api';
+import { Mail, Save, RotateCcw, Info, Eye, EyeOff, Send } from 'lucide-react';
 import { toast } from 'sonner';
 
 const EMAIL_TEMPLATE_TYPES = [
   { type: 'welcome', label: 'Welcome Email', description: 'Sent when a new member joins' },
   { type: 'otp', label: 'OTP Verification', description: 'Sent for email/phone verification' },
   { type: 'password_reset', label: 'Password Reset', description: 'Sent when user requests password reset' },
+  { type: 'attendance', label: 'Attendance Confirmation', description: 'Sent when attendance is marked' },
   { type: 'membership_activated', label: 'Membership Activated', description: 'Sent when membership is activated' },
+  { type: 'freeze_started', label: 'Freeze Started', description: 'Sent when a membership freeze is started' },
+  { type: 'freeze_ended', label: 'Freeze Ended', description: 'Sent when a freeze is ended manually/early' },
+  { type: 'freeze_ending_tomorrow', label: 'Freeze Ending Tomorrow', description: 'Sent one day before a freeze ends' },
   { type: 'payment_received', label: 'Payment Receipt', description: 'Sent after payment is received' },
   { type: 'renewal_reminder', label: 'Renewal Reminder', description: 'Sent before membership expires' },
   { type: 'birthday', label: 'Birthday Wishes', description: 'Sent on member\'s birthday' },
@@ -27,18 +32,24 @@ const AVAILABLE_VARIABLES = [
   '{{name}}', '{{member_id}}', '{{otp}}', '{{reset_link}}', '{{plan_name}}', '{{start_date}}', '{{end_date}}',
   '{{expiry_date}}', '{{days_left}}', '{{days}}', '{{amount}}', '{{payment_mode}}',
   '{{receipt_no}}', '{{holiday_date}}', '{{holiday_reason}}', '{{announcement_title}}',
-  '{{announcement_content}}', '{{plan_type}}', '{{plan_title}}'
+  '{{announcement_content}}', '{{plan_type}}', '{{plan_title}}',
+  '{{freeze_start_date}}', '{{freeze_end_date}}', '{{freeze_days}}', '{{freeze_fee}}', '{{new_expiry_date}}', '{{end_mode}}'
 ];
 
 export const EmailTemplatesSettings = () => {
   const [templates, setTemplates] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState({});
+  const [testing, setTesting] = useState(false);
   const [activeTemplate, setActiveTemplate] = useState('welcome');
   const [previewMode, setPreviewMode] = useState(false);
+  const [testEmail, setTestEmail] = useState('');
+  const [attendanceConfirmationEmailEnabled, setAttendanceConfirmationEmailEnabled] = useState(true);
+  const [savingAttendanceEmailToggle, setSavingAttendanceEmailToggle] = useState(false);
 
   useEffect(() => {
     fetchTemplates();
+    fetchTestDefaults();
   }, []);
 
   const fetchTemplates = async () => {
@@ -54,6 +65,35 @@ export const EmailTemplatesSettings = () => {
       toast.error('Failed to load templates');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchTestDefaults = async () => {
+    try {
+      const response = await settingsAPI.get();
+      if (response.data?.admin_test_email) {
+        setTestEmail(response.data.admin_test_email);
+      }
+      setAttendanceConfirmationEmailEnabled(
+        response.data?.attendance_confirmation_email_enabled !== false
+      );
+    } catch (error) {
+      // non-blocking
+    }
+  };
+
+  const handleAttendanceEmailToggleChange = async (checked) => {
+    const prev = attendanceConfirmationEmailEnabled;
+    setAttendanceConfirmationEmailEnabled(checked);
+    setSavingAttendanceEmailToggle(true);
+    try {
+      await settingsAPI.updateAttendanceConfirmationEmailToggle(checked);
+      toast.success(`Attendance confirmation email ${checked ? 'enabled' : 'disabled'}`);
+    } catch (error) {
+      setAttendanceConfirmationEmailEnabled(prev);
+      toast.error(error.response?.data?.detail || 'Failed to update attendance confirmation email setting');
+    } finally {
+      setSavingAttendanceEmailToggle(false);
     }
   };
 
@@ -97,6 +137,28 @@ export const EmailTemplatesSettings = () => {
         [field]: value
       }
     });
+  };
+
+  const handleTestSend = async () => {
+    if (!testEmail) {
+      toast.error('Enter test email');
+      return;
+    }
+    setTesting(true);
+    try {
+      await templatesAPI.testSend({
+        template_type: activeTemplate,
+        channel: 'email',
+        recipient: testEmail,
+        subject: activeTemplateData.subject || '',
+        content: activeTemplateData.content || ''
+      });
+      toast.success('Test email sent');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to send test email');
+    } finally {
+      setTesting(false);
+    }
   };
 
   const activeTemplateData = templates[activeTemplate] || { subject: '', content: '' };
@@ -161,6 +223,28 @@ export const EmailTemplatesSettings = () => {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
+              {activeTemplate === 'attendance' && (
+                <div className="rounded-lg border border-border p-4 bg-muted/20">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="font-medium text-sm">Attendance Confirmation Email</p>
+                      <p className="text-xs text-muted-foreground">
+                        Turn off to stop attendance-marked emails. Template stays saved.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-xs font-medium ${attendanceConfirmationEmailEnabled ? 'text-green-500' : 'text-zinc-500'}`}>
+                        {attendanceConfirmationEmailEnabled ? 'ON' : 'OFF'}
+                      </span>
+                      <Switch
+                        checked={attendanceConfirmationEmailEnabled}
+                        onCheckedChange={handleAttendanceEmailToggleChange}
+                        disabled={savingAttendanceEmailToggle}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
               {loading ? (
                 <div className="animate-pulse space-y-4">
                   <div className="h-10 bg-muted rounded" />
@@ -235,6 +319,22 @@ export const EmailTemplatesSettings = () => {
                       <RotateCcw size={16} className="mr-2" />
                       Reset to Default
                     </Button>
+                  </div>
+
+                  <div className="pt-4 border-t border-border">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Send Test Email For This Template</Label>
+                    <div className="mt-2 flex gap-3">
+                      <Input
+                        className="bg-muted/50 border-border"
+                        placeholder="test@example.com"
+                        value={testEmail}
+                        onChange={(e) => setTestEmail(e.target.value)}
+                      />
+                      <Button variant="outline" onClick={handleTestSend} disabled={testing}>
+                        <Send size={16} className="mr-2" />
+                        {testing ? 'Sending...' : 'Send Test'}
+                      </Button>
+                    </div>
                   </div>
                 </>
               )}

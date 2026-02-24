@@ -520,7 +520,8 @@ export const SMTPSettings = () => {
     smtp_user: '',
     smtp_pass: '',
     smtp_secure: true,
-    sender_email: ''
+    sender_email: '',
+    admin_test_email: ''
   });
 
   useEffect(() => {
@@ -537,8 +538,10 @@ export const SMTPSettings = () => {
           smtp_user: response.data.smtp_user || '',
           smtp_pass: '',
           smtp_secure: response.data.smtp_secure ?? true,
-          sender_email: response.data.sender_email || ''
+          sender_email: response.data.sender_email || '',
+          admin_test_email: response.data.admin_test_email || ''
         });
+        setTestEmail(response.data.admin_test_email || '');
       }
     } catch (error) {
       console.error('Failed to load settings');
@@ -662,6 +665,20 @@ export const SMTPSettings = () => {
                     onChange={(e) => setFormData({ ...formData, sender_email: e.target.value })}
                   />
                 </div>
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Admin Test Email</Label>
+                  <Input
+                    type="email"
+                    className="input-dark mt-2"
+                    placeholder="admin@example.com"
+                    value={formData.admin_test_email}
+                    onChange={(e) => {
+                      setFormData({ ...formData, admin_test_email: e.target.value });
+                      setTestEmail(e.target.value);
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Used as default in SMTP and Email Template test send.</p>
+                </div>
                 <div className="flex items-center gap-2 mt-6">
                   <Switch
                     data-testid="smtp-secure"
@@ -706,11 +723,22 @@ export const WhatsAppSettings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [testNumber, setTestNumber] = useState('+91');
+  const [fast2smsTemplates, setFast2smsTemplates] = useState(null);
   const [formData, setFormData] = useState({
+    whatsapp_provider: 'twilio',
     twilio_account_sid: '',
     twilio_auth_token: '',
-    twilio_whatsapp_number: ''
+    twilio_whatsapp_number: '',
+    use_sandbox: true,
+    sandbox_url: '',
+    fast2sms_api_key: '',
+    fast2sms_base_url: 'https://www.fast2sms.com',
+    fast2sms_waba_number: '',
+    fast2sms_phone_number_id: '',
+    fast2sms_use_template_api: false,
+    admin_whatsapp_test_numbers: ''
   });
 
   useEffect(() => {
@@ -722,10 +750,20 @@ export const WhatsAppSettings = () => {
       const response = await settingsAPI.get();
       if (response.data) {
         setFormData({
+          whatsapp_provider: response.data.whatsapp_provider || 'twilio',
           twilio_account_sid: response.data.twilio_account_sid || '',
           twilio_auth_token: '',
-          twilio_whatsapp_number: response.data.twilio_whatsapp_number || ''
+          twilio_whatsapp_number: response.data.twilio_whatsapp_number || '',
+          use_sandbox: response.data.use_sandbox ?? true,
+          sandbox_url: response.data.sandbox_url || '',
+          fast2sms_api_key: '',
+          fast2sms_base_url: response.data.fast2sms_base_url || 'https://www.fast2sms.com',
+          fast2sms_waba_number: response.data.fast2sms_waba_number || '',
+          fast2sms_phone_number_id: response.data.fast2sms_phone_number_id || '',
+          fast2sms_use_template_api: response.data.fast2sms_use_template_api ?? false,
+          admin_whatsapp_test_numbers: response.data.admin_whatsapp_test_numbers || ''
         });
+        setTestNumber((response.data.admin_whatsapp_test_numbers || '').split(',').map(s => s.trim()).find(Boolean) || '+91');
       }
     } catch (error) {
       console.error('Failed to load settings');
@@ -757,9 +795,22 @@ export const WhatsAppSettings = () => {
       await settingsAPI.testWhatsApp(testNumber);
       toast.success('Test message sent successfully');
     } catch (error) {
-      toast.error('Failed to send test message');
+      toast.error(error.response?.data?.detail || 'Failed to send test message');
     } finally {
       setTesting(false);
+    }
+  };
+
+  const handleFetchFast2SMSTemplates = async () => {
+    setLoadingTemplates(true);
+    try {
+      const res = await settingsAPI.getFast2SMSWabaTemplates();
+      setFast2smsTemplates(res.data?.data ?? res.data);
+      toast.success('Fetched Fast2SMS WABA templates');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to fetch Fast2SMS templates');
+    } finally {
+      setLoadingTemplates(false);
     }
   };
 
@@ -789,12 +840,26 @@ export const WhatsAppSettings = () => {
           <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
             WhatsApp Settings
           </h1>
-          <p className="text-muted-foreground">Configure Twilio WhatsApp notifications</p>
+          <p className="text-muted-foreground">Configure WhatsApp notifications (Twilio or Fast2SMS)</p>
         </div>
 
         <Card className="glass-card">
           <CardContent className="p-6">
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Default WhatsApp Provider</Label>
+                <select
+                  className="w-full mt-2 h-10 rounded-md border border-input bg-background px-3 text-sm"
+                  value={formData.whatsapp_provider}
+                  onChange={(e) => setFormData({ ...formData, whatsapp_provider: e.target.value })}
+                >
+                  <option value="twilio">Twilio</option>
+                  <option value="fast2sms">Fast2SMS</option>
+                </select>
+              </div>
+
+              {formData.whatsapp_provider === 'twilio' && (
+                <>
               <div>
                 <Label className="text-xs uppercase tracking-wider text-muted-foreground">Twilio Account SID</Label>
                 <Input
@@ -826,6 +891,98 @@ export const WhatsAppSettings = () => {
                   onChange={(e) => setFormData({ ...formData, twilio_whatsapp_number: e.target.value })}
                 />
               </div>
+                </>
+              )}
+
+              {formData.whatsapp_provider === 'fast2sms' && (
+                <>
+                  <div>
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Fast2SMS API Key</Label>
+                    <Input
+                      type="password"
+                      className="input-dark mt-2"
+                      placeholder="Enter Fast2SMS API key"
+                      value={formData.fast2sms_api_key}
+                      onChange={(e) => setFormData({ ...formData, fast2sms_api_key: e.target.value })}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Leave blank to keep existing saved API key.
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Fast2SMS Base URL</Label>
+                    <Input
+                      className="input-dark mt-2"
+                      placeholder="https://www.fast2sms.com"
+                      value={formData.fast2sms_base_url}
+                      onChange={(e) => setFormData({ ...formData, fast2sms_base_url: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Fast2SMS WABA Number (Optional)</Label>
+                    <Input
+                      className="input-dark mt-2"
+                      placeholder="Business WhatsApp / sender number (if required)"
+                      value={formData.fast2sms_waba_number}
+                      onChange={(e) => setFormData({ ...formData, fast2sms_waba_number: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Fast2SMS Phone Number ID (Recommended)</Label>
+                    <Input
+                      className="input-dark mt-2"
+                      placeholder="e.g. 1018230858036408"
+                      value={formData.fast2sms_phone_number_id}
+                      onChange={(e) => setFormData({ ...formData, fast2sms_phone_number_id: e.target.value })}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Copy this from the fetched Fast2SMS WABA template details (`phone_number_id`).
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                    <div>
+                      <p className="font-medium text-foreground">Use Template API (future)</p>
+                      <p className="text-xs text-muted-foreground">Keep off to use session messaging for current app templates</p>
+                    </div>
+                    <Switch
+                      checked={formData.fast2sms_use_template_api}
+                      onCheckedChange={(checked) => setFormData({ ...formData, fast2sms_use_template_api: checked })}
+                    />
+                  </div>
+                  <div className="rounded-lg border border-border p-4 space-y-3">
+                    <div className="flex flex-wrap gap-2 items-center justify-between">
+                      <div>
+                        <h4 className="font-semibold text-foreground">Fast2SMS WABA Templates</h4>
+                        <p className="text-xs text-muted-foreground">Fetch WABA & template details from Fast2SMS</p>
+                      </div>
+                      <Button type="button" className="btn-secondary" onClick={handleFetchFast2SMSTemplates} disabled={loadingTemplates}>
+                        {loadingTemplates ? 'Fetching...' : 'Fetch Templates'}
+                      </Button>
+                    </div>
+                    {fast2smsTemplates && (
+                      <pre className="text-xs bg-muted/40 border border-border rounded-md p-3 overflow-auto max-h-64 whitespace-pre-wrap">
+                        {JSON.stringify(fast2smsTemplates, null, 2)}
+                      </pre>
+                    )}
+                  </div>
+                </>
+              )}
+
+              <div>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Admin Test WhatsApp Numbers</Label>
+                <Input
+                  className="input-dark mt-2"
+                  placeholder="+919999999999, +918888888888"
+                  value={formData.admin_whatsapp_test_numbers}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setFormData({ ...formData, admin_whatsapp_test_numbers: value });
+                    const first = value.split(',').map(s => s.trim()).find(Boolean);
+                    if (first) setTestNumber(first);
+                  }}
+                />
+                <p className="text-xs text-muted-foreground mt-1">Comma-separated numbers. Used as default in WhatsApp tests and WhatsApp Template test send.</p>
+              </div>
 
               <Button type="submit" className="btn-primary" disabled={saving} data-testid="save-whatsapp-btn">
                 {saving ? 'Saving...' : 'Save Settings'}
@@ -848,6 +1005,9 @@ export const WhatsAppSettings = () => {
                   {testing ? 'Sending...' : 'Send Test'}
                 </Button>
               </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Test message uses the currently selected default provider: <strong>{formData.whatsapp_provider === 'fast2sms' ? 'Fast2SMS' : 'Twilio'}</strong>
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -1096,4 +1256,3 @@ export const PaymentGatewaySettings = () => {
     </DashboardLayout>
   );
 };
-

@@ -75,6 +75,10 @@ export const membershipsAPI = {
   getActive: (userId) => api.get(`/memberships/active/${userId}`),
   create: (data) => api.post('/memberships', data),
   cancel: (id) => api.put(`/memberships/${id}/cancel`),
+  freeze: (id, data) => api.post(`/memberships/${id}/freeze`, data),
+  editFreeze: (membershipId, freezeId, data) => api.put(`/memberships/${membershipId}/freeze/${freezeId}`, data),
+  endFreeze: (membershipId, freezeId, data) => api.post(`/memberships/${membershipId}/freeze/${freezeId}/end`, data),
+  cancelFreeze: (membershipId, freezeId) => api.post(`/memberships/${membershipId}/freeze/${freezeId}/cancel`),
   getPayments: (membershipId) => api.get(`/memberships/${membershipId}/payments`)
 };
 
@@ -97,6 +101,12 @@ export const whatsappLogsAPI = {
   getAll: (params) => api.get('/whatsapp-logs', { params }),
   getStats: () => api.get('/whatsapp-logs/stats'),
   clear: () => api.delete('/whatsapp-logs')
+};
+
+export const emailLogsAPI = {
+  getAll: (params) => api.get('/email-logs', { params }),
+  getStats: () => api.get('/email-logs/stats'),
+  clear: () => api.delete('/email-logs')
 };
 
 // Payment Requests APIs
@@ -136,7 +146,12 @@ export const settingsAPI = {
   updateSMTP: (data) => api.put('/settings/smtp', data),
   testSMTP: (email) => api.post(`/settings/smtp/test?to_email=${email}`),
   updateWhatsApp: (data) => api.put('/settings/whatsapp', data),
-  testWhatsApp: (number) => api.post(`/settings/whatsapp/test?to_number=${number}`)
+  updateAttendanceConfirmationWhatsAppToggle: (enabled) =>
+    api.put('/settings/notifications/attendance-confirmation-whatsapp', { enabled }),
+  updateAttendanceConfirmationEmailToggle: (enabled) =>
+    api.put('/settings/notifications/attendance-confirmation-email', { enabled }),
+  testWhatsApp: (number) => api.post(`/settings/whatsapp/test?to_number=${number}`),
+  getFast2SMSWabaTemplates: () => api.get('/settings/whatsapp/fast2sms/waba-templates')
 };
 
 // Dashboard APIs
@@ -189,7 +204,8 @@ export const templatesAPI = {
   getAll: () => api.get('/templates'),
   getByType: (templateType, channel) => api.get(`/templates/${templateType}/${channel}`),
   update: (data) => api.put('/templates', data),
-  reset: (templateType, channel) => api.delete(`/templates/${templateType}/${channel}`)
+  reset: (templateType, channel) => api.delete(`/templates/${templateType}/${channel}`),
+  testSend: (data) => api.post('/templates/test-send', data)
 };
 
 export default api;
