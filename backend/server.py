@@ -1778,6 +1778,12 @@ async def forgot_password(req: ForgotPasswordRequest, background_tasks: Backgrou
     
     # Use template system for password reset notifications (handles both email and WhatsApp)
     await send_notification(user, "password_reset", {"otp": otp}, background_tasks)
+    await log_activity(
+        user["id"],
+        "password_reset_requested",
+        "User requested password reset OTP",
+        metadata={"channel": "self_service"}
+    )
     
     return {"message": "If an account exists, a reset OTP has been sent to your email and phone"}
 
@@ -1798,6 +1804,12 @@ async def reset_password(req: ResetPasswordRequest):
     
     await db.users.update_one({"id": reset["user_id"]}, {"$set": {"password_hash": hash_password(req.new_password)}})
     await db.password_resets.update_one({"_id": reset["_id"]}, {"$set": {"used": True}})
+    await log_activity(
+        reset["user_id"],
+        "password_reset",
+        "User reset password via OTP/token",
+        metadata={"channel": "self_service"}
+    )
     
     return {"message": "Password reset successful"}
 
@@ -1819,6 +1831,12 @@ async def change_password(
     await db.users.update_one(
         {"id": current_user["id"]},
         {"$set": {"password_hash": hash_password(new_password)}}
+    )
+    await log_activity(
+        current_user["id"],
+        "password_changed",
+        "User changed password",
+        metadata={"channel": "self_service"}
     )
     
     return {"message": "Password changed successfully"}
@@ -2148,6 +2166,13 @@ async def revoke_membership(
         """
         background_tasks.add_task(send_email, user["email"], "Membership Revoked - F3 Fitness", email_body)
     
+    await log_activity(
+        current_user["id"],
+        "membership_revoked",
+        f"Revoked membership {membership['id']} for {user.get('name') or user.get('member_id')}",
+        metadata={"membership_id": membership["id"], "target_user_id": user_id}
+    )
+    
     return {"message": "Membership revoked successfully"}
 
 @api_router.get("/admin/users/{user_id}/password")
@@ -2218,6 +2243,13 @@ Login: https://f3fitness.in/login"""
         </div>
         """
         background_tasks.add_task(send_email, user["email"], "Password Reset - F3 Fitness", email_body)
+    
+    await log_activity(
+        current_user["id"],
+        "admin_reset_password",
+        f"Admin reset password for {user.get('name') or user.get('member_id')}",
+        metadata={"target_user_id": user_id}
+    )
     
     return {"message": "Password reset successfully and notification sent"}
 
@@ -2974,6 +3006,18 @@ async def create_payment(payment: PaymentCreate, background_tasks: BackgroundTas
     }
     
     await db.payments.insert_one(payment_doc)
+    await log_activity(
+        current_user["id"],
+        "payment_added",
+        f"Recorded payment ₹{payment.amount_paid} for {user.get('name') or user.get('member_id')}",
+        metadata={
+            "payment_id": payment_id,
+            "receipt_no": receipt_no,
+            "target_user_id": payment.user_id,
+            "membership_id": payment_doc.get("membership_id"),
+            "payment_method": payment.payment_method
+        }
+    )
     
     # Send payment notification
     await send_notification(user, "payment_received", {
@@ -3660,6 +3704,17 @@ async def mark_attendance(attendance: AttendanceCreate, background_tasks: Backgr
     }
     
     await db.attendance.insert_one(attendance_doc)
+    await log_activity(
+        current_user["id"],
+        "attendance_marked",
+        f"Attendance marked for {user.get('name') or user.get('member_id')}",
+        metadata={
+            "attendance_id": attendance_id,
+            "target_user_id": user["id"],
+            "marked_by_role": current_user.get("role"),
+            "marked_by_mode": marked_by
+        }
+    )
     
     # Send attendance notification
     await send_notification(user, "attendance", {}, background_tasks)
@@ -4029,6 +4084,12 @@ async def update_smtp_settings(settings: SMTPSettings, current_user: dict = Depe
         {"$set": update_data},
         upsert=True
     )
+    await log_activity(
+        current_user["id"],
+        "settings_updated",
+        "Updated SMTP settings",
+        metadata={"settings_section": "smtp"}
+    )
     
     return {"message": "SMTP settings updated"}
 
@@ -4062,6 +4123,12 @@ async def update_whatsapp_settings(settings: WhatsAppSettings, current_user: dic
         {"$set": update_data},
         upsert=True
     )
+    await log_activity(
+        current_user["id"],
+        "settings_updated",
+        "Updated WhatsApp settings",
+        metadata={"settings_section": "whatsapp", "provider": update_data.get("whatsapp_provider")}
+    )
     
     return {"message": "WhatsApp settings updated"}
 
@@ -4074,6 +4141,12 @@ async def update_attendance_confirmation_whatsapp_toggle(
         {"id": "1"},
         {"$set": {"attendance_confirmation_whatsapp_enabled": bool(req.enabled)}},
         upsert=True
+    )
+    await log_activity(
+        current_user["id"],
+        "settings_updated",
+        f"Attendance confirmation WhatsApp {'enabled' if bool(req.enabled) else 'disabled'}",
+        metadata={"settings_section": "notifications", "setting": "attendance_confirmation_whatsapp_enabled", "enabled": bool(req.enabled)}
     )
     return {
         "message": "Attendance confirmation WhatsApp setting updated",
@@ -4090,6 +4163,12 @@ async def update_attendance_confirmation_email_toggle(
         {"$set": {"attendance_confirmation_email_enabled": bool(req.enabled)}},
         upsert=True
     )
+    await log_activity(
+        current_user["id"],
+        "settings_updated",
+        f"Attendance confirmation email {'enabled' if bool(req.enabled) else 'disabled'}",
+        metadata={"settings_section": "notifications", "setting": "attendance_confirmation_email_enabled", "enabled": bool(req.enabled)}
+    )
     return {
         "message": "Attendance confirmation email setting updated",
         "attendance_confirmation_email_enabled": bool(req.enabled)
@@ -4104,6 +4183,12 @@ async def update_absent_warning_whatsapp_toggle(
         {"id": "1"},
         {"$set": {"absent_warning_whatsapp_enabled": bool(req.enabled)}},
         upsert=True
+    )
+    await log_activity(
+        current_user["id"],
+        "settings_updated",
+        f"Absence warning WhatsApp {'enabled' if bool(req.enabled) else 'disabled'}",
+        metadata={"settings_section": "notifications", "setting": "absent_warning_whatsapp_enabled", "enabled": bool(req.enabled)}
     )
     return {
         "message": "Absence warning WhatsApp setting updated",
@@ -4225,6 +4310,12 @@ async def update_template(template: TemplateUpdate, current_user: dict = Depends
         {"$set": template_doc},
         upsert=True
     )
+    await log_activity(
+        current_user["id"],
+        "template_updated",
+        f"Updated {template.template_type} template ({template.channel})",
+        metadata={"template_type": template.template_type, "channel": template.channel}
+    )
     
     return {"message": "Template updated"}
 
@@ -4235,6 +4326,13 @@ async def reset_template(template_type: str, channel: str, current_user: dict = 
     
     # Delete the customized template so default will be used
     result = await db.templates.delete_one({"id": template_id})
+    if result.deleted_count > 0:
+        await log_activity(
+            current_user["id"],
+            "template_reset",
+            f"Reset {template_type} template ({channel}) to default",
+            metadata={"template_type": template_type, "channel": channel}
+        )
     
     if result.deleted_count > 0:
         return {"message": "Template reset to default"}
@@ -4428,6 +4526,12 @@ async def update_payment_gateway_settings(
     global razorpay_client
     razorpay_client = None
     get_razorpay_client()
+    await log_activity(
+        current_user["id"],
+        "settings_updated",
+        "Updated payment gateway settings",
+        metadata={"settings_section": "payment_gateway", "provider": "razorpay", "key_id": razorpay_key_id[:6] + "..." if razorpay_key_id else ""}
+    )
     
     return {"message": "Payment gateway settings updated"}
 
