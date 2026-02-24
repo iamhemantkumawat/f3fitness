@@ -18,6 +18,8 @@ from jose import JWTError, jwt
 import aiosmtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
 import razorpay
 import base64
 import aiofiles
@@ -927,6 +929,23 @@ async def get_template(template_type: str, channel: str) -> dict:
         ("payment_received", "whatsapp"): {
             "content": "💰 Hi {{name}}, payment received!\n\nReceipt: {{receipt_no}}\nAmount: Rs.{{amount}}\nMode: {{payment_mode}}\n\nThank you! - F3 Fitness Gym"
         },
+        ("invoice_sent", "email"): {
+            "subject": "Your Invoice {{receipt_no}} - F3 Fitness 🧾",
+            "content": """<h2>Invoice Attached 🧾</h2>
+<p>Hi <strong>{{name}}</strong>,</p>
+<p>Please find your invoice PDF attached for your recent payment.</p>
+<div class="highlight-box">
+  <strong>Receipt No:</strong> {{receipt_no}}<br>
+  <strong>Amount Paid:</strong> Rs.{{amount}}<br>
+  <strong>Date:</strong> {{payment_date}}
+</div>
+<p>If you cannot open the attachment, use this secure link:</p>
+<p><a href="{{invoice_pdf_url}}">{{invoice_pdf_url}}</a></p>
+<p>Thank you for being a valued member of F3 Fitness! 💪</p>"""
+        },
+        ("invoice_sent", "whatsapp"): {
+            "content": "🧾 F3 Fitness Invoice\nReceipt: {{receipt_no}}\nAmount: Rs.{{amount}}\nDate: {{payment_date}}\n\nIf attachment is not shown, open this secure link:\n{{invoice_pdf_url}}"
+        },
         ("holiday", "email"): {
             "subject": "Holiday Notice - F3 Fitness Gym 🏖️",
             "content": """<h2>Holiday Notice 🏖️</h2>
@@ -991,7 +1010,29 @@ def replace_template_vars(template: str, variables: dict) -> str:
         template = template.replace(f"{{{{{key}}}}}", str(value))
     return template
 
-async def send_email(to_email: str, subject: str, body: str):
+def create_invoice_share_token(payment_id: str, expires_days: int = 30) -> str:
+    payload = {
+        "sub": payment_id,
+        "purpose": "invoice_pdf_share",
+        "exp": datetime.now(timezone.utc) + timedelta(days=expires_days)
+    }
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+def verify_invoice_share_token(token: str, payment_id: str) -> bool:
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload.get("purpose") == "invoice_pdf_share" and payload.get("sub") == payment_id
+    except Exception:
+        return False
+
+def get_public_base_url() -> str:
+    return (
+        os.environ.get("PUBLIC_BASE_URL")
+        or os.environ.get("APP_BASE_URL")
+        or "https://f3fitness.in"
+    ).rstrip("/")
+
+async def send_email(to_email: str, subject: str, body: str, attachments: Optional[List[dict]] = None):
     """Send email using configured SMTP settings"""
     settings = await db.settings.find_one({"id": "1"}, {"_id": 0})
     body_html = body or ""
@@ -1029,6 +1070,14 @@ async def send_email(to_email: str, subject: str, body: str):
         message["To"] = to_email
         message["Subject"] = subject
         message.attach(MIMEText(body, "html"))
+        for att in (attachments or []):
+            part = MIMEBase("application", "octet-stream")
+            part.set_payload(att.get("content_bytes", b""))
+            encoders.encode_base64(part)
+            filename = att.get("filename", "attachment.bin")
+            part.add_header("Content-Disposition", f'attachment; filename="{filename}"')
+            part.add_header("Content-Type", att.get("content_type", "application/octet-stream"))
+            message.attach(part)
         
         port = settings["smtp_port"]
         smtp_secure = settings.get("smtp_secure", True)
@@ -1084,7 +1133,7 @@ async def _log_whatsapp(log_data: dict, log_to_db: bool = True):
     if log_to_db:
         await db.whatsapp_logs.insert_one(log_data)
 
-async def _send_whatsapp_twilio(settings: dict, to_number_clean: str, message: str, log_data: dict, log_to_db: bool = True):
+async def _send_whatsapp_twilio(settings: dict, to_number_clean: str, message: str, log_data: dict, log_to_db: bool = True, media_url: Optional[str] = None):
     if not settings.get("twilio_account_sid"):
         log_data["status"] = "failed"
         log_data["error"] = "Twilio Account SID not configured"
@@ -1120,11 +1169,14 @@ async def _send_whatsapp_twilio(settings: dict, to_number_clean: str, message: s
         from twilio.rest import Client
         twilio_client = Client(settings["twilio_account_sid"], settings["twilio_auth_token"])
         from_number = _normalize_phone_e164(settings["twilio_whatsapp_number"])
-        msg = twilio_client.messages.create(
-            from_=f'whatsapp:{from_number}',
-            body=message,
-            to=f'whatsapp:{to_number_clean}'
-        )
+        twilio_kwargs = {
+            "from_": f'whatsapp:{from_number}',
+            "body": message,
+            "to": f'whatsapp:{to_number_clean}'
+        }
+        if media_url:
+            twilio_kwargs["media_url"] = [media_url]
+        msg = twilio_client.messages.create(**twilio_kwargs)
         log_data["status"] = "sent"
         log_data["message_sid"] = getattr(msg, "sid", None)
         await _log_whatsapp(log_data, log_to_db)
@@ -1136,7 +1188,7 @@ async def _send_whatsapp_twilio(settings: dict, to_number_clean: str, message: s
         logger.error(f"Twilio WhatsApp send failed: {e}")
         return False
 
-async def _send_whatsapp_fast2sms(settings: dict, to_number_clean: str, message: str, log_data: dict, log_to_db: bool = True):
+async def _send_whatsapp_fast2sms(settings: dict, to_number_clean: str, message: str, log_data: dict, log_to_db: bool = True, media_url: Optional[str] = None):
     api_key = settings.get("fast2sms_api_key")
     if not api_key:
         log_data["status"] = "failed"
@@ -1196,9 +1248,13 @@ async def _send_whatsapp_fast2sms(settings: dict, to_number_clean: str, message:
 
     await _resolve_waba_sender()
 
+    if media_url and media_url not in (message or ""):
+        final_message = f"{message}\n\nInvoice PDF: {media_url}"
+    else:
+        final_message = message
     base_payload = {
         "to": to_number_clean,
-        "text": message,
+        "text": final_message,
         "type": "text"
     }
     display_number_digits = "".join(ch for ch in display_number if ch.isdigit()) if display_number else ""
@@ -1293,7 +1349,7 @@ async def _send_whatsapp_fast2sms(settings: dict, to_number_clean: str, message:
         logger.error(f"Fast2SMS WhatsApp send failed: {e}")
         return False
 
-async def send_whatsapp(to_number: str, message: str, log_to_db: bool = True):
+async def send_whatsapp(to_number: str, message: str, log_to_db: bool = True, media_url: Optional[str] = None):
     """Send WhatsApp message using configured provider (Twilio or Fast2SMS)."""
     settings = await db.settings.find_one({"id": "1"}, {"_id": 0}) or {}
     provider = (settings.get("whatsapp_provider") or "twilio").lower()
@@ -1307,13 +1363,14 @@ async def send_whatsapp(to_number: str, message: str, log_to_db: bool = True):
         "error": None,
         "message_sid": None,
         "provider": provider,
+        "media_url": media_url,
         "timestamp": get_ist_now().isoformat()
     }
 
     if provider == "fast2sms":
-        return await _send_whatsapp_fast2sms(settings, to_number_clean, message, log_data, log_to_db)
+        return await _send_whatsapp_fast2sms(settings, to_number_clean, message, log_data, log_to_db, media_url=media_url)
 
-    return await _send_whatsapp_twilio(settings, to_number_clean, message, log_data, log_to_db)
+    return await _send_whatsapp_twilio(settings, to_number_clean, message, log_data, log_to_db, media_url=media_url)
 
 async def send_notification(user: dict, template_type: str, variables: dict, background_tasks: BackgroundTasks = None):
     """Send notification via both email and WhatsApp"""
@@ -2391,6 +2448,7 @@ async def create_membership(membership: MembershipCreate, background_tasks: Back
             "payment_date": payment_date_display,
             "description": f"Payment for {plan['name']}"
         }, background_tasks)
+        await send_invoice_to_member(user, payment_doc["id"], background_tasks)
     
     # Send membership activation notification
     await send_notification(user, "membership_activated", {
@@ -2903,6 +2961,7 @@ async def create_payment(payment: PaymentCreate, background_tasks: BackgroundTas
         "payment_date": datetime.now().strftime("%d %b %Y"),
         "description": payment.notes or "Gym Payment"
     }, background_tasks)
+    await send_invoice_to_member(user, payment_id, background_tasks)
     
     result = {k: v for k, v in payment_doc.items() if k != "_id"}
     result["user_name"] = user["name"]
@@ -2910,6 +2969,204 @@ async def create_payment(payment: PaymentCreate, background_tasks: BackgroundTas
     return result
 
 # ==================== INVOICE ROUTES ====================
+
+async def _build_invoice_pdf_bytes(payment_id: str):
+    """Generate invoice PDF bytes and filename for a payment."""
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import mm
+    from reportlab.lib.colors import HexColor
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_CENTER, TA_RIGHT
+
+    payment = await db.payments.find_one({"id": payment_id}, {"_id": 0})
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment not found")
+
+    user = await db.users.find_one({"id": payment["user_id"]}, {"_id": 0})
+
+    membership = None
+    plan = None
+    if payment.get("membership_id"):
+        membership = await db.memberships.find_one({"id": payment["membership_id"]}, {"_id": 0})
+        if membership:
+            plan = await db.plans.find_one({"id": membership["plan_id"]}, {"_id": 0})
+
+    receipt_no = payment.get("receipt_no", f"F3-{payment['id'][:8].upper()}")
+    payment_date = payment.get("payment_date", "")
+    if payment_date:
+        try:
+            dt = datetime.fromisoformat(payment_date.replace('Z', '+00:00'))
+            payment_date_formatted = dt.strftime("%d %b %Y")
+        except Exception:
+            payment_date_formatted = payment_date[:10] if payment_date else "N/A"
+    else:
+        payment_date_formatted = "N/A"
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=20*mm, leftMargin=20*mm, topMargin=20*mm, bottomMargin=20*mm)
+
+    primary_color = HexColor('#0ea5b7')
+    dark_color = HexColor('#0b7285')
+    gray_color = HexColor('#64748b')
+
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle('Title', parent=styles['Heading1'], fontSize=20, textColor=primary_color, alignment=TA_CENTER, spaceAfter=5)
+    subtitle_style = ParagraphStyle('Subtitle', parent=styles['Normal'], fontSize=10, textColor=gray_color, alignment=TA_CENTER)
+    normal_style = ParagraphStyle('Normal', parent=styles['Normal'], fontSize=10, textColor=HexColor('#334155'))
+    bold_style = ParagraphStyle('Bold', parent=styles['Normal'], fontSize=10, textColor=HexColor('#334155'), fontName='Helvetica-Bold')
+
+    elements = []
+    try:
+        logo_data = base64.b64decode(F3_LOGO_BASE64)
+        logo_buffer = BytesIO(logo_data)
+        logo_img = RLImage(logo_buffer, width=120, height=72)
+        elements.append(logo_img)
+    except Exception as e:
+        logger.error(f"Error adding logo: {e}")
+
+    elements.append(Spacer(1, 10))
+    elements.append(Paragraph("F3 FITNESS HEALTH CLUB", title_style))
+    elements.append(Paragraph("Your Fitness Journey Partner", subtitle_style))
+    elements.append(Spacer(1, 5))
+    elements.append(Paragraph(f"<b>Receipt: {receipt_no}</b>", ParagraphStyle('Receipt', parent=styles['Normal'], fontSize=12, textColor=primary_color, alignment=TA_CENTER)))
+    elements.append(Spacer(1, 20))
+
+    user_name = user.get("name", "N/A") if user else "N/A"
+    user_member_id = user.get("member_id", "N/A") if user else "N/A"
+    user_phone = user.get("phone_number", "") if user else ""
+    user_email = user.get("email", "") if user else ""
+
+    info_data = [
+        [Paragraph("<b>BILLED TO</b>", ParagraphStyle('H', fontSize=9, textColor=gray_color)),
+         Paragraph("<b>INVOICE DETAILS</b>", ParagraphStyle('R0', fontSize=9, textColor=gray_color, alignment=TA_RIGHT))],
+        [Paragraph(f"<b>{user_name}</b>", bold_style),
+         Paragraph(f"<b>Invoice #:</b> {receipt_no}", ParagraphStyle('R1', fontSize=10, alignment=TA_RIGHT))],
+        [Paragraph(f"Member ID: {user_member_id}", normal_style),
+         Paragraph(f"<b>Date:</b> {payment_date_formatted}", ParagraphStyle('R2', fontSize=10, alignment=TA_RIGHT))],
+        [Paragraph(f"{user_phone}", normal_style),
+         Paragraph(f"<b>Payment Mode:</b> {payment.get('payment_method', 'Cash').title()}", ParagraphStyle('R3', fontSize=10, alignment=TA_RIGHT))],
+        [Paragraph(f"{user_email}", normal_style), ""],
+    ]
+    info_table = Table(info_data, colWidths=[250, 250])
+    info_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('TOPPADDING', (0, 0), (-1, -1), 3),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+    ]))
+    elements.append(info_table)
+    elements.append(Spacer(1, 20))
+
+    header_style = ParagraphStyle('Header', fontSize=10, textColor=HexColor('#FFFFFF'), fontName='Helvetica-Bold')
+    if membership and plan:
+        start_date = membership.get("start_date", "")[:10] if membership.get("start_date") else ""
+        end_date = membership.get("end_date", "")[:10] if membership.get("end_date") else ""
+        original_price = membership.get("original_price", 0)
+        discount = membership.get("discount_amount", 0)
+        table_data = [
+            [Paragraph("Description", header_style), Paragraph("Amount", header_style)],
+            [Paragraph(f"<b>{plan.get('name', 'Membership Plan')}</b><br/><font size=8 color='#64748b'>{start_date} to {end_date} ({plan.get('duration_days', '')} days)</font>", normal_style),
+             Paragraph(f"Rs. {original_price:,.0f}", ParagraphStyle('RA', fontSize=10, alignment=TA_RIGHT))],
+        ]
+        if discount > 0:
+            table_data.append([
+                Paragraph("<font color='#10b981'>Discount Applied</font>", normal_style),
+                Paragraph(f"<font color='#10b981'>-Rs. {discount:,.0f}</font>", ParagraphStyle('RB', fontSize=10, alignment=TA_RIGHT))
+            ])
+    else:
+        table_data = [
+            [Paragraph("Description", header_style), Paragraph("Amount", header_style)],
+            [Paragraph(payment.get("notes", "Gym Payment"), normal_style),
+             Paragraph(f"Rs. {payment.get('amount_paid', 0):,.0f}", ParagraphStyle('RC', fontSize=10, alignment=TA_RIGHT))],
+        ]
+
+    table_data.append([
+        Paragraph("<b>Amount Paid</b>", ParagraphStyle('B', fontSize=12, fontName='Helvetica-Bold', textColor=dark_color)),
+        Paragraph(f"<b>Rs. {payment.get('amount_paid', 0):,.0f}</b>", ParagraphStyle('RD', fontSize=12, fontName='Helvetica-Bold', textColor=dark_color, alignment=TA_RIGHT))
+    ])
+
+    items_table = Table(table_data, colWidths=[350, 150])
+    items_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), primary_color),
+        ('TEXTCOLOR', (0, 0), (-1, 0), HexColor('#FFFFFF')),
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+        ('TOPPADDING', (0, 0), (-1, 0), 10),
+        ('BACKGROUND', (0, -1), (-1, -1), HexColor('#f0f9ff')),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
+        ('TOPPADDING', (0, 1), (-1, -1), 8),
+        ('GRID', (0, 0), (-1, -1), 0.5, HexColor('#e5e7eb')),
+    ]))
+    elements.append(items_table)
+    elements.append(Spacer(1, 30))
+
+    thanks_style = ParagraphStyle('Thanks', fontSize=11, textColor=dark_color, alignment=TA_CENTER)
+    elements.append(Paragraph("Thank you for being a valued member of F3 Fitness Health Club!", thanks_style))
+    elements.append(Paragraph("<b>Transform Your Body, Transform Your Life!</b>", ParagraphStyle('Motto', fontSize=10, textColor=primary_color, alignment=TA_CENTER, spaceAfter=30)))
+
+    footer_style = ParagraphStyle('Footer', fontSize=9, textColor=gray_color, alignment=TA_CENTER)
+    elements.append(Spacer(1, 20))
+    elements.append(Paragraph("<b>F3 FITNESS HEALTH CLUB</b>", ParagraphStyle('FTitle', fontSize=11, textColor=HexColor('#334155'), alignment=TA_CENTER)))
+    elements.append(Paragraph("4th Avenue Plot No 4R-B, Mode, near Mandir Marg, Sector 4, Vidyadhar Nagar, Jaipur, Rajasthan 302039", footer_style))
+    elements.append(Paragraph("Phone: 072300 52193 | Email: info@f3fitness.in", footer_style))
+    elements.append(Paragraph("Mon-Sat: 5:00 AM - 10:00 PM | Sun: 6:00 AM - 12:00 PM | Instagram: @f3fitnessclub", ParagraphStyle('Hours', fontSize=8, textColor=HexColor('#94a3b8'), alignment=TA_CENTER)))
+
+    doc.build(elements)
+    pdf_bytes = buffer.getvalue()
+    filename = f"F3_Invoice_{receipt_no}.pdf"
+    return pdf_bytes, filename, payment
+
+async def send_invoice_to_member(user: dict, payment_id: str, background_tasks: Optional[BackgroundTasks] = None):
+    """Send invoice PDF by email attachment and WhatsApp (media/link) after payment creation."""
+    payment = await db.payments.find_one({"id": payment_id}, {"_id": 0})
+    if not payment or not user:
+        return
+    try:
+        pdf_bytes, filename, payment_doc = await _build_invoice_pdf_bytes(payment_id)
+    except Exception as e:
+        logger.error(f"Invoice PDF generation failed for payment {payment_id}: {e}")
+        return
+
+    receipt_no = payment_doc.get("receipt_no", f"F3-{payment_id[:8].upper()}")
+    amount_paid = payment_doc.get("amount_paid", 0)
+    payment_date = payment_doc.get("payment_date", "")[:10]
+    token = create_invoice_share_token(payment_id)
+    invoice_url = f"{get_public_base_url()}/api/invoices/{payment_id}/pdf/public?token={token}"
+    vars_with_user = {
+        "name": user.get("name"),
+        "member_id": user.get("member_id"),
+        "receipt_no": receipt_no,
+        "amount": amount_paid,
+        "payment_date": payment_date or "N/A",
+        "invoice_pdf_url": invoice_url
+    }
+
+    email_template = await get_template("invoice_sent", "email")
+    whatsapp_template = await get_template("invoice_sent", "whatsapp")
+
+    invoice_subject = replace_template_vars(
+        email_template.get("subject", f"Invoice {receipt_no} - F3 Fitness"),
+        vars_with_user
+    )
+    invoice_email_content = replace_template_vars(email_template.get("content", ""), vars_with_user)
+    invoice_html = wrap_email_in_template(invoice_email_content, invoice_subject)
+
+    email_attachments = [{"filename": filename, "content_bytes": pdf_bytes, "content_type": "application/pdf"}]
+    if user.get("email") and invoice_email_content:
+        if background_tasks:
+            background_tasks.add_task(send_email, user["email"], invoice_subject, invoice_html, email_attachments)
+        else:
+            await send_email(user["email"], invoice_subject, invoice_html, email_attachments)
+
+    if user.get("phone_number") and whatsapp_template.get("content"):
+        phone = user.get("country_code", "+91") + user["phone_number"].lstrip("0")
+        wa_text = replace_template_vars(whatsapp_template["content"], vars_with_user)
+        if background_tasks:
+            background_tasks.add_task(send_whatsapp, phone, wa_text, True, invoice_url)
+        else:
+            await send_whatsapp(phone, wa_text, True, invoice_url)
 
 @api_router.get("/invoices/{payment_id}")
 async def get_invoice(payment_id: str, current_user: dict = Depends(get_current_user)):
@@ -3011,13 +3268,6 @@ async def get_membership_payments(membership_id: str, current_user: dict = Depen
 @api_router.get("/invoices/{payment_id}/pdf")
 async def get_invoice_pdf(payment_id: str, current_user: dict = Depends(get_current_user)):
     """Generate and download PDF invoice using reportlab"""
-    from reportlab.lib.pagesizes import A4
-    from reportlab.lib.units import inch, mm
-    from reportlab.lib.colors import HexColor
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
-    
     payment = await db.payments.find_one({"id": payment_id}, {"_id": 0})
     if not payment:
         raise HTTPException(status_code=404, detail="Payment not found")
@@ -3025,165 +3275,23 @@ async def get_invoice_pdf(payment_id: str, current_user: dict = Depends(get_curr
     # Check authorization
     if current_user["role"] != "admin" and payment["user_id"] != current_user["id"]:
         raise HTTPException(status_code=403, detail="Not authorized")
-    
-    user = await db.users.find_one({"id": payment["user_id"]}, {"_id": 0})
-    
-    # Get membership and plan details
-    membership = None
-    plan = None
-    if payment.get("membership_id"):
-        membership = await db.memberships.find_one({"id": payment["membership_id"]}, {"_id": 0})
-        if membership:
-            plan = await db.plans.find_one({"id": membership["plan_id"]}, {"_id": 0})
-    
-    receipt_no = payment.get("receipt_no", f"F3-{payment['id'][:8].upper()}")
-    payment_date = payment.get("payment_date", "")
-    if payment_date:
-        try:
-            dt = datetime.fromisoformat(payment_date.replace('Z', '+00:00'))
-            payment_date_formatted = dt.strftime("%d %b %Y")
-        except:
-            payment_date_formatted = payment_date[:10] if payment_date else "N/A"
-    else:
-        payment_date_formatted = "N/A"
-    
-    # Create PDF buffer
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=20*mm, leftMargin=20*mm, topMargin=20*mm, bottomMargin=20*mm)
-    
-    # Define colors
-    primary_color = HexColor('#0ea5b7')
-    dark_color = HexColor('#0b7285')
-    gray_color = HexColor('#64748b')
-    light_bg = HexColor('#f8fafc')
-    
-    # Styles
-    styles = getSampleStyleSheet()
-    title_style = ParagraphStyle('Title', parent=styles['Heading1'], fontSize=20, textColor=primary_color, alignment=TA_CENTER, spaceAfter=5)
-    subtitle_style = ParagraphStyle('Subtitle', parent=styles['Normal'], fontSize=10, textColor=gray_color, alignment=TA_CENTER)
-    heading_style = ParagraphStyle('Heading', parent=styles['Heading2'], fontSize=12, textColor=dark_color, spaceAfter=10)
-    normal_style = ParagraphStyle('Normal', parent=styles['Normal'], fontSize=10, textColor=HexColor('#334155'))
-    bold_style = ParagraphStyle('Bold', parent=styles['Normal'], fontSize=10, textColor=HexColor('#334155'), fontName='Helvetica-Bold')
-    
-    elements = []
-    
-    # Add logo from base64
-    try:
-        import base64
-        logo_data = base64.b64decode(F3_LOGO_BASE64)
-        logo_buffer = BytesIO(logo_data)
-        logo_img = RLImage(logo_buffer, width=120, height=72)
-        elements.append(logo_img)
-    except Exception as e:
-        logger.error(f"Error adding logo: {e}")
-    
-    # Header
-    elements.append(Spacer(1, 10))
-    elements.append(Paragraph("F3 FITNESS HEALTH CLUB", title_style))
-    elements.append(Paragraph("Your Fitness Journey Partner", subtitle_style))
-    elements.append(Spacer(1, 5))
-    elements.append(Paragraph(f"<b>Receipt: {receipt_no}</b>", ParagraphStyle('Receipt', parent=styles['Normal'], fontSize=12, textColor=primary_color, alignment=TA_CENTER)))
-    elements.append(Spacer(1, 20))
-    
-    # Info section
-    user_name = user.get("name", "N/A") if user else "N/A"
-    user_member_id = user.get("member_id", "N/A") if user else "N/A"
-    user_phone = user.get("phone_number", "") if user else ""
-    user_email = user.get("email", "") if user else ""
-    
-    info_data = [
-        [Paragraph("<b>BILLED TO</b>", ParagraphStyle('H', fontSize=9, textColor=gray_color)), 
-         Paragraph("<b>INVOICE DETAILS</b>", ParagraphStyle('H', fontSize=9, textColor=gray_color, alignment=TA_RIGHT))],
-        [Paragraph(f"<b>{user_name}</b>", bold_style), 
-         Paragraph(f"<b>Invoice #:</b> {receipt_no}", ParagraphStyle('R', fontSize=10, alignment=TA_RIGHT))],
-        [Paragraph(f"Member ID: {user_member_id}", normal_style), 
-         Paragraph(f"<b>Date:</b> {payment_date_formatted}", ParagraphStyle('R', fontSize=10, alignment=TA_RIGHT))],
-        [Paragraph(f"{user_phone}", normal_style), 
-         Paragraph(f"<b>Payment Mode:</b> {payment.get('payment_method', 'Cash').title()}", ParagraphStyle('R', fontSize=10, alignment=TA_RIGHT))],
-        [Paragraph(f"{user_email}", normal_style), ""],
-    ]
-    info_table = Table(info_data, colWidths=[250, 250])
-    info_table.setStyle(TableStyle([
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('TOPPADDING', (0, 0), (-1, -1), 3),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
-    ]))
-    elements.append(info_table)
-    elements.append(Spacer(1, 20))
-    
-    # Invoice items table
-    header_style = ParagraphStyle('Header', fontSize=10, textColor=HexColor('#FFFFFF'), fontName='Helvetica-Bold')
-    
-    if membership and plan:
-        start_date = membership.get("start_date", "")[:10] if membership.get("start_date") else ""
-        end_date = membership.get("end_date", "")[:10] if membership.get("end_date") else ""
-        original_price = membership.get("original_price", 0)
-        discount = membership.get("discount_amount", 0)
-        
-        table_data = [
-            [Paragraph("Description", header_style), Paragraph("Amount", header_style)],
-            [Paragraph(f"<b>{plan.get('name', 'Membership Plan')}</b><br/><font size=8 color='#64748b'>{start_date} to {end_date} ({plan.get('duration_days', '')} days)</font>", normal_style),
-             Paragraph(f"Rs. {original_price:,.0f}", ParagraphStyle('R', fontSize=10, alignment=TA_RIGHT))],
-        ]
-        
-        if discount > 0:
-            table_data.append([
-                Paragraph("<font color='#10b981'>Discount Applied</font>", normal_style),
-                Paragraph(f"<font color='#10b981'>-Rs. {discount:,.0f}</font>", ParagraphStyle('R', fontSize=10, alignment=TA_RIGHT))
-            ])
-    else:
-        table_data = [
-            [Paragraph("Description", header_style), Paragraph("Amount", header_style)],
-            [Paragraph(payment.get("notes", "Gym Payment"), normal_style),
-             Paragraph(f"Rs. {payment.get('amount_paid', 0):,.0f}", ParagraphStyle('R', fontSize=10, alignment=TA_RIGHT))],
-        ]
-    
-    # Total row
-    table_data.append([
-        Paragraph("<b>Amount Paid</b>", ParagraphStyle('B', fontSize=12, fontName='Helvetica-Bold', textColor=dark_color)),
-        Paragraph(f"<b>Rs. {payment.get('amount_paid', 0):,.0f}</b>", ParagraphStyle('R', fontSize=12, fontName='Helvetica-Bold', textColor=dark_color, alignment=TA_RIGHT))
-    ])
-    
-    items_table = Table(table_data, colWidths=[350, 150])
-    items_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), primary_color),
-        ('TEXTCOLOR', (0, 0), (-1, 0), HexColor('#FFFFFF')),
-        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
-        ('TOPPADDING', (0, 0), (-1, 0), 10),
-        ('BACKGROUND', (0, -1), (-1, -1), HexColor('#f0f9ff')),
-        ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
-        ('TOPPADDING', (0, 1), (-1, -1), 8),
-        ('GRID', (0, 0), (-1, -1), 0.5, HexColor('#e5e7eb')),
-    ]))
-    elements.append(items_table)
-    elements.append(Spacer(1, 30))
-    
-    # Thank you message
-    thanks_style = ParagraphStyle('Thanks', fontSize=11, textColor=dark_color, alignment=TA_CENTER)
-    elements.append(Paragraph("Thank you for being a valued member of F3 Fitness Health Club!", thanks_style))
-    elements.append(Paragraph("<b>Transform Your Body, Transform Your Life!</b>", ParagraphStyle('Motto', fontSize=10, textColor=primary_color, alignment=TA_CENTER, spaceAfter=30)))
-    
-    # Footer
-    footer_style = ParagraphStyle('Footer', fontSize=9, textColor=gray_color, alignment=TA_CENTER)
-    elements.append(Spacer(1, 20))
-    elements.append(Paragraph("<b>F3 FITNESS HEALTH CLUB</b>", ParagraphStyle('FTitle', fontSize=11, textColor=HexColor('#334155'), alignment=TA_CENTER)))
-    elements.append(Paragraph("4th Avenue Plot No 4R-B, Mode, near Mandir Marg, Sector 4, Vidyadhar Nagar, Jaipur, Rajasthan 302039", footer_style))
-    elements.append(Paragraph("Phone: 072300 52193 | Email: info@f3fitness.in", footer_style))
-    elements.append(Paragraph("Mon-Sat: 5:00 AM - 10:00 PM | Sun: 6:00 AM - 12:00 PM | Instagram: @f3fitnessclub", ParagraphStyle('Hours', fontSize=8, textColor=HexColor('#94a3b8'), alignment=TA_CENTER)))
-    
-    # Build PDF
-    doc.build(elements)
-    
-    # Return as downloadable file
-    buffer.seek(0)
-    filename = f"F3_Invoice_{receipt_no}.pdf"
+    pdf_bytes, filename, _ = await _build_invoice_pdf_bytes(payment_id)
     return StreamingResponse(
-        buffer,
+        BytesIO(pdf_bytes),
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
+
+@api_router.get("/invoices/{payment_id}/pdf/public")
+async def get_invoice_pdf_public(payment_id: str, token: str):
+    """Public (token-protected) invoice PDF endpoint used for WhatsApp document/link sharing."""
+    if not verify_invoice_share_token(token, payment_id):
+        raise HTTPException(status_code=403, detail="Invalid or expired invoice token")
+    pdf_bytes, filename, _ = await _build_invoice_pdf_bytes(payment_id)
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename=\"{filename}\"'}
     )
 
 # ==================== WHATSAPP LOGS ROUTES ====================
@@ -3821,7 +3929,7 @@ async def get_templates(current_user: dict = Depends(get_admin_user)):
     template_types = [
         "welcome", "otp", "password_reset", "attendance", "absent_warning", 
         "birthday", "holiday", "plan_shared", "renewal_reminder", 
-        "membership_activated", "payment_received", "announcement",
+        "membership_activated", "payment_received", "invoice_sent", "announcement",
         "freeze_started", "freeze_ended", "freeze_ending_tomorrow",
         "new_user_credentials", "test_email"
     ]

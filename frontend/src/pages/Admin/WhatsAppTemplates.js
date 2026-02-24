@@ -16,6 +16,7 @@ const WHATSAPP_TEMPLATE_TYPES = [
   { type: 'password_reset', label: 'Password Reset', description: 'Sent when user requests password reset' },
   { type: 'attendance', label: 'Attendance Confirmation', description: 'Sent when attendance is marked' },
   { type: 'membership_activated', label: 'Membership Activated', description: 'Sent when membership is activated' },
+  { type: 'invoice_sent', label: 'Invoice Sent', description: 'Sent with invoice PDF / secure link after payment' },
   { type: 'freeze_started', label: 'Freeze Started', description: 'Sent when a membership freeze is started' },
   { type: 'freeze_ended', label: 'Freeze Ended', description: 'Sent when a freeze is ended manually/early' },
   { type: 'freeze_ending_tomorrow', label: 'Freeze Ending Tomorrow', description: 'Sent one day before a freeze ends' },
@@ -32,7 +33,7 @@ const AVAILABLE_VARIABLES = [
   '{{name}}', '{{member_id}}', '{{otp}}', '{{reset_link}}', '{{plan_name}}', '{{start_date}}', '{{end_date}}',
   '{{expiry_date}}', '{{days_left}}', '{{days}}', '{{amount}}', '{{payment_mode}}',
   '{{receipt_no}}', '{{holiday_date}}', '{{holiday_reason}}', '{{announcement_title}}',
-  '{{announcement_content}}', '{{plan_type}}', '{{plan_title}}',
+  '{{announcement_content}}', '{{plan_type}}', '{{plan_title}}', '{{invoice_pdf_url}}',
   '{{freeze_start_date}}', '{{freeze_end_date}}', '{{freeze_days}}', '{{freeze_fee}}', '{{new_expiry_date}}', '{{end_mode}}'
 ];
 
@@ -177,6 +178,7 @@ export const WhatsAppTemplatesSettings = () => {
       .replace(/\{\{amount\}\}/g, '2,500')
       .replace(/\{\{payment_mode\}\}/g, 'UPI')
       .replace(/\{\{receipt_no\}\}/g, 'RCP-2025-001')
+      .replace(/\{\{invoice_pdf_url\}\}/g, 'https://f3fitness.in/api/invoices/demo/pdf/public?token=demo')
       .replace(/\{\{holiday_date\}\}/g, '26 Jan 2025')
       .replace(/\{\{holiday_reason\}\}/g, 'Republic Day')
       .replace(/\{\{announcement_title\}\}/g, 'New Equipment Arrived!')
