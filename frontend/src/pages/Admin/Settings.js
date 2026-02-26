@@ -720,6 +720,14 @@ export const SMTPSettings = () => {
 };
 
 export const WhatsAppSettings = () => {
+  const FAST2SMS_TEMPLATE_DEFAULTS = {
+    otp: '13503',
+    password_reset: '13754',
+    welcome: '13750',
+    membership_activated: '13752',
+    payment_received: '13753',
+    invoice_sent: '13755'
+  };
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -738,6 +746,12 @@ export const WhatsAppSettings = () => {
     fast2sms_waba_number: '',
     fast2sms_phone_number_id: '',
     fast2sms_use_template_api: false,
+    fast2sms_template_otp_message_id: '13503',
+    fast2sms_template_password_reset_message_id: '13754',
+    fast2sms_template_welcome_message_id: '13750',
+    fast2sms_template_membership_activated_message_id: '13752',
+    fast2sms_template_payment_received_message_id: '13753',
+    fast2sms_template_invoice_sent_message_id: '13755',
     admin_whatsapp_test_numbers: ''
   });
 
@@ -761,6 +775,12 @@ export const WhatsAppSettings = () => {
           fast2sms_waba_number: response.data.fast2sms_waba_number || '',
           fast2sms_phone_number_id: response.data.fast2sms_phone_number_id || '',
           fast2sms_use_template_api: response.data.fast2sms_use_template_api ?? false,
+          fast2sms_template_otp_message_id: response.data.fast2sms_template_otp_message_id || FAST2SMS_TEMPLATE_DEFAULTS.otp,
+          fast2sms_template_password_reset_message_id: response.data.fast2sms_template_password_reset_message_id || FAST2SMS_TEMPLATE_DEFAULTS.password_reset,
+          fast2sms_template_welcome_message_id: response.data.fast2sms_template_welcome_message_id || FAST2SMS_TEMPLATE_DEFAULTS.welcome,
+          fast2sms_template_membership_activated_message_id: response.data.fast2sms_template_membership_activated_message_id || FAST2SMS_TEMPLATE_DEFAULTS.membership_activated,
+          fast2sms_template_payment_received_message_id: response.data.fast2sms_template_payment_received_message_id || FAST2SMS_TEMPLATE_DEFAULTS.payment_received,
+          fast2sms_template_invoice_sent_message_id: response.data.fast2sms_template_invoice_sent_message_id || FAST2SMS_TEMPLATE_DEFAULTS.invoice_sent,
           admin_whatsapp_test_numbers: response.data.admin_whatsapp_test_numbers || ''
         });
         setTestNumber((response.data.admin_whatsapp_test_numbers || '').split(',').map(s => s.trim()).find(Boolean) || '+91');
@@ -941,13 +961,87 @@ export const WhatsAppSettings = () => {
                   </div>
                   <div className="flex items-center justify-between rounded-lg border border-border p-3">
                     <div>
-                      <p className="font-medium text-foreground">Use Template API (future)</p>
-                      <p className="text-xs text-muted-foreground">Keep off to use session messaging for current app templates</p>
+                      <p className="font-medium text-foreground">Use Template API (OTP / Password Reset / Welcome)</p>
+                      <p className="text-xs text-muted-foreground">Required for sending WhatsApp outside the 24h customer reply window on Fast2SMS.</p>
                     </div>
                     <Switch
                       checked={formData.fast2sms_use_template_api}
                       onCheckedChange={(checked) => setFormData({ ...formData, fast2sms_use_template_api: checked })}
                     />
+                  </div>
+                  <div className="rounded-lg border border-border p-4 space-y-4">
+                    <div>
+                      <h4 className="font-semibold text-foreground">Fast2SMS Template Message IDs (Critical Flows)</h4>
+                      <p className="text-xs text-muted-foreground">
+                        Default IDs are prefilled. You can change them any time from here. Pending templates will start working after Fast2SMS marks them approved.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">OTP Template Message ID</Label>
+                        <Input
+                          className="input-dark mt-2"
+                          placeholder="e.g. 13503"
+                          value={formData.fast2sms_template_otp_message_id}
+                          onChange={(e) => setFormData({ ...formData, fast2sms_template_otp_message_id: e.target.value })}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">From your Fast2SMS Templates API export (`otp`).</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Password Reset Template Message ID</Label>
+                        <Input
+                          className="input-dark mt-2"
+                          placeholder="e.g. 13754 (password_forgot)"
+                          value={formData.fast2sms_template_password_reset_message_id}
+                          onChange={(e) => setFormData({ ...formData, fast2sms_template_password_reset_message_id: e.target.value })}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Recommended variable count: 1 (reset code / temporary password).</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Welcome Template Message ID</Label>
+                        <Input
+                          className="input-dark mt-2"
+                          placeholder="e.g. 13750 (welcome_massage1)"
+                          value={formData.fast2sms_template_welcome_message_id}
+                          onChange={(e) => setFormData({ ...formData, fast2sms_template_welcome_message_id: e.target.value })}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Uses variables: `name | member_id` (your utility welcome template).</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Membership Activated Template Message ID</Label>
+                        <Input
+                          className="input-dark mt-2"
+                          placeholder="e.g. 13752 (membership)"
+                          value={formData.fast2sms_template_membership_activated_message_id}
+                          onChange={(e) => setFormData({ ...formData, fast2sms_template_membership_activated_message_id: e.target.value })}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Variables: `name | plan_name | start_date | end_date`.</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Payment Receipt Template Message ID</Label>
+                        <Input
+                          className="input-dark mt-2"
+                          placeholder="e.g. 13753 (payment_receipt)"
+                          value={formData.fast2sms_template_payment_received_message_id}
+                          onChange={(e) => setFormData({ ...formData, fast2sms_template_payment_received_message_id: e.target.value })}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Variables: `name | receipt_no | amount | payment_mode`.</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Invoice Sent Template Message ID</Label>
+                        <Input
+                          className="input-dark mt-2"
+                          placeholder="e.g. 13755 (invoice_sent)"
+                          value={formData.fast2sms_template_invoice_sent_message_id}
+                          onChange={(e) => setFormData({ ...formData, fast2sms_template_invoice_sent_message_id: e.target.value })}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Variables: `receipt_no | amount | payment_date | invoice_pdf_url`.</p>
+                      </div>
+                    </div>
                   </div>
                   <div className="rounded-lg border border-border p-4 space-y-3">
                     <div className="flex flex-wrap gap-2 items-center justify-between">

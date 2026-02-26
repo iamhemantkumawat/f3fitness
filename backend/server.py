@@ -334,6 +334,14 @@ class WhatsAppSettings(BaseModel):
     fast2sms_waba_number: Optional[str] = ""  # optional sender / business number if required by account
     fast2sms_phone_number_id: Optional[str] = ""
     fast2sms_use_template_api: bool = False
+    # Fast2SMS template message IDs (can be changed from Admin > WhatsApp Settings)
+    # Some defaults may be pending approval; they will work after Fast2SMS marks them APPROVED.
+    fast2sms_template_otp_message_id: Optional[str] = "13503"
+    fast2sms_template_password_reset_message_id: Optional[str] = "13754"
+    fast2sms_template_welcome_message_id: Optional[str] = "13750"
+    fast2sms_template_membership_activated_message_id: Optional[str] = "13752"
+    fast2sms_template_payment_received_message_id: Optional[str] = "13753"
+    fast2sms_template_invoice_sent_message_id: Optional[str] = "13755"
     admin_whatsapp_test_numbers: Optional[str] = ""  # comma separated
     attendance_confirmation_whatsapp_enabled: bool = True
     attendance_confirmation_email_enabled: bool = True
@@ -356,6 +364,12 @@ class SettingsResponse(BaseModel):
     fast2sms_waba_number: Optional[str] = None
     fast2sms_phone_number_id: Optional[str] = None
     fast2sms_use_template_api: Optional[bool] = False
+    fast2sms_template_otp_message_id: Optional[str] = "13503"
+    fast2sms_template_password_reset_message_id: Optional[str] = "13754"
+    fast2sms_template_welcome_message_id: Optional[str] = "13750"
+    fast2sms_template_membership_activated_message_id: Optional[str] = "13752"
+    fast2sms_template_payment_received_message_id: Optional[str] = "13753"
+    fast2sms_template_invoice_sent_message_id: Optional[str] = "13755"
     admin_whatsapp_test_numbers: Optional[str] = None
     attendance_confirmation_whatsapp_enabled: Optional[bool] = True
     attendance_confirmation_email_enabled: Optional[bool] = True
@@ -1365,7 +1379,218 @@ async def _send_whatsapp_fast2sms(settings: dict, to_number_clean: str, message:
         logger.error(f"Fast2SMS WhatsApp send failed: {e}")
         return False
 
-async def send_whatsapp(to_number: str, message: str, log_to_db: bool = True, media_url: Optional[str] = None):
+async def _send_whatsapp_fast2sms_template(
+    settings: dict,
+    to_number_clean: str,
+    template_type: str,
+    template_vars: Optional[dict],
+    log_data: dict,
+    log_to_db: bool = True
+):
+    """Send approved WhatsApp template via Fast2SMS /dev/whatsapp endpoint.
+    Returns:
+      True/False for attempted send result,
+      None when template mode is not configured for the given template (caller may fallback to session API).
+    """
+    api_key = settings.get("fast2sms_api_key")
+    if not api_key:
+        return None
+
+    base_url = (settings.get("fast2sms_base_url") or "https://www.fast2sms.com").rstrip("/")
+    if not bool(settings.get("fast2sms_use_template_api")):
+        return None
+
+    template_field_map = {
+        "otp": "fast2sms_template_otp_message_id",
+        "password_reset": "fast2sms_template_password_reset_message_id",
+        "welcome": "fast2sms_template_welcome_message_id",
+        "membership_activated": "fast2sms_template_membership_activated_message_id",
+        "payment_received": "fast2sms_template_payment_received_message_id",
+        "invoice_sent": "fast2sms_template_invoice_sent_message_id",
+    }
+    msg_id_key = template_field_map.get(template_type)
+    if not msg_id_key:
+        return None
+    message_id = str(settings.get(msg_id_key) or "").strip()
+    if not message_id:
+        return None
+
+    template_vars = template_vars or {}
+    if template_type == "otp":
+        variables_values = [str(template_vars.get("otp") or "")]
+    elif template_type == "password_reset":
+        # Recommend Fast2SMS template with single variable for temporary password/reset code.
+        variables_values = [str(template_vars.get("otp") or template_vars.get("new_password") or "")]
+    elif template_type == "welcome":
+        variables_values = [
+            str(template_vars.get("name") or ""),
+            str(template_vars.get("member_id") or "")
+        ]
+    elif template_type == "membership_activated":
+        variables_values = [
+            str(template_vars.get("name") or ""),
+            str(template_vars.get("plan_name") or ""),
+            str(template_vars.get("start_date") or ""),
+            str(template_vars.get("end_date") or "")
+        ]
+    elif template_type == "payment_received":
+        variables_values = [
+            str(template_vars.get("name") or ""),
+            str(template_vars.get("receipt_no") or ""),
+            str(template_vars.get("amount") or ""),
+            str(template_vars.get("payment_mode") or "")
+        ]
+    elif template_type == "invoice_sent":
+        variables_values = [
+            str(template_vars.get("receipt_no") or ""),
+            str(template_vars.get("amount") or ""),
+            str(template_vars.get("payment_date") or ""),
+            str(template_vars.get("invoice_pdf_url") or "")
+        ]
+    else:
+        return None
+    if any(v is None for v in variables_values) or any(v == "" for v in variables_values):
+        return None
+
+    display_number = str(settings.get("fast2sms_waba_number") or "").strip()
+    phone_number_id = str(settings.get("fast2sms_phone_number_id") or "").strip()
+    display_number_digits = "".join(ch for ch in display_number if ch.isdigit()) if display_number else ""
+
+    async def _resolve_waba_sender():
+        nonlocal display_number, phone_number_id, display_number_digits
+        if display_number and phone_number_id:
+            return
+        try:
+            async with httpx.AsyncClient(timeout=20) as client:
+                response = await client.get(
+                    f"{base_url}/dev/dlt_manager/whatsapp",
+                    headers={"authorization": api_key},
+                    params={"authorization": api_key}
+                )
+            if response.status_code >= 400:
+                return
+            data = response.json() if response.headers.get("content-type", "").startswith("application/json") else None
+            if not isinstance(data, list):
+                return
+            def _digits(v):
+                return "".join(ch for ch in str(v or "") if ch.isdigit())
+            matched = None
+            if display_number:
+                want = _digits(display_number)
+                for row in data:
+                    if _digits(row.get("number")) == want:
+                        matched = row
+                        break
+            if not matched:
+                for row in data:
+                    if str(row.get("connection_status", "")).upper() == "CONNECTED":
+                        matched = row
+                        break
+            if not matched and data:
+                matched = data[0]
+            if matched:
+                display_number = display_number or str(matched.get("number") or "")
+                phone_number_id = phone_number_id or str(matched.get("phone_number_id") or "")
+                display_number_digits = "".join(ch for ch in display_number if ch.isdigit()) if display_number else ""
+        except Exception:
+            return
+
+    await _resolve_waba_sender()
+    endpoint = f"{base_url}/dev/whatsapp"
+    headers = {"authorization": api_key}
+    numbers_variants = [to_number_clean, to_number_clean.lstrip("+")]
+    sender_variants = []
+    if phone_number_id:
+        sender_variants.append({"phone_number_id": phone_number_id})
+    if display_number:
+        sender_variants.append({"display_number": display_number})
+    if display_number_digits and display_number_digits != display_number:
+        sender_variants.append({"display_number": display_number_digits})
+    if phone_number_id and display_number:
+        sender_variants.append({"phone_number_id": phone_number_id, "display_number": display_number})
+    if phone_number_id and display_number_digits:
+        sender_variants.append({"phone_number_id": phone_number_id, "display_number": display_number_digits})
+    if not sender_variants:
+        sender_variants.append({})
+
+    # de-duplicate sender payloads
+    dedup = []
+    seen = set()
+    for sv in sender_variants:
+        key = tuple(sorted(sv.items()))
+        if key not in seen:
+            seen.add(key)
+            dedup.append(sv)
+    sender_variants = dedup
+
+    payload_base = {
+        "message_id": message_id,
+        "numbers": numbers_variants[0],
+        "variables_values": "|".join(variables_values)
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            last_resp = None
+            attempts = []
+            for sender in sender_variants:
+                for num in numbers_variants:
+                    body = {**payload_base, **sender, "numbers": num}
+                    variants = [
+                        ("get", body),
+                        ("post_json", body),
+                        ("post_form", body),
+                    ]
+                    for mode, payload in variants:
+                        attempts.append({"mode": mode, "keys": sorted(list(payload.keys()))})
+                        if mode == "get":
+                            resp = await client.get(endpoint, headers=headers, params={**payload, "authorization": api_key})
+                        elif mode == "post_json":
+                            resp = await client.post(endpoint, headers=headers, json=payload)
+                        else:
+                            resp = await client.post(endpoint, headers=headers, data=payload)
+                        last_resp = resp
+                        if 200 <= resp.status_code < 300:
+                            try:
+                                body_json = resp.json()
+                            except Exception:
+                                body_json = None
+                            failed_flag = isinstance(body_json, dict) and (
+                                body_json.get("return") is False or str(body_json.get("status", "")).lower() in {"fail", "failed", "error"}
+                            )
+                            if not failed_flag:
+                                log_data["provider_mode"] = "fast2sms_template"
+                                log_data["provider_attempts"] = attempts
+                                log_data["status"] = "sent"
+                                log_data["message_sid"] = (body_json or {}).get("request_id") or (body_json or {}).get("message_id") or "fast2sms-template"
+                                log_data["provider_response"] = body_json or resp.text[:500]
+                                await _log_whatsapp(log_data, log_to_db)
+                                return True
+            if last_resp is None:
+                return None
+            err_text = last_resp.text[:500] if getattr(last_resp, "text", None) else ""
+            log_data["provider_mode"] = "fast2sms_template"
+            log_data["provider_attempts"] = attempts
+            log_data["status"] = "failed"
+            log_data["error"] = f"Fast2SMS template API returned status {last_resp.status_code}: {err_text}"
+            await _log_whatsapp(log_data, log_to_db)
+            return False
+    except Exception as e:
+        log_data["provider_mode"] = "fast2sms_template"
+        log_data["status"] = "failed"
+        log_data["error"] = str(e)
+        await _log_whatsapp(log_data, log_to_db)
+        logger.error(f"Fast2SMS template send failed: {e}")
+        return False
+
+async def send_whatsapp(
+    to_number: str,
+    message: str,
+    log_to_db: bool = True,
+    media_url: Optional[str] = None,
+    template_type: Optional[str] = None,
+    template_vars: Optional[dict] = None
+):
     """Send WhatsApp message using configured provider (Twilio or Fast2SMS)."""
     settings = await db.settings.find_one({"id": "1"}, {"_id": 0}) or {}
     provider = (settings.get("whatsapp_provider") or "twilio").lower()
@@ -1384,6 +1609,15 @@ async def send_whatsapp(to_number: str, message: str, log_to_db: bool = True, me
     }
 
     if provider == "fast2sms":
+        if template_type:
+            template_result = await _send_whatsapp_fast2sms_template(
+                settings, to_number_clean, template_type, template_vars, dict(log_data), log_to_db
+            )
+            if template_result is True:
+                return True
+            # False means template send attempted+failed and is already logged. Do not double-send via session.
+            if template_result is False:
+                return False
         return await _send_whatsapp_fast2sms(settings, to_number_clean, message, log_data, log_to_db, media_url=media_url)
 
     return await _send_whatsapp_twilio(settings, to_number_clean, message, log_data, log_to_db, media_url=media_url)
@@ -1429,9 +1663,9 @@ async def send_notification(user: dict, template_type: str, variables: dict, bac
         phone = user.get("country_code", "+91") + user["phone_number"].lstrip("0")
         message = replace_template_vars(whatsapp_template["content"], vars_with_user)
         if background_tasks:
-            background_tasks.add_task(send_whatsapp, phone, message)
+            background_tasks.add_task(send_whatsapp, phone, message, True, None, template_type, vars_with_user)
         else:
-            await send_whatsapp(phone, message)
+            await send_whatsapp(phone, message, True, None, template_type, vars_with_user)
 
 async def send_notification_to_all(template_type: str, variables: dict, background_tasks: BackgroundTasks):
     """Send notification to all active members"""
@@ -1598,7 +1832,7 @@ async def send_otp(req: SendOTPRequest, background_tasks: BackgroundTasks):
     full_phone = f"{req.country_code}{req.phone_number.lstrip('0')}"
     whatsapp_template = await get_template("otp", "whatsapp")
     whatsapp_message = replace_template_vars(whatsapp_template.get("content", "🔐 Your OTP: {{otp}}"), {"otp": otp, "name": "User"})
-    background_tasks.add_task(send_whatsapp, full_phone, whatsapp_message)
+    background_tasks.add_task(send_whatsapp, full_phone, whatsapp_message, True, None, "otp", {"otp": otp, "name": "User"})
     
     # Send same OTP to Email using template
     if req.email:
@@ -3230,9 +3464,9 @@ async def send_invoice_to_member(user: dict, payment_id: str, background_tasks: 
         phone = user.get("country_code", "+91") + user["phone_number"].lstrip("0")
         wa_text = replace_template_vars(whatsapp_template["content"], vars_with_user)
         if background_tasks:
-            background_tasks.add_task(send_whatsapp, phone, wa_text, True, invoice_url)
+            background_tasks.add_task(send_whatsapp, phone, wa_text, True, invoice_url, "invoice_sent", vars_with_user)
         else:
-            await send_whatsapp(phone, wa_text, True, invoice_url)
+            await send_whatsapp(phone, wa_text, True, invoice_url, "invoice_sent", vars_with_user)
 
 @api_router.get("/invoices/{payment_id}")
 async def get_invoice(payment_id: str, current_user: dict = Depends(get_current_user)):
@@ -4372,6 +4606,7 @@ async def test_send_template(req: TemplateTestSendRequest, current_user: dict = 
         "days": "7",
         "amount": "2500",
         "payment_mode": "UPI",
+        "payment_date": "24 Feb 2026",
         "receipt_no": "RCP-2026-001",
         "holiday_date": "26 Jan 2026",
         "holiday_reason": "Republic Day",
@@ -4394,7 +4629,7 @@ async def test_send_template(req: TemplateTestSendRequest, current_user: dict = 
         success = await send_email(recipient, rendered_subject, body)
     else:
         rendered_message = replace_template_vars(content or "", sample_vars)
-        success = await send_whatsapp(recipient, rendered_message)
+        success = await send_whatsapp(recipient, rendered_message, True, None, req.template_type, sample_vars)
 
     if not success:
         latest_log = await db.whatsapp_logs.find_one(sort=[("timestamp", -1)]) if channel == "whatsapp" else None
