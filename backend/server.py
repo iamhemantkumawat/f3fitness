@@ -2160,14 +2160,15 @@ async def create_user(user: UserCreate, role: str = "member", current_user: dict
             "password": user.password
         }
         
-        # WhatsApp message using template
+        # WhatsApp welcome message via template-aware sender (supports Fast2SMS template API)
         if user.phone_number:
             full_phone = f"{user.country_code}{user.phone_number.lstrip('0')}"
-            whatsapp_template = await get_template("new_user_credentials", "whatsapp")
-            whatsapp_msg = replace_template_vars(whatsapp_template.get("content", ""), template_vars)
-            background_tasks.add_task(send_whatsapp, full_phone, whatsapp_msg)
+            welcome_template = await get_template("welcome", "whatsapp")
+            welcome_vars = {"name": user.name, "member_id": member_id}
+            welcome_msg = replace_template_vars(welcome_template.get("content", ""), welcome_vars)
+            background_tasks.add_task(send_whatsapp, full_phone, welcome_msg, True, None, "welcome", welcome_vars)
         
-        # Email notification using template
+        # Email notification with login credentials
         email_template = await get_template("new_user_credentials", "email")
         subject = replace_template_vars(email_template.get("subject", "Welcome to F3 Fitness Gym"), template_vars)
         content = replace_template_vars(email_template.get("content", ""), template_vars)
