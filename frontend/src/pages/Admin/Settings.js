@@ -724,6 +724,7 @@ export const WhatsAppSettings = () => {
     otp: '13503',
     password_reset: '13754',
     welcome: '13750',
+    new_user_credentials: '',
     membership_activated: '13752',
     payment_received: '13753',
     invoice_sent: '13755'
@@ -749,6 +750,7 @@ export const WhatsAppSettings = () => {
     fast2sms_template_otp_message_id: '13503',
     fast2sms_template_password_reset_message_id: '13754',
     fast2sms_template_welcome_message_id: '13750',
+    fast2sms_template_new_user_credentials_message_id: '',
     fast2sms_template_membership_activated_message_id: '13752',
     fast2sms_template_payment_received_message_id: '13753',
     fast2sms_template_invoice_sent_message_id: '13755',
@@ -778,6 +780,7 @@ export const WhatsAppSettings = () => {
           fast2sms_template_otp_message_id: response.data.fast2sms_template_otp_message_id || FAST2SMS_TEMPLATE_DEFAULTS.otp,
           fast2sms_template_password_reset_message_id: response.data.fast2sms_template_password_reset_message_id || FAST2SMS_TEMPLATE_DEFAULTS.password_reset,
           fast2sms_template_welcome_message_id: response.data.fast2sms_template_welcome_message_id || FAST2SMS_TEMPLATE_DEFAULTS.welcome,
+          fast2sms_template_new_user_credentials_message_id: response.data.fast2sms_template_new_user_credentials_message_id || FAST2SMS_TEMPLATE_DEFAULTS.new_user_credentials,
           fast2sms_template_membership_activated_message_id: response.data.fast2sms_template_membership_activated_message_id || FAST2SMS_TEMPLATE_DEFAULTS.membership_activated,
           fast2sms_template_payment_received_message_id: response.data.fast2sms_template_payment_received_message_id || FAST2SMS_TEMPLATE_DEFAULTS.payment_received,
           fast2sms_template_invoice_sent_message_id: response.data.fast2sms_template_invoice_sent_message_id || FAST2SMS_TEMPLATE_DEFAULTS.invoice_sent,
@@ -961,7 +964,7 @@ export const WhatsAppSettings = () => {
                   </div>
                   <div className="flex items-center justify-between rounded-lg border border-border p-3">
                     <div>
-                      <p className="font-medium text-foreground">Use Template API (OTP / Password Reset / Welcome)</p>
+                      <p className="font-medium text-foreground">Use Template API (Critical Notifications)</p>
                       <p className="text-xs text-muted-foreground">Required for sending WhatsApp outside the 24h customer reply window on Fast2SMS.</p>
                     </div>
                     <Switch
@@ -1009,6 +1012,18 @@ export const WhatsAppSettings = () => {
                         />
                         <p className="text-xs text-muted-foreground mt-1">Uses variables: `name | member_id` (your utility welcome template).</p>
                       </div>
+                      <div>
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">New User Credentials Template Message ID</Label>
+                        <Input
+                          className="input-dark mt-2"
+                          placeholder="e.g. 14000 (new_user_credentials_utility)"
+                          value={formData.fast2sms_template_new_user_credentials_message_id}
+                          onChange={(e) => setFormData({ ...formData, fast2sms_template_new_user_credentials_message_id: e.target.value })}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Variables: `name | member_id | email | password`.</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label className="text-xs uppercase tracking-wider text-muted-foreground">Membership Activated Template Message ID</Label>
                         <Input

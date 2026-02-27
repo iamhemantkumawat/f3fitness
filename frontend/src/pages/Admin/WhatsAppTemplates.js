@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 
 const WHATSAPP_TEMPLATE_TYPES = [
   { type: 'welcome', label: 'Welcome Message', description: 'Sent when a new member joins' },
+  { type: 'new_user_credentials', label: 'New User Credentials', description: 'Sent when account is created (admin or self signup)' },
   { type: 'otp', label: 'OTP Verification', description: 'Sent for email/phone verification' },
   { type: 'password_reset', label: 'Password Reset', description: 'Sent when user requests password reset' },
   { type: 'attendance', label: 'Attendance Confirmation', description: 'Sent when attendance is marked' },
@@ -30,7 +31,7 @@ const WHATSAPP_TEMPLATE_TYPES = [
 ];
 
 const AVAILABLE_VARIABLES = [
-  '{{name}}', '{{member_id}}', '{{otp}}', '{{reset_link}}', '{{plan_name}}', '{{start_date}}', '{{end_date}}',
+  '{{name}}', '{{member_id}}', '{{email}}', '{{password}}', '{{otp}}', '{{reset_link}}', '{{plan_name}}', '{{start_date}}', '{{end_date}}',
   '{{expiry_date}}', '{{days_left}}', '{{days}}', '{{amount}}', '{{payment_mode}}',
   '{{receipt_no}}', '{{holiday_date}}', '{{holiday_reason}}', '{{announcement_title}}',
   '{{announcement_content}}', '{{plan_type}}', '{{plan_title}}', '{{invoice_pdf_url}}',
@@ -189,6 +190,8 @@ export const WhatsAppTemplatesSettings = () => {
     return (content || '')
       .replace(/\{\{name\}\}/g, 'Rahul Sharma')
       .replace(/\{\{member_id\}\}/g, 'F3-0042')
+      .replace(/\{\{email\}\}/g, 'rahul@example.com')
+      .replace(/\{\{password\}\}/g, 'Temp@1234')
       .replace(/\{\{plan_name\}\}/g, 'Quarterly')
       .replace(/\{\{start_date\}\}/g, '01 Jan 2025')
       .replace(/\{\{end_date\}\}/g, '31 Mar 2025')

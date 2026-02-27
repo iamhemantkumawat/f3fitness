@@ -339,6 +339,7 @@ class WhatsAppSettings(BaseModel):
     fast2sms_template_otp_message_id: Optional[str] = "13503"
     fast2sms_template_password_reset_message_id: Optional[str] = "13754"
     fast2sms_template_welcome_message_id: Optional[str] = "13750"
+    fast2sms_template_new_user_credentials_message_id: Optional[str] = ""
     fast2sms_template_membership_activated_message_id: Optional[str] = "13752"
     fast2sms_template_payment_received_message_id: Optional[str] = "13753"
     fast2sms_template_invoice_sent_message_id: Optional[str] = "13755"
@@ -367,6 +368,7 @@ class SettingsResponse(BaseModel):
     fast2sms_template_otp_message_id: Optional[str] = "13503"
     fast2sms_template_password_reset_message_id: Optional[str] = "13754"
     fast2sms_template_welcome_message_id: Optional[str] = "13750"
+    fast2sms_template_new_user_credentials_message_id: Optional[str] = ""
     fast2sms_template_membership_activated_message_id: Optional[str] = "13752"
     fast2sms_template_payment_received_message_id: Optional[str] = "13753"
     fast2sms_template_invoice_sent_message_id: Optional[str] = "13755"
@@ -1004,22 +1006,21 @@ async def get_template(template_type: str, channel: str) -> dict:
             "content": "📢 *{{announcement_title}}*\n\nHi {{name}},\n\n{{announcement_content}}\n\n- F3 Fitness Gym"
         },
         ("new_user_credentials", "email"): {
-            "subject": "Welcome to F3 Fitness Gym - Your Login Details 🏋️",
-            "content": """<h2>Welcome to F3 Fitness Gym! 🏋️</h2>
+            "subject": "F3 Fitness Account Details (Service Message)",
+            "content": """<h2>F3 Fitness Account Created ✅</h2>
 <p>Hi <strong>{{name}}</strong>,</p>
-<p>Your account has been created successfully. Here are your login credentials:</p>
+<p>Your member account has been created successfully. Use these login details:</p>
 <div class="highlight-box">
   <strong>Member ID:</strong> {{member_id}}<br>
   <strong>Email:</strong> {{email}}<br>
   <strong>Password:</strong> <code style="color:#dc2626; font-weight:700;">{{password}}</code>
 </div>
-<p style="color:#dc2626; font-weight:500;">⚠️ Please change your password after your first login for security.</p>
+<p style="color:#dc2626; font-weight:500;">⚠️ Please change your password after your first login.</p>
 <center><a href="https://f3fitness.in/login" class="button">Login Now</a></center>
-<div class="divider"></div>
-<p>Transform Your Body, Transform Your Life! 💪</p>"""
+<p style="font-size:13px; color:#777777;">This is an important service message from F3 Fitness.</p>"""
         },
         ("new_user_credentials", "whatsapp"): {
-            "content": "🏋️ Welcome to F3 Fitness Gym!\n\nHello {{name}},\n\nYour account is ready!\n\n📋 *Login Details:*\nMember ID: {{member_id}}\nEmail: {{email}}\nPassword: {{password}}\n\n🔗 Login at: https://f3fitness.in/login\n\n⚠️ Change your password after first login.\n\nTransform Your Body, Transform Your Life! 💪\n\n- F3 Fitness Team"
+            "content": "Hello {{name}},\n\nYour F3 Fitness member account has been created successfully.\n\nMember ID: {{member_id}}\nEmail: {{email}}\nPassword: {{password}}\n\nLogin: https://f3fitness.in/login\n\nPlease change your password after first login.\n\n- F3 Fitness Health Club"
         },
         ("test_email", "email"): {
             "subject": "F3 Fitness Gym - Test Email ✅",
@@ -1396,6 +1397,7 @@ async def _send_whatsapp_fast2sms_template(
         "otp": "fast2sms_template_otp_message_id",
         "password_reset": "fast2sms_template_password_reset_message_id",
         "welcome": "fast2sms_template_welcome_message_id",
+        "new_user_credentials": "fast2sms_template_new_user_credentials_message_id",
         "membership_activated": "fast2sms_template_membership_activated_message_id",
         "payment_received": "fast2sms_template_payment_received_message_id",
         "invoice_sent": "fast2sms_template_invoice_sent_message_id",
@@ -1429,6 +1431,13 @@ async def _send_whatsapp_fast2sms_template(
         variables_values = [
             str(template_vars.get("name") or ""),
             str(template_vars.get("member_id") or "")
+        ]
+    elif template_type == "new_user_credentials":
+        variables_values = [
+            str(template_vars.get("name") or ""),
+            str(template_vars.get("member_id") or ""),
+            str(template_vars.get("email") or ""),
+            str(template_vars.get("password") or "")
         ]
     elif template_type == "membership_activated":
         variables_values = [
@@ -1674,6 +1683,51 @@ async def send_notification(user: dict, template_type: str, variables: dict, bac
             background_tasks.add_task(send_whatsapp, phone, message, True, None, template_type, vars_with_user)
         else:
             await send_whatsapp(phone, message, True, None, template_type, vars_with_user)
+
+async def send_account_credentials_notification(
+    user: dict,
+    login_email: str,
+    plain_password: str,
+    background_tasks: Optional[BackgroundTasks] = None
+):
+    """Send account-created login credentials to member via email + WhatsApp."""
+    vars_with_user = {
+        "name": user.get("name"),
+        "member_id": user.get("member_id"),
+        "email": login_email or user.get("email") or "",
+        "password": plain_password or ""
+    }
+
+    email_template = await get_template("new_user_credentials", "email")
+    whatsapp_template = await get_template("new_user_credentials", "whatsapp")
+
+    if user.get("email") and email_template.get("content"):
+        subject = replace_template_vars(
+            email_template.get("subject", "F3 Fitness Account Details"),
+            vars_with_user
+        )
+        content = replace_template_vars(email_template["content"], vars_with_user)
+        body = wrap_email_in_template(content, subject)
+        if background_tasks:
+            background_tasks.add_task(send_email, user["email"], subject, body)
+        else:
+            await send_email(user["email"], subject, body)
+
+    if user.get("phone_number") and whatsapp_template.get("content"):
+        phone = user.get("country_code", "+91") + user["phone_number"].lstrip("0")
+        message = replace_template_vars(whatsapp_template["content"], vars_with_user)
+        if background_tasks:
+            background_tasks.add_task(
+                send_whatsapp,
+                phone,
+                message,
+                True,
+                None,
+                "new_user_credentials",
+                vars_with_user
+            )
+        else:
+            await send_whatsapp(phone, message, True, None, "new_user_credentials", vars_with_user)
 
 async def send_notification_to_all(template_type: str, variables: dict, background_tasks: BackgroundTasks):
     """Send notification to all active members"""
@@ -1931,8 +1985,8 @@ async def signup_with_otp(user: SignupWithOTP, background_tasks: BackgroundTasks
     # Clean up OTP
     await db.otps.delete_one({"phone_number": user.phone_number})
     
-    # Send welcome notification
-    await send_notification(user_doc, "welcome", {}, background_tasks)
+    # Send account credentials notification
+    await send_account_credentials_notification(user_doc, user.email, user.password, background_tasks)
     
     token = create_access_token({"sub": user_id, "role": "member"})
     return {"token": token, "user": {k: v for k, v in user_doc.items() if k not in ["password_hash", "_id"]}}
@@ -1974,8 +2028,8 @@ async def signup(user: UserCreate, background_tasks: BackgroundTasks):
     
     await db.users.insert_one(user_doc)
     
-    # Send welcome notification
-    await send_notification(user_doc, "welcome", {}, background_tasks)
+    # Send account credentials notification
+    await send_account_credentials_notification(user_doc, user.email, user.password, background_tasks)
     
     token = create_access_token({"sub": user_id, "role": "member"})
     return {"token": token, "user": {k: v for k, v in user_doc.items() if k not in ["password_hash", "_id"]}}
@@ -2159,32 +2213,11 @@ async def create_user(user: UserCreate, role: str = "member", current_user: dict
     
     await db.users.insert_one(user_doc)
     
-    # Send welcome notification with credentials using template system
-    if background_tasks:
-        template_vars = {
-            "name": user.name,
-            "member_id": member_id,
-            "email": user.email,
-            "password": user.password
-        }
-        
-        # WhatsApp welcome message via template-aware sender (supports Fast2SMS template API)
-        if user.phone_number:
-            full_phone = f"{user.country_code}{user.phone_number.lstrip('0')}"
-            welcome_template = await get_template("welcome", "whatsapp")
-            welcome_vars = {"name": user.name, "member_id": member_id}
-            welcome_msg = replace_template_vars(welcome_template.get("content", ""), welcome_vars)
-            background_tasks.add_task(send_whatsapp, full_phone, welcome_msg, True, None, "welcome", welcome_vars)
-        
-        # Email notification with login credentials
-        email_template = await get_template("new_user_credentials", "email")
-        subject = replace_template_vars(email_template.get("subject", "Welcome to F3 Fitness Gym"), template_vars)
-        content = replace_template_vars(email_template.get("content", ""), template_vars)
-        email_body = wrap_email_in_template(content, subject)
-        background_tasks.add_task(send_email, user.email, subject, email_body)
-        
-        # Log activity
-        await log_activity(current_user["id"], "create_member", f"Created new {role}: {user.name} ({member_id})")
+    # Send account credentials notification for admin-created users
+    await send_account_credentials_notification(user_doc, user.email, user.password, background_tasks)
+
+    # Log activity
+    await log_activity(current_user["id"], "create_member", f"Created new {role}: {user.name} ({member_id})")
     
     return {k: v for k, v in user_doc.items() if k not in ["password_hash", "_id"]}
 
@@ -4617,6 +4650,8 @@ async def test_send_template(req: TemplateTestSendRequest, current_user: dict = 
     sample_vars = {
         "name": "Rahul Sharma",
         "member_id": "F3-0042",
+        "email": "rahul@example.com",
+        "password": "Temp@1234",
         "otp": "123456",
         "reset_link": "https://example.com/reset-password",
         "plan_name": "Quarterly",
