@@ -1392,14 +1392,6 @@ async def _send_whatsapp_fast2sms_template(
       True/False for attempted send result,
       None when template mode is not configured for the given template (caller may fallback to session API).
     """
-    api_key = settings.get("fast2sms_api_key")
-    if not api_key:
-        return None
-
-    base_url = (settings.get("fast2sms_base_url") or "https://www.fast2sms.com").rstrip("/")
-    if not bool(settings.get("fast2sms_use_template_api")):
-        return None
-
     template_field_map = {
         "otp": "fast2sms_template_otp_message_id",
         "password_reset": "fast2sms_template_password_reset_message_id",
@@ -1408,12 +1400,24 @@ async def _send_whatsapp_fast2sms_template(
         "payment_received": "fast2sms_template_payment_received_message_id",
         "invoice_sent": "fast2sms_template_invoice_sent_message_id",
     }
+    api_key = settings.get("fast2sms_api_key")
+    if not api_key:
+        return None
+
+    base_url = (settings.get("fast2sms_base_url") or "https://www.fast2sms.com").rstrip("/")
+    if not bool(settings.get("fast2sms_use_template_api")):
+        return None
+
     msg_id_key = template_field_map.get(template_type)
     if not msg_id_key:
         return None
     message_id = str(settings.get(msg_id_key) or "").strip()
     if not message_id:
-        return None
+        log_data["provider_mode"] = "fast2sms_template"
+        log_data["status"] = "failed"
+        log_data["error"] = f"Fast2SMS template message_id is missing for template '{template_type}'"
+        await _log_whatsapp(log_data, log_to_db)
+        return False
 
     template_vars = template_vars or {}
     if template_type == "otp":
@@ -1450,7 +1454,11 @@ async def _send_whatsapp_fast2sms_template(
     else:
         return None
     if any(v is None for v in variables_values) or any(v == "" for v in variables_values):
-        return None
+        log_data["provider_mode"] = "fast2sms_template"
+        log_data["status"] = "failed"
+        log_data["error"] = f"Missing template variables for '{template_type}'"
+        await _log_whatsapp(log_data, log_to_db)
+        return False
 
     display_number = str(settings.get("fast2sms_waba_number") or "").strip()
     phone_number_id = str(settings.get("fast2sms_phone_number_id") or "").strip()
@@ -4447,12 +4455,24 @@ async def test_whatsapp(to_number: str, current_user: dict = Depends(get_admin_u
             raise HTTPException(status_code=400, detail="Twilio WhatsApp number is missing.")
     
     try:
-        success = await send_whatsapp(to_number, "🏋️ Hello from F3 Fitness Gym! WhatsApp integration is working. 💪")
+        use_fast2sms_template_test = provider == "fast2sms" and bool(settings.get("fast2sms_use_template_api"))
+        test_template_type = "welcome" if use_fast2sms_template_test else None
+        test_template_vars = {"name": "Test Member", "member_id": "F3-TEST-001"} if use_fast2sms_template_test else None
+        test_message = "🏋️ Hello from F3 Fitness Gym! WhatsApp integration is working. 💪"
+        success = await send_whatsapp(
+            to_number,
+            test_message,
+            True,
+            None,
+            test_template_type,
+            test_template_vars
+        )
         if success:
             return {
                 "message": "Test message sent successfully", 
                 "success": True,
                 "provider": provider,
+                "mode": "template" if use_fast2sms_template_test else "session",
                 "from_number": (_normalize_phone_e164(settings.get("twilio_whatsapp_number", "")) if provider == "twilio" else settings.get("fast2sms_waba_number")),
                 "to_number": to_number
             }
@@ -4609,6 +4629,7 @@ async def test_send_template(req: TemplateTestSendRequest, current_user: dict = 
         "payment_mode": "UPI",
         "payment_date": "24 Feb 2026",
         "receipt_no": "RCP-2026-001",
+        "invoice_pdf_url": "https://f3fitness.in/api/invoices/demo/pdf/public?token=demo",
         "holiday_date": "26 Jan 2026",
         "holiday_reason": "Republic Day",
         "announcement_title": "New Equipment Arrived",
