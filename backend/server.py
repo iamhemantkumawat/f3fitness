@@ -4278,13 +4278,19 @@ async def get_attendance(
     attendance = await db.attendance.find(query, {"_id": 0}).sort("check_in_time", -1).to_list(10000)
     
     for a in attendance:
-        user = await db.users.find_one({"id": a["user_id"]}, {"_id": 0, "name": 1, "member_id": 1, "profile_photo_url": 1, "gender": 1})
+        user = await db.users.find_one(
+            {"id": a["user_id"]},
+            {"_id": 0, "name": 1, "member_id": 1, "profile_photo_url": 1, "gender": 1, "role": 1}
+        )
         if user:
-            a["user_name"] = user["name"]
-            a["member_id"] = user["member_id"]
+            if user.get("role") != "member":
+                continue
+            a["user_name"] = user.get("name", "Unknown User")
+            a["member_id"] = user.get("member_id")
             a["profile_photo_url"] = user.get("profile_photo_url")
             a["gender"] = user.get("gender")
-    
+
+    attendance = [a for a in attendance if a.get("user_name")]
     return attendance
 
 @api_router.get("/attendance/today")
@@ -4296,24 +4302,24 @@ async def get_today_attendance(current_user: dict = Depends(get_admin_user)):
         {"_id": 0}
     ).to_list(10000)
     
-    present_user_ids = set(a["user_id"] for a in attendance)
-    
     active_memberships = await db.memberships.find({"status": "active"}, {"_id": 0, "user_id": 1}).to_list(10000)
     active_user_ids = set(m["user_id"] for m in active_memberships)
-    
-    absent_user_ids = active_user_ids - present_user_ids
-    
+
     present = []
+    present_member_user_ids = set()
     for a in attendance:
-        if a.get("user_id") not in active_user_ids:
-            continue
-        user = await db.users.find_one({"id": a["user_id"]}, {"_id": 0, "name": 1, "member_id": 1})
+        user = await db.users.find_one({"id": a["user_id"]}, {"_id": 0, "name": 1, "member_id": 1, "role": 1})
         if user:
+            if user.get("role") != "member":
+                continue
+            present_member_user_ids.add(a["user_id"])
             present.append({
                 **a,
                 "user_name": user.get("name", "Unknown User"),
                 "member_id": user.get("member_id")
             })
+
+    absent_user_ids = active_user_ids - present_member_user_ids
     
     absent = []
     for uid in absent_user_ids:
