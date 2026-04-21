@@ -4357,6 +4357,14 @@ async def mark_attendance(attendance: AttendanceCreate, background_tasks: Backgr
 
     if user.get("role") != "member":
         raise HTTPException(status_code=400, detail="Attendance can only be marked for members")
+
+    membership = await db.memberships.find_one(
+        {"user_id": user["id"]},
+        {"_id": 0},
+        sort=[("end_date", -1)]
+    )
+    if not _membership_is_currently_active_for_attendance(membership):
+        raise HTTPException(status_code=400, detail=f"No active membership for {user['name']}")
     
     today = get_ist_now().strftime("%Y-%m-%d")
     existing = await db.attendance.find_one({
@@ -4476,6 +4484,16 @@ def _current_freeze_info_for_membership(membership: Optional[dict]):
                 "remaining_freeze_days": (end - today).days + 1
             }
     return None
+
+def _membership_is_currently_active_for_attendance(membership: Optional[dict]) -> bool:
+    if not membership:
+        return False
+    if membership.get("status") != "active":
+        return False
+    end_date = _parse_iso_date_only(membership.get("end_date"))
+    if not end_date:
+        return False
+    return end_date >= get_ist_now().date()
 
 async def _build_member_membership_map():
     users = await db.users.find(
