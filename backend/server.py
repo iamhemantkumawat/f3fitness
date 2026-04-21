@@ -977,13 +977,10 @@ async def get_template(template_type: str, channel: str) -> dict:
   <strong>Amount Paid:</strong> Rs.{{amount}}<br>
   <strong>Date:</strong> {{payment_date}}
 </div>
-<p>If you cannot open the attachment, use this secure link:</p>
-<center><a href="{{invoice_pdf_url}}" class="button">View Invoice PDF</a></center>
-<p style="font-size:12px; color:#777777;">If the button does not work, copy this link into your browser:<br>{{invoice_pdf_url}}</p>
 <p>Thank you for being a valued member of F3 Fitness! 💪</p>"""
         },
         ("invoice_sent", "whatsapp"): {
-            "content": "🧾 F3 Fitness Invoice\nReceipt: {{receipt_no}}\nAmount: Rs.{{amount}}\nDate: {{payment_date}}\n\nIf attachment is not shown, open this secure link:\n{{invoice_pdf_url}}"
+            "content": "🧾 F3 Fitness Invoice\nReceipt: {{receipt_no}}\nAmount: Rs.{{amount}}\nDate: {{payment_date}}\n\nYour invoice PDF is attached."
         },
         ("holiday", "email"): {
             "subject": "Holiday Notice - F3 Fitness Gym 🏖️",
@@ -1047,6 +1044,34 @@ def replace_template_vars(template: str, variables: dict) -> str:
     for key, value in variables.items():
         template = template.replace(f"{{{{{key}}}}}", str(value))
     return template
+
+def sanitize_invoice_whatsapp_message(message: str) -> str:
+    """Keep invoice WhatsApp captions attachment-first, without fallback links."""
+    text = str(message or "")
+    lines = []
+    skip_phrases = [
+        "if attachment is not shown",
+        "open this secure link",
+        "view invoice pdf",
+        "copy this link",
+    ]
+    for line in text.splitlines():
+        line_clean = line.strip()
+        lower = line_clean.lower()
+        if not line_clean:
+            lines.append("")
+            continue
+        if "invoice_pdf_url" in line_clean:
+            continue
+        if line_clean.startswith("http://") or line_clean.startswith("https://"):
+            continue
+        if any(phrase in lower for phrase in skip_phrases):
+            continue
+        lines.append(line)
+
+    cleaned = "\n".join(lines)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned).strip()
+    return cleaned
 
 def create_invoice_share_token(payment_id: str, expires_days: int = 30) -> str:
     payload = {
@@ -1267,7 +1292,10 @@ async def _send_whatsapp_evolution(
     message: str,
     log_data: dict,
     log_to_db: bool = True,
-    media_url: Optional[str] = None
+    media_url: Optional[str] = None,
+    media_base64: Optional[str] = None,
+    media_filename: Optional[str] = None,
+    media_mimetype: Optional[str] = None
 ):
     base_url = _evolution_api_base_url(settings)
     api_key = str(settings.get("evolution_api_key") or "").strip()
@@ -1296,30 +1324,31 @@ async def _send_whatsapp_evolution(
         return False
 
     try:
-        if media_url:
-            url_lower = str(media_url).lower()
+        if media_url or media_base64:
+            media_source = media_base64 or media_url
+            url_lower = str(media_url or media_filename or "").lower()
             media_type = "document"
-            mime_type = "application/pdf"
-            file_name = "attachment.pdf"
+            mime_type = media_mimetype or "application/pdf"
+            file_name = media_filename or "attachment.pdf"
             if any(url_lower.endswith(ext) for ext in [".jpg", ".jpeg"]):
                 media_type = "image"
-                mime_type = "image/jpeg"
-                file_name = "image.jpg"
+                mime_type = media_mimetype or "image/jpeg"
+                file_name = media_filename or "image.jpg"
             elif url_lower.endswith(".png"):
                 media_type = "image"
-                mime_type = "image/png"
-                file_name = "image.png"
+                mime_type = media_mimetype or "image/png"
+                file_name = media_filename or "image.png"
             elif url_lower.endswith(".mp4"):
                 media_type = "video"
-                mime_type = "video/mp4"
-                file_name = "video.mp4"
+                mime_type = media_mimetype or "video/mp4"
+                file_name = media_filename or "video.mp4"
 
             payload = {
                 "number": target_number,
                 "mediatype": media_type,
                 "mimetype": mime_type,
                 "caption": message,
-                "media": media_url,
+                "media": media_source,
                 "fileName": file_name
             }
             response = await _evolution_request(
@@ -1818,6 +1847,9 @@ async def send_whatsapp(
     message: str,
     log_to_db: bool = True,
     media_url: Optional[str] = None,
+    media_base64: Optional[str] = None,
+    media_filename: Optional[str] = None,
+    media_mimetype: Optional[str] = None,
     template_type: Optional[str] = None,
     template_vars: Optional[dict] = None
 ):
@@ -1835,6 +1867,7 @@ async def send_whatsapp(
         "message_sid": None,
         "provider": provider,
         "media_url": media_url,
+        "has_media_attachment": bool(media_url or media_base64),
         "timestamp": get_ist_now().isoformat()
     }
 
@@ -1850,7 +1883,17 @@ async def send_whatsapp(
                 return False
         return await _send_whatsapp_fast2sms(settings, to_number_clean, message, log_data, log_to_db, media_url=media_url)
     if provider == "evolution":
-        return await _send_whatsapp_evolution(settings, to_number_clean, message, log_data, log_to_db, media_url=media_url)
+        return await _send_whatsapp_evolution(
+            settings,
+            to_number_clean,
+            message,
+            log_data,
+            log_to_db,
+            media_url=media_url,
+            media_base64=media_base64,
+            media_filename=media_filename,
+            media_mimetype=media_mimetype
+        )
 
     return await _send_whatsapp_twilio(settings, to_number_clean, message, log_data, log_to_db, media_url=media_url)
 
@@ -1895,9 +1938,30 @@ async def send_notification(user: dict, template_type: str, variables: dict, bac
         phone = user.get("country_code", "+91") + user["phone_number"].lstrip("0")
         message = replace_template_vars(whatsapp_template["content"], vars_with_user)
         if background_tasks:
-            background_tasks.add_task(send_whatsapp, phone, message, True, None, template_type, vars_with_user)
+            background_tasks.add_task(
+                send_whatsapp,
+                phone,
+                message,
+                True,
+                None,
+                None,
+                None,
+                None,
+                template_type,
+                vars_with_user
+            )
         else:
-            await send_whatsapp(phone, message, True, None, template_type, vars_with_user)
+            await send_whatsapp(
+                phone,
+                message,
+                True,
+                None,
+                None,
+                None,
+                None,
+                template_type,
+                vars_with_user
+            )
 
 async def send_account_credentials_notification(
     user: dict,
@@ -1938,11 +2002,24 @@ async def send_account_credentials_notification(
                 message,
                 True,
                 None,
+                None,
+                None,
+                None,
                 "new_user_credentials",
                 vars_with_user
             )
         else:
-            await send_whatsapp(phone, message, True, None, "new_user_credentials", vars_with_user)
+            await send_whatsapp(
+                phone,
+                message,
+                True,
+                None,
+                None,
+                None,
+                None,
+                "new_user_credentials",
+                vars_with_user
+            )
 
 async def send_notification_to_all(template_type: str, variables: dict, background_tasks: BackgroundTasks):
     """Send notification to all active members"""
@@ -3675,6 +3752,59 @@ async def _build_invoice_pdf_bytes(payment_id: str):
     filename = f"F3_Invoice_{receipt_no}.pdf"
     return pdf_bytes, filename, payment
 
+def _build_demo_invoice_pdf_bytes():
+    """Generate a lightweight dummy invoice PDF for template tests."""
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import mm
+    from reportlab.lib.colors import HexColor
+    from reportlab.pdfgen import canvas
+
+    receipt_no = "RCP-DEMO-001"
+    amount = "2500"
+    payment_date = "24 Feb 2026"
+    filename = "F3_Demo_Invoice.pdf"
+
+    buffer = BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+
+    primary = HexColor("#0ea5b7")
+    dark = HexColor("#334155")
+    muted = HexColor("#64748b")
+
+    pdf.setFillColor(primary)
+    pdf.setFont("Helvetica-Bold", 22)
+    pdf.drawCentredString(width / 2, height - 30 * mm, "F3 FITNESS HEALTH CLUB")
+
+    pdf.setFillColor(muted)
+    pdf.setFont("Helvetica", 11)
+    pdf.drawCentredString(width / 2, height - 38 * mm, "Demo Invoice PDF for Template Testing")
+
+    pdf.setFillColor(dark)
+    pdf.setFont("Helvetica-Bold", 14)
+    pdf.drawString(20 * mm, height - 58 * mm, f"Receipt: {receipt_no}")
+
+    pdf.setFont("Helvetica", 11)
+    pdf.drawString(20 * mm, height - 72 * mm, "Customer: Rahul Sharma")
+    pdf.drawString(20 * mm, height - 82 * mm, "Member ID: F3-0042")
+    pdf.drawString(20 * mm, height - 92 * mm, f"Date: {payment_date}")
+    pdf.drawString(20 * mm, height - 102 * mm, "Plan: Quarterly")
+    pdf.drawString(20 * mm, height - 112 * mm, f"Amount Paid: Rs.{amount}")
+
+    pdf.setFillColor(primary)
+    pdf.rect(20 * mm, height - 145 * mm, width - 40 * mm, 12 * mm, fill=1, stroke=0)
+    pdf.setFillColor(HexColor("#ffffff"))
+    pdf.setFont("Helvetica-Bold", 12)
+    pdf.drawString(24 * mm, height - 137.5 * mm, "This is a dummy invoice PDF used for template testing.")
+
+    pdf.setFillColor(muted)
+    pdf.setFont("Helvetica", 10)
+    pdf.drawString(20 * mm, 20 * mm, "F3 Fitness Health Club | Jaipur | Template Test Attachment")
+
+    pdf.showPage()
+    pdf.save()
+    return buffer.getvalue(), filename
+
 async def send_invoice_to_member(user: dict, payment_id: str, background_tasks: Optional[BackgroundTasks] = None):
     """Send invoice PDF by email attachment and WhatsApp (media/link) after payment creation."""
     payment = await db.payments.find_one({"id": payment_id}, {"_id": 0})
@@ -3720,10 +3850,47 @@ async def send_invoice_to_member(user: dict, payment_id: str, background_tasks: 
     if user.get("phone_number") and whatsapp_template.get("content"):
         phone = user.get("country_code", "+91") + user["phone_number"].lstrip("0")
         wa_text = replace_template_vars(whatsapp_template["content"], vars_with_user)
+        wa_text = sanitize_invoice_whatsapp_message(wa_text)
+        settings = await db.settings.find_one({"id": "1"}, {"_id": 0, "whatsapp_provider": 1}) or {}
+        provider = (settings.get("whatsapp_provider") or "twilio").lower()
+        media_kwargs = {
+            "media_url": invoice_url,
+            "media_base64": None,
+            "media_filename": None,
+            "media_mimetype": None
+        }
+        if provider == "evolution":
+            media_kwargs = {
+                "media_url": None,
+                "media_base64": base64.b64encode(pdf_bytes).decode(),
+                "media_filename": filename,
+                "media_mimetype": "application/pdf"
+            }
         if background_tasks:
-            background_tasks.add_task(send_whatsapp, phone, wa_text, True, invoice_url, "invoice_sent", vars_with_user)
+            background_tasks.add_task(
+                send_whatsapp,
+                phone,
+                wa_text,
+                True,
+                media_kwargs["media_url"],
+                media_kwargs["media_base64"],
+                media_kwargs["media_filename"],
+                media_kwargs["media_mimetype"],
+                "invoice_sent",
+                vars_with_user
+            )
         else:
-            await send_whatsapp(phone, wa_text, True, invoice_url, "invoice_sent", vars_with_user)
+            await send_whatsapp(
+                phone,
+                wa_text,
+                True,
+                media_kwargs["media_url"],
+                media_kwargs["media_base64"],
+                media_kwargs["media_filename"],
+                media_kwargs["media_mimetype"],
+                "invoice_sent",
+                vars_with_user
+            )
 
 @api_router.get("/invoices/{payment_id}")
 async def get_invoice(payment_id: str, current_user: dict = Depends(get_current_user)):
@@ -3845,6 +4012,16 @@ async def get_invoice_pdf_public(payment_id: str, token: str):
     if not verify_invoice_share_token(token, payment_id):
         raise HTTPException(status_code=403, detail="Invalid or expired invoice token")
     pdf_bytes, filename, _ = await _build_invoice_pdf_bytes(payment_id)
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename=\"{filename}\"'}
+    )
+
+@api_router.get("/invoices/demo/pdf/public")
+async def get_demo_invoice_pdf_public():
+    """Public dummy invoice PDF used for template tests and attachment verification."""
+    pdf_bytes, filename = _build_demo_invoice_pdf_bytes()
     return StreamingResponse(
         BytesIO(pdf_bytes),
         media_type="application/pdf",
@@ -4721,6 +4898,9 @@ async def test_whatsapp(to_number: str, current_user: dict = Depends(get_admin_u
             test_message,
             True,
             None,
+            None,
+            None,
+            None,
             test_template_type,
             test_template_vars
         )
@@ -4957,6 +5137,7 @@ async def test_send_template(req: TemplateTestSendRequest, current_user: dict = 
     saved_template = await get_template(req.template_type, channel)
     content = req.content if req.content is not None else saved_template.get("content", "")
     subject = req.subject if req.subject is not None else saved_template.get("subject", f"F3 Fitness - {req.template_type}")
+    demo_invoice_url = f"{get_public_base_url()}/api/invoices/demo/pdf/public"
 
     sample_vars = {
         "name": "Rahul Sharma",
@@ -4975,7 +5156,7 @@ async def test_send_template(req: TemplateTestSendRequest, current_user: dict = 
         "payment_mode": "UPI",
         "payment_date": "24 Feb 2026",
         "receipt_no": "RCP-2026-001",
-        "invoice_pdf_url": "https://f3fitness.in/api/invoices/demo/pdf/public?token=demo",
+        "invoice_pdf_url": demo_invoice_url,
         "holiday_date": "26 Jan 2026",
         "holiday_reason": "Republic Day",
         "announcement_title": "New Equipment Arrived",
@@ -4994,10 +5175,39 @@ async def test_send_template(req: TemplateTestSendRequest, current_user: dict = 
         rendered_subject = replace_template_vars(subject or "F3 Fitness Notification", sample_vars)
         rendered_content = replace_template_vars(content or "", sample_vars)
         body = wrap_email_in_template(rendered_content, rendered_subject)
-        success = await send_email(recipient, rendered_subject, body)
+        attachments = None
+        if req.template_type == "invoice_sent":
+            pdf_bytes, filename = _build_demo_invoice_pdf_bytes()
+            attachments = [{"filename": filename, "content_bytes": pdf_bytes, "content_type": "application/pdf"}]
+        success = await send_email(recipient, rendered_subject, body, attachments)
     else:
         rendered_message = replace_template_vars(content or "", sample_vars)
-        success = await send_whatsapp(recipient, rendered_message, True, None, req.template_type, sample_vars)
+        media_url = None
+        media_base64 = None
+        media_filename = None
+        media_mimetype = None
+        if req.template_type == "invoice_sent":
+            rendered_message = sanitize_invoice_whatsapp_message(rendered_message)
+            settings = await db.settings.find_one({"id": "1"}, {"_id": 0, "whatsapp_provider": 1}) or {}
+            provider = (settings.get("whatsapp_provider") or "twilio").lower()
+            if provider == "evolution":
+                pdf_bytes, filename = _build_demo_invoice_pdf_bytes()
+                media_base64 = base64.b64encode(pdf_bytes).decode()
+                media_filename = filename
+                media_mimetype = "application/pdf"
+            else:
+                media_url = demo_invoice_url
+        success = await send_whatsapp(
+            recipient,
+            rendered_message,
+            True,
+            media_url,
+            media_base64,
+            media_filename,
+            media_mimetype,
+            req.template_type,
+            sample_vars
+        )
 
     if not success:
         latest_log = await db.whatsapp_logs.find_one(sort=[("timestamp", -1)]) if channel == "whatsapp" else None
