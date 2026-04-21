@@ -28,6 +28,7 @@ import string
 import httpx
 import json
 import asyncio
+import qrcode
 from contextlib import asynccontextmanager
 from io import BytesIO
 from logo_base64 import F3_LOGO_BASE64
@@ -323,7 +324,7 @@ class SMTPSettings(BaseModel):
     admin_test_email: Optional[str] = ""
 
 class WhatsAppSettings(BaseModel):
-    whatsapp_provider: str = "twilio"  # twilio | fast2sms
+    whatsapp_provider: str = "twilio"  # twilio | fast2sms | evolution
     twilio_account_sid: Optional[str] = ""
     twilio_auth_token: Optional[str] = ""
     twilio_whatsapp_number: Optional[str] = ""
@@ -343,6 +344,10 @@ class WhatsAppSettings(BaseModel):
     fast2sms_template_membership_activated_message_id: Optional[str] = "13752"
     fast2sms_template_payment_received_message_id: Optional[str] = "13753"
     fast2sms_template_invoice_sent_message_id: Optional[str] = "13755"
+    evolution_api_base_url: Optional[str] = ""
+    evolution_api_key: Optional[str] = ""
+    evolution_instance_name: Optional[str] = "f3fitness"
+    evolution_instance_token: Optional[str] = ""
     admin_whatsapp_test_numbers: Optional[str] = ""  # comma separated
     attendance_confirmation_whatsapp_enabled: bool = True
     attendance_confirmation_email_enabled: bool = True
@@ -372,6 +377,8 @@ class SettingsResponse(BaseModel):
     fast2sms_template_membership_activated_message_id: Optional[str] = "13752"
     fast2sms_template_payment_received_message_id: Optional[str] = "13753"
     fast2sms_template_invoice_sent_message_id: Optional[str] = "13755"
+    evolution_api_base_url: Optional[str] = None
+    evolution_instance_name: Optional[str] = "f3fitness"
     admin_whatsapp_test_numbers: Optional[str] = None
     attendance_confirmation_whatsapp_enabled: Optional[bool] = True
     attendance_confirmation_email_enabled: Optional[bool] = True
@@ -1160,6 +1167,212 @@ def _normalize_phone_e164(number: str) -> str:
         clean = '+' + clean.lstrip('+')
     return clean
 
+def _normalize_phone_digits(number: str) -> str:
+    return "".join(ch for ch in str(number or "") if ch.isdigit())
+
+def _evolution_api_base_url(settings: dict) -> str:
+    return str(settings.get("evolution_api_base_url") or "").strip().rstrip("/")
+
+def _evolution_instance_name(settings: dict) -> str:
+    return str(settings.get("evolution_instance_name") or "f3fitness").strip()
+
+def _build_qr_data_url(payload: str) -> str:
+    qr = qrcode.QRCode(version=1, box_size=8, border=2)
+    qr.add_data(payload)
+    qr.make(fit=True)
+    image = qr.make_image(fill_color="black", back_color="white")
+    buffer = BytesIO()
+    image.save(buffer, format="PNG")
+    return f"data:image/png;base64,{base64.b64encode(buffer.getvalue()).decode()}"
+
+async def _evolution_request(
+    settings: dict,
+    method: str,
+    path: str,
+    *,
+    json_body: Optional[dict] = None,
+    params: Optional[dict] = None,
+    timeout: int = 30
+):
+    base_url = _evolution_api_base_url(settings)
+    api_key = str(settings.get("evolution_api_key") or "").strip()
+    if not base_url:
+        raise HTTPException(status_code=400, detail="Evolution API base URL is missing.")
+    if not api_key:
+        raise HTTPException(status_code=400, detail="Evolution API key is missing.")
+
+    url = f"{base_url}{path}"
+    headers = {"apikey": api_key}
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        response = await client.request(method.upper(), url, headers=headers, json=json_body, params=params)
+    return response
+
+async def _get_evolution_connection_state(settings: dict) -> dict:
+    instance_name = _evolution_instance_name(settings)
+    response = await _evolution_request(settings, "GET", f"/instance/connectionState/{instance_name}")
+    if response.status_code == 404:
+        return {
+            "provider": "evolution",
+            "instance_name": instance_name,
+            "exists": False,
+            "connected": False,
+            "state": "not_created"
+        }
+    try:
+        payload = response.json()
+    except Exception:
+        payload = {"raw": response.text}
+    if response.status_code >= 400:
+        raise HTTPException(status_code=response.status_code, detail=str(payload))
+    state = str(((payload or {}).get("instance") or {}).get("state") or "").lower()
+    return {
+        "provider": "evolution",
+        "instance_name": instance_name,
+        "exists": True,
+        "connected": state == "open",
+        "state": state or "unknown",
+        "raw": payload
+    }
+
+async def _ensure_evolution_instance(settings: dict) -> dict:
+    instance_name = _evolution_instance_name(settings)
+    payload = {
+        "instanceName": instance_name,
+        "integration": "WHATSAPP-BAILEYS",
+        "token": str(settings.get("evolution_instance_token") or "").strip(),
+        "qrcode": True,
+        "rejectCall": False,
+        "groupsIgnore": False,
+        "alwaysOnline": True,
+        "readMessages": False,
+        "readStatus": False,
+        "syncFullHistory": False
+    }
+    response = await _evolution_request(settings, "POST", "/instance/create", json_body=payload, timeout=45)
+    try:
+        body = response.json()
+    except Exception:
+        body = {"raw": response.text}
+    if response.status_code < 400:
+        return {"created": True, "raw": body}
+    error_text = json.dumps(body) if not isinstance(body, str) else body
+    lowered = error_text.lower()
+    if "already exists" in lowered or "instance exists" in lowered or "duplic" in lowered:
+        return {"created": False, "raw": body}
+    return {"created": False, "raw": body, "status_code": response.status_code}
+
+async def _send_whatsapp_evolution(
+    settings: dict,
+    to_number_clean: str,
+    message: str,
+    log_data: dict,
+    log_to_db: bool = True,
+    media_url: Optional[str] = None
+):
+    base_url = _evolution_api_base_url(settings)
+    api_key = str(settings.get("evolution_api_key") or "").strip()
+    instance_name = _evolution_instance_name(settings)
+    if not base_url:
+        log_data["status"] = "failed"
+        log_data["error"] = "Evolution API base URL not configured"
+        await _log_whatsapp(log_data, log_to_db)
+        return False
+    if not api_key:
+        log_data["status"] = "failed"
+        log_data["error"] = "Evolution API key not configured"
+        await _log_whatsapp(log_data, log_to_db)
+        return False
+    if not instance_name:
+        log_data["status"] = "failed"
+        log_data["error"] = "Evolution instance name not configured"
+        await _log_whatsapp(log_data, log_to_db)
+        return False
+
+    target_number = _normalize_phone_digits(to_number_clean)
+    if not target_number:
+        log_data["status"] = "failed"
+        log_data["error"] = "Recipient number is invalid"
+        await _log_whatsapp(log_data, log_to_db)
+        return False
+
+    try:
+        if media_url:
+            url_lower = str(media_url).lower()
+            media_type = "document"
+            mime_type = "application/pdf"
+            file_name = "attachment.pdf"
+            if any(url_lower.endswith(ext) for ext in [".jpg", ".jpeg"]):
+                media_type = "image"
+                mime_type = "image/jpeg"
+                file_name = "image.jpg"
+            elif url_lower.endswith(".png"):
+                media_type = "image"
+                mime_type = "image/png"
+                file_name = "image.png"
+            elif url_lower.endswith(".mp4"):
+                media_type = "video"
+                mime_type = "video/mp4"
+                file_name = "video.mp4"
+
+            payload = {
+                "number": target_number,
+                "mediatype": media_type,
+                "mimetype": mime_type,
+                "caption": message,
+                "media": media_url,
+                "fileName": file_name
+            }
+            response = await _evolution_request(
+                settings,
+                "POST",
+                f"/message/sendMedia/{instance_name}",
+                json_body=payload,
+                timeout=45
+            )
+        else:
+            payload = {
+                "number": target_number,
+                "text": message,
+                "linkPreview": True
+            }
+            response = await _evolution_request(
+                settings,
+                "POST",
+                f"/message/sendText/{instance_name}",
+                json_body=payload,
+                timeout=45
+            )
+
+        try:
+            body = response.json()
+        except Exception:
+            body = {"raw": response.text}
+
+        if 200 <= response.status_code < 300:
+            message_key = ((body or {}).get("key") or {}) if isinstance(body, dict) else {}
+            log_data["status"] = "sent"
+            log_data["message_sid"] = message_key.get("id") or "evolution"
+            log_data["provider_response"] = body
+            await _log_whatsapp(log_data, log_to_db)
+            return True
+
+        log_data["status"] = "failed"
+        log_data["error"] = f"Evolution API returned status {response.status_code}: {body}"
+        log_data["provider_response"] = body
+        await _log_whatsapp(log_data, log_to_db)
+        return False
+    except HTTPException as e:
+        log_data["status"] = "failed"
+        log_data["error"] = e.detail
+        await _log_whatsapp(log_data, log_to_db)
+        return False
+    except Exception as e:
+        log_data["status"] = "failed"
+        log_data["error"] = str(e)
+        await _log_whatsapp(log_data, log_to_db)
+        logger.error(f"Evolution WhatsApp send failed: {e}")
+        return False
+
 async def _log_whatsapp(log_data: dict, log_to_db: bool = True):
     if log_to_db:
         await db.whatsapp_logs.insert_one(log_data)
@@ -1608,7 +1821,7 @@ async def send_whatsapp(
     template_type: Optional[str] = None,
     template_vars: Optional[dict] = None
 ):
-    """Send WhatsApp message using configured provider (Twilio or Fast2SMS)."""
+    """Send WhatsApp message using configured provider (Twilio, Fast2SMS, or Evolution)."""
     settings = await db.settings.find_one({"id": "1"}, {"_id": 0}) or {}
     provider = (settings.get("whatsapp_provider") or "twilio").lower()
     to_number_clean = _normalize_phone_e164(to_number)
@@ -1636,6 +1849,8 @@ async def send_whatsapp(
             if template_result is False:
                 return False
         return await _send_whatsapp_fast2sms(settings, to_number_clean, message, log_data, log_to_db, media_url=media_url)
+    if provider == "evolution":
+        return await _send_whatsapp_evolution(settings, to_number_clean, message, log_data, log_to_db, media_url=media_url)
 
     return await _send_whatsapp_twilio(settings, to_number_clean, message, log_data, log_to_db, media_url=media_url)
 
@@ -4343,7 +4558,7 @@ async def delete_announcement(announcement_id: str, current_user: dict = Depends
 async def get_settings(current_user: dict = Depends(get_admin_user)):
     settings = await db.settings.find_one(
         {"id": "1"},
-        {"_id": 0, "smtp_pass": 0, "twilio_auth_token": 0, "fast2sms_api_key": 0}
+        {"_id": 0, "smtp_pass": 0, "twilio_auth_token": 0, "fast2sms_api_key": 0, "evolution_api_key": 0}
     )
     if not settings:
         return SettingsResponse()
@@ -4385,12 +4600,14 @@ async def test_smtp(to_email: str, current_user: dict = Depends(get_admin_user))
 async def update_whatsapp_settings(settings: WhatsAppSettings, current_user: dict = Depends(get_admin_user)):
     update_data = settings.model_dump()
     provider = (update_data.get("whatsapp_provider") or "twilio").lower()
-    update_data["whatsapp_provider"] = provider if provider in {"twilio", "fast2sms"} else "twilio"
+    update_data["whatsapp_provider"] = provider if provider in {"twilio", "fast2sms", "evolution"} else "twilio"
     # Preserve stored secrets when form submits blank password/api key values.
     if update_data.get("twilio_auth_token") == "":
         update_data.pop("twilio_auth_token", None)
     if update_data.get("fast2sms_api_key") == "":
         update_data.pop("fast2sms_api_key", None)
+    if update_data.get("evolution_api_key") == "":
+        update_data.pop("evolution_api_key", None)
     if update_data.get("fast2sms_phone_number_id") == "":
         update_data["fast2sms_phone_number_id"] = ""
     
@@ -4479,6 +4696,13 @@ async def test_whatsapp(to_number: str, current_user: dict = Depends(get_admin_u
     if provider == "fast2sms":
         if not settings.get("fast2sms_api_key"):
             raise HTTPException(status_code=400, detail="Fast2SMS API key is missing.")
+    elif provider == "evolution":
+        if not settings.get("evolution_api_base_url"):
+            raise HTTPException(status_code=400, detail="Evolution API base URL is missing.")
+        if not settings.get("evolution_api_key"):
+            raise HTTPException(status_code=400, detail="Evolution API key is missing.")
+        if not settings.get("evolution_instance_name"):
+            raise HTTPException(status_code=400, detail="Evolution instance name is missing.")
     else:
         if not settings.get("twilio_account_sid"):
             raise HTTPException(status_code=400, detail="Twilio Account SID is missing.")
@@ -4506,7 +4730,13 @@ async def test_whatsapp(to_number: str, current_user: dict = Depends(get_admin_u
                 "success": True,
                 "provider": provider,
                 "mode": "template" if use_fast2sms_template_test else "session",
-                "from_number": (_normalize_phone_e164(settings.get("twilio_whatsapp_number", "")) if provider == "twilio" else settings.get("fast2sms_waba_number")),
+                "from_number": (
+                    _normalize_phone_e164(settings.get("twilio_whatsapp_number", ""))
+                    if provider == "twilio"
+                    else settings.get("fast2sms_waba_number")
+                    if provider == "fast2sms"
+                    else settings.get("evolution_instance_name")
+                ),
                 "to_number": to_number
             }
         else:
@@ -4551,6 +4781,87 @@ async def get_fast2sms_waba_templates(current_user: dict = Depends(get_admin_use
     except Exception as e:
         logger.error(f"Fast2SMS template fetch failed: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch Fast2SMS WABA templates: {e}")
+
+@api_router.get("/settings/whatsapp/evolution/status")
+async def get_evolution_status(current_user: dict = Depends(get_admin_user)):
+    settings = await db.settings.find_one({"id": "1"}, {"_id": 0}) or {}
+    state = await _get_evolution_connection_state(settings)
+    return {"success": True, **state}
+
+@api_router.post("/settings/whatsapp/evolution/connect")
+async def connect_evolution_instance(current_user: dict = Depends(get_admin_user)):
+    settings = await db.settings.find_one({"id": "1"}, {"_id": 0}) or {}
+    instance_name = _evolution_instance_name(settings)
+    await _ensure_evolution_instance(settings)
+    response = await _evolution_request(settings, "GET", f"/instance/connect/{instance_name}", timeout=45)
+    try:
+        payload = response.json()
+    except Exception:
+        payload = {"raw": response.text}
+    if response.status_code >= 400:
+        raise HTTPException(status_code=response.status_code, detail=str(payload))
+
+    qr_payload = str((payload or {}).get("code") or "").strip()
+    pairing_code = str((payload or {}).get("pairingCode") or "").strip()
+    count = int((payload or {}).get("count") or 0)
+    connection_state = await _get_evolution_connection_state(settings)
+
+    await log_activity(
+        current_user["id"],
+        "settings_updated",
+        "Requested Evolution WhatsApp QR connection",
+        metadata={"settings_section": "whatsapp", "provider": "evolution", "instance_name": instance_name}
+    )
+
+    return {
+        "success": True,
+        "provider": "evolution",
+        "instance_name": instance_name,
+        "pairing_code": pairing_code,
+        "qr_code_data_url": _build_qr_data_url(qr_payload) if qr_payload else None,
+        "count": count,
+        "state": connection_state.get("state"),
+        "connected": connection_state.get("connected", False),
+        "raw": payload
+    }
+
+@api_router.post("/settings/whatsapp/evolution/restart")
+async def restart_evolution_instance(current_user: dict = Depends(get_admin_user)):
+    settings = await db.settings.find_one({"id": "1"}, {"_id": 0}) or {}
+    instance_name = _evolution_instance_name(settings)
+    response = await _evolution_request(settings, "PUT", f"/instance/restart/{instance_name}", timeout=45)
+    try:
+        payload = response.json()
+    except Exception:
+        payload = {"raw": response.text}
+    if response.status_code >= 400:
+        raise HTTPException(status_code=response.status_code, detail=str(payload))
+    await log_activity(
+        current_user["id"],
+        "settings_updated",
+        "Restarted Evolution WhatsApp instance",
+        metadata={"settings_section": "whatsapp", "provider": "evolution", "instance_name": instance_name}
+    )
+    return {"success": True, "provider": "evolution", "instance_name": instance_name, "raw": payload}
+
+@api_router.delete("/settings/whatsapp/evolution/logout")
+async def logout_evolution_instance(current_user: dict = Depends(get_admin_user)):
+    settings = await db.settings.find_one({"id": "1"}, {"_id": 0}) or {}
+    instance_name = _evolution_instance_name(settings)
+    response = await _evolution_request(settings, "DELETE", f"/instance/logout/{instance_name}", timeout=45)
+    try:
+        payload = response.json()
+    except Exception:
+        payload = {"raw": response.text}
+    if response.status_code >= 400:
+        raise HTTPException(status_code=response.status_code, detail=str(payload))
+    await log_activity(
+        current_user["id"],
+        "settings_updated",
+        "Logged out Evolution WhatsApp instance",
+        metadata={"settings_section": "whatsapp", "provider": "evolution", "instance_name": instance_name}
+    )
+    return {"success": True, "provider": "evolution", "instance_name": instance_name, "raw": payload}
 
 # ==================== TEMPLATE ROUTES ====================
 

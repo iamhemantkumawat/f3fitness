@@ -9,7 +9,7 @@ import { Label } from '../../components/ui/label';
 import { Switch } from '../../components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '../../components/ui/dialog';
 import { 
-  Plus, Edit, Trash2, CreditCard, Bell, Calendar, Mail, MessageSquare, Send
+  Plus, Edit, Trash2, CreditCard, Bell, Calendar, Mail, MessageSquare, Send, RefreshCw, LogOut, QrCode, PlugZap
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -733,6 +733,9 @@ export const WhatsAppSettings = () => {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [evolutionStatus, setEvolutionStatus] = useState(null);
+  const [evolutionQr, setEvolutionQr] = useState(null);
+  const [evolutionLoading, setEvolutionLoading] = useState(false);
   const [testNumber, setTestNumber] = useState('+91');
   const [fast2smsTemplates, setFast2smsTemplates] = useState(null);
   const [formData, setFormData] = useState({
@@ -754,6 +757,10 @@ export const WhatsAppSettings = () => {
     fast2sms_template_membership_activated_message_id: '13752',
     fast2sms_template_payment_received_message_id: '13753',
     fast2sms_template_invoice_sent_message_id: '13755',
+    evolution_api_base_url: '',
+    evolution_api_key: '',
+    evolution_instance_name: 'f3fitness',
+    evolution_instance_token: '',
     admin_whatsapp_test_numbers: ''
   });
 
@@ -784,9 +791,16 @@ export const WhatsAppSettings = () => {
           fast2sms_template_membership_activated_message_id: response.data.fast2sms_template_membership_activated_message_id || FAST2SMS_TEMPLATE_DEFAULTS.membership_activated,
           fast2sms_template_payment_received_message_id: response.data.fast2sms_template_payment_received_message_id || FAST2SMS_TEMPLATE_DEFAULTS.payment_received,
           fast2sms_template_invoice_sent_message_id: response.data.fast2sms_template_invoice_sent_message_id || FAST2SMS_TEMPLATE_DEFAULTS.invoice_sent,
+          evolution_api_base_url: response.data.evolution_api_base_url || '',
+          evolution_api_key: '',
+          evolution_instance_name: response.data.evolution_instance_name || 'f3fitness',
+          evolution_instance_token: '',
           admin_whatsapp_test_numbers: response.data.admin_whatsapp_test_numbers || ''
         });
         setTestNumber((response.data.admin_whatsapp_test_numbers || '').split(',').map(s => s.trim()).find(Boolean) || '+91');
+        if (response.data.evolution_api_base_url && response.data.evolution_instance_name) {
+          loadEvolutionStatus();
+        }
       }
     } catch (error) {
       console.error('Failed to load settings');
@@ -799,8 +813,10 @@ export const WhatsAppSettings = () => {
     e.preventDefault();
     setSaving(true);
     try {
-      await settingsAPI.updateWhatsApp(formData);
-      toast.success('WhatsApp settings saved');
+      await persistWhatsAppSettings(formData);
+      if (formData.whatsapp_provider === 'evolution') {
+        await loadEvolutionStatus();
+      }
     } catch (error) {
       toast.error('Failed to save settings');
     } finally {
@@ -837,6 +853,71 @@ export const WhatsAppSettings = () => {
     }
   };
 
+  const persistWhatsAppSettings = async (payload, showToast = true) => {
+    await settingsAPI.updateWhatsApp(payload);
+    if (showToast) {
+      toast.success('WhatsApp settings saved');
+    }
+  };
+
+  const loadEvolutionStatus = async () => {
+    try {
+      const res = await settingsAPI.getEvolutionStatus();
+      setEvolutionStatus(res.data);
+      if (res.data?.connected) {
+        setEvolutionQr(null);
+      }
+    } catch (error) {
+      const detail = error.response?.data?.detail;
+      if (detail) {
+        toast.error(detail);
+      }
+    }
+  };
+
+  const handleEvolutionConnect = async () => {
+    setEvolutionLoading(true);
+    try {
+      await persistWhatsAppSettings(formData, false);
+      const res = await settingsAPI.connectEvolution();
+      setEvolutionQr(res.data);
+      await loadEvolutionStatus();
+      toast.success(res.data?.connected ? 'Evolution WhatsApp already connected' : 'QR generated. Scan it in WhatsApp.');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to connect Evolution WhatsApp');
+    } finally {
+      setEvolutionLoading(false);
+    }
+  };
+
+  const handleEvolutionRestart = async () => {
+    setEvolutionLoading(true);
+    try {
+      await persistWhatsAppSettings(formData, false);
+      await settingsAPI.restartEvolution();
+      await loadEvolutionStatus();
+      toast.success('Evolution instance restarted');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to restart Evolution instance');
+    } finally {
+      setEvolutionLoading(false);
+    }
+  };
+
+  const handleEvolutionLogout = async () => {
+    setEvolutionLoading(true);
+    try {
+      await settingsAPI.logoutEvolution();
+      setEvolutionQr(null);
+      await loadEvolutionStatus();
+      toast.success('Evolution WhatsApp logged out');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to logout Evolution instance');
+    } finally {
+      setEvolutionLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <DashboardLayout role="admin">
@@ -863,7 +944,7 @@ export const WhatsAppSettings = () => {
           <h1 className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Barlow Condensed' }}>
             WhatsApp Settings
           </h1>
-          <p className="text-muted-foreground">Configure WhatsApp notifications (Twilio or Fast2SMS)</p>
+          <p className="text-muted-foreground">Configure WhatsApp notifications (Twilio, Fast2SMS, or Evolution API)</p>
         </div>
 
         <Card className="glass-card">
@@ -878,6 +959,7 @@ export const WhatsAppSettings = () => {
                 >
                   <option value="twilio">Twilio</option>
                   <option value="fast2sms">Fast2SMS</option>
+                  <option value="evolution">Evolution API</option>
                 </select>
               </div>
 
@@ -1077,6 +1159,118 @@ export const WhatsAppSettings = () => {
                 </>
               )}
 
+              {formData.whatsapp_provider === 'evolution' && (
+                <div className="rounded-lg border border-border p-4 space-y-4 bg-muted/10">
+                  <div className="flex items-start gap-3">
+                    <PlugZap className="mt-0.5 text-primary" size={18} />
+                    <div>
+                      <h4 className="font-semibold text-foreground">Evolution API Setup</h4>
+                      <p className="text-xs text-muted-foreground">
+                        Connect a WhatsApp account by QR and send session-style WhatsApp messages from your own Evolution server.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Evolution API Base URL</Label>
+                    <Input
+                      className="input-dark mt-2"
+                      placeholder="https://waapi.yourdomain.com"
+                      value={formData.evolution_api_base_url}
+                      onChange={(e) => setFormData({ ...formData, evolution_api_base_url: e.target.value })}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Public HTTPS URL where Evolution API is installed.</p>
+                  </div>
+
+                  <div>
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Evolution API Key</Label>
+                    <Input
+                      type="password"
+                      className="input-dark mt-2"
+                      placeholder="Enter Evolution global API key"
+                      value={formData.evolution_api_key}
+                      onChange={(e) => setFormData({ ...formData, evolution_api_key: e.target.value })}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Leave blank to keep the existing saved API key.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Instance Name</Label>
+                      <Input
+                        className="input-dark mt-2"
+                        placeholder="f3fitness"
+                        value={formData.evolution_instance_name}
+                        onChange={(e) => setFormData({ ...formData, evolution_instance_name: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Instance Token (Optional)</Label>
+                      <Input
+                        className="input-dark mt-2"
+                        placeholder="Optional per-instance token"
+                        value={formData.evolution_instance_token}
+                        onChange={(e) => setFormData({ ...formData, evolution_instance_token: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-border p-4 space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <h4 className="font-semibold text-foreground">Connection Status</h4>
+                        <p className="text-xs text-muted-foreground">
+                          Instance: <span className="font-medium text-foreground">{formData.evolution_instance_name || 'Not set'}</span>
+                        </p>
+                      </div>
+                      <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        evolutionStatus?.connected
+                          ? 'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400'
+                          : 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400'
+                      }`}>
+                        {evolutionStatus?.connected ? 'Connected' : evolutionStatus?.state || 'Not connected'}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <Button type="button" className="btn-secondary" onClick={handleEvolutionConnect} disabled={evolutionLoading}>
+                        <QrCode size={16} className="mr-2" />
+                        {evolutionLoading ? 'Preparing...' : 'Create / Refresh QR'}
+                      </Button>
+                      <Button type="button" className="btn-secondary" onClick={loadEvolutionStatus} disabled={evolutionLoading}>
+                        <RefreshCw size={16} className="mr-2" />
+                        Refresh Status
+                      </Button>
+                      <Button type="button" className="btn-secondary" onClick={handleEvolutionRestart} disabled={evolutionLoading}>
+                        <RefreshCw size={16} className="mr-2" />
+                        Restart Instance
+                      </Button>
+                      <Button type="button" variant="outline" onClick={handleEvolutionLogout} disabled={evolutionLoading}>
+                        <LogOut size={16} className="mr-2" />
+                        Logout WhatsApp
+                      </Button>
+                    </div>
+
+                    {evolutionQr?.pairing_code && (
+                      <div className="text-xs text-muted-foreground">
+                        Pairing code: <span className="font-semibold text-foreground">{evolutionQr.pairing_code}</span>
+                      </div>
+                    )}
+
+                    {evolutionQr?.qr_code_data_url && !evolutionStatus?.connected && (
+                      <div className="rounded-xl border border-dashed border-border p-4 bg-background">
+                        <p className="text-sm font-medium text-foreground mb-3">Scan this QR from the WhatsApp app on your phone</p>
+                        <img
+                          src={evolutionQr.qr_code_data_url}
+                          alt="Evolution WhatsApp QR"
+                          className="mx-auto w-full max-w-xs rounded-lg border border-border bg-white p-3"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div>
                 <Label className="text-xs uppercase tracking-wider text-muted-foreground">Admin Test WhatsApp Numbers</Label>
                 <Input
@@ -1115,7 +1309,13 @@ export const WhatsAppSettings = () => {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                Test message uses the currently selected default provider: <strong>{formData.whatsapp_provider === 'fast2sms' ? 'Fast2SMS' : 'Twilio'}</strong>
+                Test message uses the currently selected default provider: <strong>{
+                  formData.whatsapp_provider === 'fast2sms'
+                    ? 'Fast2SMS'
+                    : formData.whatsapp_provider === 'evolution'
+                    ? 'Evolution API'
+                    : 'Twilio'
+                }</strong>
               </p>
             </div>
           </CardContent>

@@ -153,7 +153,11 @@ export const settingsAPI = {
   updateAbsentWarningWhatsAppToggle: (enabled) =>
     api.put('/settings/notifications/absent-warning-whatsapp', { enabled }),
   testWhatsApp: (number) => api.post(`/settings/whatsapp/test?to_number=${number}`),
-  getFast2SMSWabaTemplates: () => api.get('/settings/whatsapp/fast2sms/waba-templates')
+  getFast2SMSWabaTemplates: () => api.get('/settings/whatsapp/fast2sms/waba-templates'),
+  getEvolutionStatus: () => api.get('/settings/whatsapp/evolution/status'),
+  connectEvolution: () => api.post('/settings/whatsapp/evolution/connect'),
+  restartEvolution: () => api.post('/settings/whatsapp/evolution/restart'),
+  logoutEvolution: () => api.delete('/settings/whatsapp/evolution/logout')
 };
 
 // Dashboard APIs
