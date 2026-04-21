@@ -102,14 +102,14 @@ class UserLogin(BaseModel):
 class UserResponse(UserBase):
     model_config = ConfigDict(extra="ignore")
     id: str
-    member_id: str
+    member_id: Optional[str] = None
     role: str
-    joining_date: str
+    joining_date: Optional[str] = None
     profile_photo_url: Optional[str] = None
     trainer_id: Optional[str] = None
     pt_trainer_id: Optional[str] = None
     pt_sessions_remaining: Optional[int] = 0
-    created_at: str
+    created_at: Optional[str] = None
 
 class UserUpdate(BaseModel):
     name: Optional[str] = None
@@ -4305,9 +4305,15 @@ async def get_today_attendance(current_user: dict = Depends(get_admin_user)):
     
     present = []
     for a in attendance:
+        if a.get("user_id") not in active_user_ids:
+            continue
         user = await db.users.find_one({"id": a["user_id"]}, {"_id": 0, "name": 1, "member_id": 1})
         if user:
-            present.append({**a, "user_name": user["name"], "member_id": user["member_id"]})
+            present.append({
+                **a,
+                "user_name": user.get("name", "Unknown User"),
+                "member_id": user.get("member_id")
+            })
     
     absent = []
     for uid in absent_user_ids:
@@ -4342,6 +4348,9 @@ async def mark_attendance(attendance: AttendanceCreate, background_tasks: Backgr
     
     if not user:
         raise HTTPException(status_code=404, detail="Member not found. Try searching by name, phone, email or member ID")
+
+    if user.get("role") != "member":
+        raise HTTPException(status_code=400, detail="Attendance can only be marked for members")
     
     today = get_ist_now().strftime("%Y-%m-%d")
     existing = await db.attendance.find_one({
