@@ -1324,47 +1324,48 @@ async def _send_whatsapp_evolution(
         return False
 
     try:
-        if media_url or media_base64:
-            media_source = media_base64 or media_url
-            url_lower = str(media_url or media_filename or "").lower()
-            media_type = "document"
-            mime_type = media_mimetype or "application/pdf"
-            file_name = media_filename or "attachment.pdf"
-            if any(url_lower.endswith(ext) for ext in [".jpg", ".jpeg"]):
-                media_type = "image"
-                mime_type = media_mimetype or "image/jpeg"
-                file_name = media_filename or "image.jpg"
-            elif url_lower.endswith(".png"):
-                media_type = "image"
-                mime_type = media_mimetype or "image/png"
-                file_name = media_filename or "image.png"
-            elif url_lower.endswith(".mp4"):
-                media_type = "video"
-                mime_type = media_mimetype or "video/mp4"
-                file_name = media_filename or "video.mp4"
+        async def _perform_send():
+            if media_url or media_base64:
+                media_source = media_base64 or media_url
+                url_lower = str(media_url or media_filename or "").lower()
+                media_type = "document"
+                mime_type = media_mimetype or "application/pdf"
+                file_name = media_filename or "attachment.pdf"
+                if any(url_lower.endswith(ext) for ext in [".jpg", ".jpeg"]):
+                    media_type = "image"
+                    mime_type = media_mimetype or "image/jpeg"
+                    file_name = media_filename or "image.jpg"
+                elif url_lower.endswith(".png"):
+                    media_type = "image"
+                    mime_type = media_mimetype or "image/png"
+                    file_name = media_filename or "image.png"
+                elif url_lower.endswith(".mp4"):
+                    media_type = "video"
+                    mime_type = media_mimetype or "video/mp4"
+                    file_name = media_filename or "video.mp4"
 
-            payload = {
-                "number": target_number,
-                "mediatype": media_type,
-                "mimetype": mime_type,
-                "caption": message,
-                "media": media_source,
-                "fileName": file_name
-            }
-            response = await _evolution_request(
-                settings,
-                "POST",
-                f"/message/sendMedia/{instance_name}",
-                json_body=payload,
-                timeout=45
-            )
-        else:
+                payload = {
+                    "number": target_number,
+                    "mediatype": media_type,
+                    "mimetype": mime_type,
+                    "caption": message,
+                    "media": media_source,
+                    "fileName": file_name
+                }
+                return await _evolution_request(
+                    settings,
+                    "POST",
+                    f"/message/sendMedia/{instance_name}",
+                    json_body=payload,
+                    timeout=45
+                )
+
             payload = {
                 "number": target_number,
                 "text": message,
                 "linkPreview": True
             }
-            response = await _evolution_request(
+            return await _evolution_request(
                 settings,
                 "POST",
                 f"/message/sendText/{instance_name}",
@@ -1372,10 +1373,27 @@ async def _send_whatsapp_evolution(
                 timeout=45
             )
 
+        response = await _perform_send()
         try:
             body = response.json()
         except Exception:
             body = {"raw": response.text}
+
+        connection_closed = (
+            response.status_code >= 500
+            and isinstance(body, dict)
+            and "connection closed" in str(body).lower()
+        )
+        if connection_closed:
+            await asyncio.sleep(2)
+            response = await _perform_send()
+            try:
+                body = response.json()
+            except Exception:
+                body = {"raw": response.text}
+            if isinstance(log_data, dict):
+                log_data["retry_reason"] = "Evolution connection closed"
+                log_data["retried_once"] = True
 
         if 200 <= response.status_code < 300:
             message_key = ((body or {}).get("key") or {}) if isinstance(body, dict) else {}
@@ -6073,6 +6091,8 @@ async def broadcast_whatsapp(
     
     sent_count = 0
     failed_count = 0
+    provider_settings = await db.settings.find_one({"id": "1"}, {"_id": 0, "whatsapp_provider": 1}) or {}
+    is_evolution = (provider_settings.get("whatsapp_provider") or "twilio").lower() == "evolution"
     
     for user in users:
         if user.get("phone_number"):
@@ -6085,12 +6105,23 @@ async def broadcast_whatsapp(
             personalized_message = replace_template_vars(request.message, vars_map)
             
             phone = f"{user.get('country_code', '+91')}{user['phone_number'].lstrip('0')}"
-            background_tasks.add_task(
-                send_whatsapp,
-                to_number=phone,
-                message=personalized_message
-            )
-            sent_count += 1
+            if is_evolution:
+                success = await send_whatsapp(
+                    to_number=phone,
+                    message=personalized_message
+                )
+                if success:
+                    sent_count += 1
+                else:
+                    failed_count += 1
+                await asyncio.sleep(0.6)
+            else:
+                background_tasks.add_task(
+                    send_whatsapp,
+                    to_number=phone,
+                    message=personalized_message
+                )
+                sent_count += 1
         else:
             failed_count += 1
     
