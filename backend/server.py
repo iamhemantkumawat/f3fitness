@@ -2186,7 +2186,18 @@ async def send_otp(req: SendOTPRequest, background_tasks: BackgroundTasks):
     full_phone = f"{req.country_code}{req.phone_number.lstrip('0')}"
     whatsapp_template = await get_template("otp", "whatsapp")
     whatsapp_message = replace_template_vars(whatsapp_template.get("content", "🔐 Your OTP: {{otp}}"), {"otp": otp, "name": "User"})
-    background_tasks.add_task(send_whatsapp, full_phone, whatsapp_message, True, None, "otp", {"otp": otp, "name": "User"})
+    background_tasks.add_task(
+        send_whatsapp,
+        full_phone,
+        whatsapp_message,
+        True,
+        None,
+        None,
+        None,
+        None,
+        "otp",
+        {"otp": otp, "name": "User"}
+    )
     
     # Send same OTP to Email using template
     if req.email:
