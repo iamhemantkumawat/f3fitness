@@ -1940,27 +1940,27 @@ async def send_notification(user: dict, template_type: str, variables: dict, bac
         if background_tasks:
             background_tasks.add_task(
                 send_whatsapp,
-                phone,
-                message,
-                True,
-                None,
-                None,
-                None,
-                None,
-                template_type,
-                vars_with_user
+                to_number=phone,
+                message=message,
+                log_to_db=True,
+                media_url=None,
+                media_base64=None,
+                media_filename=None,
+                media_mimetype=None,
+                template_type=template_type,
+                template_vars=vars_with_user
             )
         else:
             await send_whatsapp(
-                phone,
-                message,
-                True,
-                None,
-                None,
-                None,
-                None,
-                template_type,
-                vars_with_user
+                to_number=phone,
+                message=message,
+                log_to_db=True,
+                media_url=None,
+                media_base64=None,
+                media_filename=None,
+                media_mimetype=None,
+                template_type=template_type,
+                template_vars=vars_with_user
             )
 
 async def send_account_credentials_notification(
@@ -1998,27 +1998,27 @@ async def send_account_credentials_notification(
         if background_tasks:
             background_tasks.add_task(
                 send_whatsapp,
-                phone,
-                message,
-                True,
-                None,
-                None,
-                None,
-                None,
-                "new_user_credentials",
-                vars_with_user
+                to_number=phone,
+                message=message,
+                log_to_db=True,
+                media_url=None,
+                media_base64=None,
+                media_filename=None,
+                media_mimetype=None,
+                template_type="new_user_credentials",
+                template_vars=vars_with_user
             )
         else:
             await send_whatsapp(
-                phone,
-                message,
-                True,
-                None,
-                None,
-                None,
-                None,
-                "new_user_credentials",
-                vars_with_user
+                to_number=phone,
+                message=message,
+                log_to_db=True,
+                media_url=None,
+                media_base64=None,
+                media_filename=None,
+                media_mimetype=None,
+                template_type="new_user_credentials",
+                template_vars=vars_with_user
             )
 
 async def send_notification_to_all(template_type: str, variables: dict, background_tasks: BackgroundTasks):
@@ -2188,15 +2188,15 @@ async def send_otp(req: SendOTPRequest, background_tasks: BackgroundTasks):
     whatsapp_message = replace_template_vars(whatsapp_template.get("content", "🔐 Your OTP: {{otp}}"), {"otp": otp, "name": "User"})
     background_tasks.add_task(
         send_whatsapp,
-        full_phone,
-        whatsapp_message,
-        True,
-        None,
-        None,
-        None,
-        None,
-        "otp",
-        {"otp": otp, "name": "User"}
+        to_number=full_phone,
+        message=whatsapp_message,
+        log_to_db=True,
+        media_url=None,
+        media_base64=None,
+        media_filename=None,
+        media_mimetype=None,
+        template_type="otp",
+        template_vars={"otp": otp, "name": "User"}
     )
     
     # Send same OTP to Email using template
@@ -3880,27 +3880,27 @@ async def send_invoice_to_member(user: dict, payment_id: str, background_tasks: 
         if background_tasks:
             background_tasks.add_task(
                 send_whatsapp,
-                phone,
-                wa_text,
-                True,
-                media_kwargs["media_url"],
-                media_kwargs["media_base64"],
-                media_kwargs["media_filename"],
-                media_kwargs["media_mimetype"],
-                "invoice_sent",
-                vars_with_user
+                to_number=phone,
+                message=wa_text,
+                log_to_db=True,
+                media_url=media_kwargs["media_url"],
+                media_base64=media_kwargs["media_base64"],
+                media_filename=media_kwargs["media_filename"],
+                media_mimetype=media_kwargs["media_mimetype"],
+                template_type="invoice_sent",
+                template_vars=vars_with_user
             )
         else:
             await send_whatsapp(
-                phone,
-                wa_text,
-                True,
-                media_kwargs["media_url"],
-                media_kwargs["media_base64"],
-                media_kwargs["media_filename"],
-                media_kwargs["media_mimetype"],
-                "invoice_sent",
-                vars_with_user
+                to_number=phone,
+                message=wa_text,
+                log_to_db=True,
+                media_url=media_kwargs["media_url"],
+                media_base64=media_kwargs["media_base64"],
+                media_filename=media_kwargs["media_filename"],
+                media_mimetype=media_kwargs["media_mimetype"],
+                template_type="invoice_sent",
+                template_vars=vars_with_user
             )
 
 @api_router.get("/invoices/{payment_id}")
@@ -4938,15 +4938,15 @@ async def test_whatsapp(to_number: str, current_user: dict = Depends(get_admin_u
         test_template_vars = {"name": "Test Member", "member_id": "F3-TEST-001"} if use_fast2sms_template_test else None
         test_message = "🏋️ Hello from F3 Fitness Gym! WhatsApp integration is working. 💪"
         success = await send_whatsapp(
-            to_number,
-            test_message,
-            True,
-            None,
-            None,
-            None,
-            None,
-            test_template_type,
-            test_template_vars
+            to_number=to_number,
+            message=test_message,
+            log_to_db=True,
+            media_url=None,
+            media_base64=None,
+            media_filename=None,
+            media_mimetype=None,
+            template_type=test_template_type,
+            template_vars=test_template_vars
         )
         if success:
             return {
@@ -5242,15 +5242,15 @@ async def test_send_template(req: TemplateTestSendRequest, current_user: dict = 
             else:
                 media_url = demo_invoice_url
         success = await send_whatsapp(
-            recipient,
-            rendered_message,
-            True,
-            media_url,
-            media_base64,
-            media_filename,
-            media_mimetype,
-            req.template_type,
-            sample_vars
+            to_number=recipient,
+            message=rendered_message,
+            log_to_db=True,
+            media_url=media_url,
+            media_base64=media_base64,
+            media_filename=media_filename,
+            media_mimetype=media_mimetype,
+            template_type=req.template_type,
+            template_vars=sample_vars
         )
 
     if not success:
@@ -5998,6 +5998,53 @@ class BroadcastRequest(BaseModel):
     target_audience: str = "all"  # all, active, inactive
     selected_user_ids: Optional[List[str]] = None
 
+def _format_broadcast_date(value: Optional[str]) -> str:
+    date_value = _parse_iso_date_only(value)
+    if not date_value:
+        return ""
+    return date_value.strftime("%d %b %Y")
+
+async def _build_broadcast_context_map(user_ids: List[str]) -> dict:
+    if not user_ids:
+        return {}
+
+    memberships = await db.memberships.find(
+        {"user_id": {"$in": user_ids}},
+        {"_id": 0, "user_id": 1, "plan_id": 1, "start_date": 1, "end_date": 1, "status": 1}
+    ).sort("end_date", -1).to_list(10000)
+
+    latest_membership_by_user = {}
+    plan_ids = set()
+    for membership in memberships:
+        user_id = membership.get("user_id")
+        if user_id and user_id not in latest_membership_by_user:
+            latest_membership_by_user[user_id] = membership
+            if membership.get("plan_id"):
+                plan_ids.add(membership["plan_id"])
+
+    plans = await db.plans.find(
+        {"id": {"$in": list(plan_ids)}},
+        {"_id": 0, "id": 1, "name": 1}
+    ).to_list(1000) if plan_ids else []
+    plan_map = {plan["id"]: plan for plan in plans}
+
+    today = get_ist_now().date()
+    context_map = {}
+    for user_id in user_ids:
+        membership = latest_membership_by_user.get(user_id)
+        plan = plan_map.get(membership.get("plan_id")) if membership else None
+        end_date = _parse_iso_date_only(membership.get("end_date")) if membership else None
+        days_left = (end_date - today).days if end_date else ""
+        context_map[user_id] = {
+            "plan_name": plan.get("name", "") if plan else "",
+            "start_date": _format_broadcast_date(membership.get("start_date")) if membership else "",
+            "end_date": _format_broadcast_date(membership.get("end_date")) if membership else "",
+            "expiry_date": _format_broadcast_date(membership.get("end_date")) if membership else "",
+            "days_left": str(days_left) if days_left != "" else "",
+            "days": str(days_left) if days_left != "" else "",
+        }
+    return context_map
+
 @api_router.post("/broadcast/whatsapp")
 async def broadcast_whatsapp(
     request: BroadcastRequest,
@@ -6018,19 +6065,31 @@ async def broadcast_whatsapp(
         active_user_ids = [m["user_id"] for m in active_memberships]
         query["id"] = {"$nin": active_user_ids}
     
-    users = await db.users.find(query, {"_id": 0, "name": 1, "phone_number": 1, "country_code": 1, "member_id": 1}).to_list(10000)
+    users = await db.users.find(
+        query,
+        {"_id": 0, "id": 1, "name": 1, "phone_number": 1, "country_code": 1, "member_id": 1, "email": 1}
+    ).to_list(10000)
+    context_map = await _build_broadcast_context_map([user["id"] for user in users if user.get("id")])
     
     sent_count = 0
     failed_count = 0
     
     for user in users:
         if user.get("phone_number"):
-            # Personalize message
-            personalized_message = request.message.replace("{{name}}", user.get("name", "Member"))
-            personalized_message = personalized_message.replace("{{member_id}}", user.get("member_id", ""))
+            vars_map = {
+                "name": user.get("name", "Member"),
+                "member_id": user.get("member_id", ""),
+                "email": user.get("email", ""),
+                **context_map.get(user.get("id"), {})
+            }
+            personalized_message = replace_template_vars(request.message, vars_map)
             
             phone = f"{user.get('country_code', '+91')}{user['phone_number'].lstrip('0')}"
-            background_tasks.add_task(send_whatsapp, phone, personalized_message)
+            background_tasks.add_task(
+                send_whatsapp,
+                to_number=phone,
+                message=personalized_message
+            )
             sent_count += 1
         else:
             failed_count += 1

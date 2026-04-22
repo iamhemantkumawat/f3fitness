@@ -181,7 +181,7 @@ export const WhatsAppBroadcast = () => {
                 Compose Message
               </CardTitle>
               <CardDescription>
-                Use {"{{name}}"} and {"{{member_id}}"} to personalize messages
+                Use {"{{name}}"}, {"{{member_id}}"}, {"{{email}}"}, {"{{plan_name}}"}, {"{{start_date}}"}, {"{{end_date}}"}, {"{{expiry_date}}"}, {"{{days_left}}"} and {"{{days}}"}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
