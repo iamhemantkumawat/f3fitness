@@ -1,4 +1,4 @@
-import pytest
+import asyncio
 
 import server
 
@@ -11,8 +11,7 @@ class FakeResponse:
         return {"key": {"id": "message-1"}}
 
 
-@pytest.mark.asyncio
-async def test_evolution_send_skips_disconnected_instance(monkeypatch):
+def test_evolution_send_skips_disconnected_instance(monkeypatch):
     requests = []
     logs = []
     settings = {
@@ -42,11 +41,13 @@ async def test_evolution_send_skips_disconnected_instance(monkeypatch):
     monkeypatch.setattr(server, "_evolution_request", fake_request)
     monkeypatch.setattr(server, "_log_whatsapp", fake_log)
 
-    sent = await server._send_whatsapp_evolution(
-        settings,
-        "+919999999999",
-        "Test message",
-        {},
+    sent = asyncio.run(
+        server._send_whatsapp_evolution(
+            settings,
+            "+919999999999",
+            "Test message",
+            {},
+        )
     )
 
     assert sent is True
