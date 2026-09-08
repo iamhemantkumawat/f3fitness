@@ -28,6 +28,7 @@ import string
 import httpx
 import json
 import asyncio
+import time
 import qrcode
 from contextlib import asynccontextmanager
 from io import BytesIO
@@ -346,7 +347,7 @@ class WhatsAppSettings(BaseModel):
     fast2sms_template_invoice_sent_message_id: Optional[str] = "13755"
     evolution_api_base_url: Optional[str] = ""
     evolution_api_key: Optional[str] = ""
-    evolution_instance_name: Optional[str] = "f3fitness"
+    evolution_instance_name: Optional[str] = "f3fitness"  # comma-separated names enable round-robin failover
     evolution_instance_token: Optional[str] = ""
     admin_whatsapp_test_numbers: Optional[str] = ""  # comma separated
     attendance_confirmation_whatsapp_enabled: bool = True
@@ -1198,8 +1199,35 @@ def _normalize_phone_digits(number: str) -> str:
 def _evolution_api_base_url(settings: dict) -> str:
     return str(settings.get("evolution_api_base_url") or "").strip().rstrip("/")
 
+def _evolution_instance_names(settings: dict) -> List[str]:
+    raw_names = str(settings.get("evolution_instance_name") or "f3fitness")
+    names = []
+    for name in re.split(r"[,\n]+", raw_names):
+        clean_name = name.strip()
+        if clean_name and clean_name not in names:
+            names.append(clean_name)
+    return names or ["f3fitness"]
+
 def _evolution_instance_name(settings: dict) -> str:
-    return str(settings.get("evolution_instance_name") or "f3fitness").strip()
+    return _evolution_instance_names(settings)[0]
+
+_evolution_round_robin_index = 0
+_evolution_connection_cache = {
+    "key": None,
+    "expires_at": 0.0,
+    "connected": []
+}
+
+def _rotate_evolution_instances(instance_names: List[str]) -> List[str]:
+    global _evolution_round_robin_index
+    if len(instance_names) < 2:
+        return instance_names
+    start_index = _evolution_round_robin_index % len(instance_names)
+    _evolution_round_robin_index += 1
+    return instance_names[start_index:] + instance_names[:start_index]
+
+def _invalidate_evolution_connection_cache():
+    _evolution_connection_cache["expires_at"] = 0.0
 
 def _build_qr_data_url(payload: str) -> str:
     qr = qrcode.QRCode(version=1, box_size=8, border=2)
@@ -1232,8 +1260,8 @@ async def _evolution_request(
         response = await client.request(method.upper(), url, headers=headers, json=json_body, params=params)
     return response
 
-async def _get_evolution_connection_state(settings: dict) -> dict:
-    instance_name = _evolution_instance_name(settings)
+async def _get_evolution_connection_state(settings: dict, instance_name: Optional[str] = None) -> dict:
+    instance_name = instance_name or _evolution_instance_name(settings)
     response = await _evolution_request(settings, "GET", f"/instance/connectionState/{instance_name}")
     if response.status_code == 404:
         return {
@@ -1258,6 +1286,32 @@ async def _get_evolution_connection_state(settings: dict) -> dict:
         "state": state or "unknown",
         "raw": payload
     }
+
+async def _get_connected_evolution_instances(settings: dict, force_refresh: bool = False) -> List[str]:
+    instance_names = _evolution_instance_names(settings)
+    cache_key = (_evolution_api_base_url(settings), tuple(instance_names))
+    now = time.monotonic()
+    if (
+        not force_refresh
+        and _evolution_connection_cache.get("key") == cache_key
+        and now < float(_evolution_connection_cache.get("expires_at") or 0)
+    ):
+        return list(_evolution_connection_cache.get("connected") or [])
+
+    results = await asyncio.gather(
+        *[_get_evolution_connection_state(settings, name) for name in instance_names],
+        return_exceptions=True
+    )
+    connected = [
+        name for name, result in zip(instance_names, results)
+        if isinstance(result, dict) and result.get("connected")
+    ]
+    _evolution_connection_cache.update({
+        "key": cache_key,
+        "expires_at": now + 15,
+        "connected": connected
+    })
+    return connected
 
 async def _ensure_evolution_instance(settings: dict) -> dict:
     instance_name = _evolution_instance_name(settings)
@@ -1299,7 +1353,7 @@ async def _send_whatsapp_evolution(
 ):
     base_url = _evolution_api_base_url(settings)
     api_key = str(settings.get("evolution_api_key") or "").strip()
-    instance_name = _evolution_instance_name(settings)
+    instance_names = _evolution_instance_names(settings)
     if not base_url:
         log_data["status"] = "failed"
         log_data["error"] = "Evolution API base URL not configured"
@@ -1310,9 +1364,9 @@ async def _send_whatsapp_evolution(
         log_data["error"] = "Evolution API key not configured"
         await _log_whatsapp(log_data, log_to_db)
         return False
-    if not instance_name:
+    if not instance_names:
         log_data["status"] = "failed"
-        log_data["error"] = "Evolution instance name not configured"
+        log_data["error"] = "Evolution instance names not configured"
         await _log_whatsapp(log_data, log_to_db)
         return False
 
@@ -1324,7 +1378,22 @@ async def _send_whatsapp_evolution(
         return False
 
     try:
-        async def _perform_send():
+        connected_instances = await _get_connected_evolution_instances(settings)
+        if not connected_instances:
+            connected_instances = await _get_connected_evolution_instances(settings, force_refresh=True)
+        if not connected_instances:
+            log_data["status"] = "failed"
+            log_data["error"] = f"No connected Evolution WhatsApp instance. Checked: {', '.join(instance_names)}"
+            log_data["provider_attempts"] = [
+                {"instance_name": name, "result": "not_connected"} for name in instance_names
+            ]
+            await _log_whatsapp(log_data, log_to_db)
+            return False
+
+        ordered_instances = _rotate_evolution_instances(connected_instances)
+        attempts = []
+
+        async def _perform_send(instance_name: str):
             if media_url or media_base64:
                 media_source = media_base64 or media_url
                 url_lower = str(media_url or media_filename or "").lower()
@@ -1373,39 +1442,52 @@ async def _send_whatsapp_evolution(
                 timeout=45
             )
 
-        response = await _perform_send()
-        try:
-            body = response.json()
-        except Exception:
-            body = {"raw": response.text}
-
-        connection_closed = (
-            response.status_code >= 500
-            and isinstance(body, dict)
-            and "connection closed" in str(body).lower()
-        )
-        if connection_closed:
-            await asyncio.sleep(2)
-            response = await _perform_send()
+        last_response = None
+        last_body = None
+        for instance_name in ordered_instances:
+            response = await _perform_send(instance_name)
             try:
                 body = response.json()
             except Exception:
                 body = {"raw": response.text}
-            if isinstance(log_data, dict):
-                log_data["retry_reason"] = "Evolution connection closed"
-                log_data["retried_once"] = True
+            attempts.append({
+                "instance_name": instance_name,
+                "status_code": response.status_code,
+                "result": "sent" if 200 <= response.status_code < 300 else "failed"
+            })
 
-        if 200 <= response.status_code < 300:
-            message_key = ((body or {}).get("key") or {}) if isinstance(body, dict) else {}
-            log_data["status"] = "sent"
-            log_data["message_sid"] = message_key.get("id") or "evolution"
-            log_data["provider_response"] = body
-            await _log_whatsapp(log_data, log_to_db)
-            return True
+            if 200 <= response.status_code < 300:
+                message_key = ((body or {}).get("key") or {}) if isinstance(body, dict) else {}
+                log_data["status"] = "sent"
+                log_data["message_sid"] = message_key.get("id") or "evolution"
+                log_data["evolution_instance_name"] = instance_name
+                log_data["provider_attempts"] = attempts
+                log_data["provider_response"] = body
+                await _log_whatsapp(log_data, log_to_db)
+                return True
+
+            last_response = response
+            last_body = body
+            response_text = str(body).lower()
+            connection_failure = (
+                response.status_code == 404
+                or response.status_code >= 500
+                or "connection closed" in response_text
+                or "not connected" in response_text
+                or "instance not found" in response_text
+            )
+            if connection_failure:
+                _invalidate_evolution_connection_cache()
+                continue
+            break
 
         log_data["status"] = "failed"
-        log_data["error"] = f"Evolution API returned status {response.status_code}: {body}"
-        log_data["provider_response"] = body
+        if last_response is None:
+            log_data["error"] = "Evolution API send failed before receiving a response"
+        else:
+            log_data["error"] = f"Evolution API returned status {last_response.status_code}: {last_body}"
+        log_data["provider_attempts"] = attempts
+        log_data["provider_response"] = last_body
         await _log_whatsapp(log_data, log_to_db)
         return False
     except HTTPException as e:
@@ -4855,6 +4937,7 @@ async def update_whatsapp_settings(settings: WhatsAppSettings, current_user: dic
         {"$set": update_data},
         upsert=True
     )
+    _invalidate_evolution_connection_cache()
     await log_activity(
         current_user["id"],
         "settings_updated",
@@ -5027,8 +5110,35 @@ async def get_fast2sms_waba_templates(current_user: dict = Depends(get_admin_use
 @api_router.get("/settings/whatsapp/evolution/status")
 async def get_evolution_status(current_user: dict = Depends(get_admin_user)):
     settings = await db.settings.find_one({"id": "1"}, {"_id": 0}) or {}
-    state = await _get_evolution_connection_state(settings)
-    return {"success": True, **state}
+    instance_names = _evolution_instance_names(settings)
+    results = await asyncio.gather(
+        *[_get_evolution_connection_state(settings, name) for name in instance_names],
+        return_exceptions=True
+    )
+    states = []
+    for name, result in zip(instance_names, results):
+        if isinstance(result, Exception):
+            states.append({
+                "provider": "evolution",
+                "instance_name": name,
+                "exists": False,
+                "connected": False,
+                "state": "unavailable",
+                "error": str(getattr(result, "detail", result))
+            })
+        else:
+            states.append(result)
+
+    connected = any(state.get("connected") for state in states)
+    return {
+        "success": True,
+        "provider": "evolution",
+        "instance_name": instance_names[0],
+        "exists": any(state.get("exists") for state in states),
+        "connected": connected,
+        "state": "open" if connected else states[0].get("state", "unknown"),
+        "instances": states
+    }
 
 @api_router.post("/settings/whatsapp/evolution/connect")
 async def connect_evolution_instance(current_user: dict = Depends(get_admin_user)):

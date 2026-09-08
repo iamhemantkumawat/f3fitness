@@ -1196,13 +1196,16 @@ export const WhatsAppSettings = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Instance Name</Label>
+                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Instance Names (Round Robin)</Label>
                       <Input
                         className="input-dark mt-2"
-                        placeholder="f3fitness"
+                        placeholder="F3number, f3gym"
                         value={formData.evolution_instance_name}
                         onChange={(e) => setFormData({ ...formData, evolution_instance_name: e.target.value })}
                       />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Enter Evolution instance names in priority order, separated by commas. Sends rotate across connected instances and skip logged-out ones.
+                      </p>
                     </div>
                     <div>
                       <Label className="text-xs uppercase tracking-wider text-muted-foreground">Instance Token (Optional)</Label>
@@ -1220,7 +1223,7 @@ export const WhatsAppSettings = () => {
                       <div>
                         <h4 className="font-semibold text-foreground">Connection Status</h4>
                         <p className="text-xs text-muted-foreground">
-                          Instance: <span className="font-medium text-foreground">{formData.evolution_instance_name || 'Not set'}</span>
+                          Primary: <span className="font-medium text-foreground">{(formData.evolution_instance_name || '').split(',')[0]?.trim() || 'Not set'}</span>
                         </p>
                       </div>
                       <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
@@ -1232,10 +1235,23 @@ export const WhatsAppSettings = () => {
                       </div>
                     </div>
 
+                    {evolutionStatus?.instances?.length > 0 && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {evolutionStatus.instances.map((instance) => (
+                          <div key={instance.instance_name} className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
+                            <span className="text-sm font-medium text-foreground">{instance.instance_name}</span>
+                            <span className={`text-xs font-semibold ${instance.connected ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                              {instance.connected ? 'Connected' : instance.state || 'Disconnected'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     <div className="flex flex-wrap gap-2">
                       <Button type="button" className="btn-secondary" onClick={handleEvolutionConnect} disabled={evolutionLoading}>
                         <QrCode size={16} className="mr-2" />
-                        {evolutionLoading ? 'Preparing...' : 'Create / Refresh QR'}
+                        {evolutionLoading ? 'Preparing...' : 'Create / Refresh Primary QR'}
                       </Button>
                       <Button type="button" className="btn-secondary" onClick={loadEvolutionStatus} disabled={evolutionLoading}>
                         <RefreshCw size={16} className="mr-2" />
@@ -1243,11 +1259,11 @@ export const WhatsAppSettings = () => {
                       </Button>
                       <Button type="button" className="btn-secondary" onClick={handleEvolutionRestart} disabled={evolutionLoading}>
                         <RefreshCw size={16} className="mr-2" />
-                        Restart Instance
+                        Restart Primary
                       </Button>
                       <Button type="button" variant="outline" onClick={handleEvolutionLogout} disabled={evolutionLoading}>
                         <LogOut size={16} className="mr-2" />
-                        Logout WhatsApp
+                        Logout Primary
                       </Button>
                     </div>
 
